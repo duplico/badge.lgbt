@@ -45,6 +45,7 @@
 									<listOptionValue builtIn="false" value="${COM_TI_SIMPLELINK_CC2640R2_SDK_INCLUDE_PATH}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/ble"/>
+									<listOptionValue builtIn="false" value="${PROJECT_LOC}/badge_drivers"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Startup"/>
 									<listOptionValue builtIn="false" value="${SRC_BLE_DIR}/controller/cc26xx_r2/inc"/>
 									<listOptionValue builtIn="false" value="${SRC_BLE_DIR}/inc"/>
@@ -211,6 +212,7 @@
 									<listOptionValue builtIn="false" value="${COM_TI_SIMPLELINK_CC2640R2_SDK_INCLUDE_PATH}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/ble"/>
+									<listOptionValue builtIn="false" value="${PROJECT_LOC}/badge_drivers"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Startup"/>
 									<listOptionValue builtIn="false" value="${SRC_BLE_DIR}/controller/cc26xx_r2/inc"/>
 									<listOptionValue builtIn="false" value="${SRC_BLE_DIR}/inc"/>

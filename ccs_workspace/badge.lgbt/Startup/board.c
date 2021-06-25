@@ -116,8 +116,6 @@ const GPIOCC26XX_Config GPIOCC26XX_config = {
     .intPriority        = (~0)
 };
 
-// TODO:
-
 /*
  *  =============================== GPTimer ===============================
  *  Remove unused entries to reduce flash usage both in Board.c and Board.h

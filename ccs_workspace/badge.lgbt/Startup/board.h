@@ -107,14 +107,15 @@ typedef enum BADGE_ADCBufName {
  *  @brief  Enum of ADCBuf channels
  */
 typedef enum BADGE_ADCBuf0ChannelName {
-    ADCBUF_CH_VBAT = 0,
-    ADCBUF_CH_LIGHT,
+    ADCBUF_CH_LIGHT = 0,
     BADGE_ADCBUF0CHANNELVDDS,
     BADGE_ADCBUF0CHANNELDCOUPL,
     BADGE_ADCBUF0CHANNELVSS,
 
     BADGE_ADCBUF0CHANNELCOUNT
 } BADGE_ADCBuf0ChannelName;
+
+// Skipping PIN because it doesn't require an enum
 
 /*!
  *  @def    BADGE_GPIOName

@@ -54,6 +54,8 @@ dkms.conf
 
 # TI CCS
 *.launches/
+*.metadata/
+.jxbrowser-data/
 
 # Gerbers
 *.gbr
@@ -61,3 +63,7 @@ dkms.conf
 
 # Python
 *.pyc
+
+# Project specific files
+ccs_workspace/badge_lgbt/SingleMode_FlashOnly/
+ccs_workspace/badge_lgbt/MultiMode_FlashOnly/

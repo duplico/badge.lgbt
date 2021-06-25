@@ -1,0 +1,261 @@
+/*
+ * board.h
+ *
+ *  Created on: Apr 11, 2019
+ *      Author: george
+ */
+
+#ifndef STARTUP_BOARD_H_
+#define STARTUP_BOARD_H_
+
+#include <ti/drivers/ADC.h>
+#include <ti/drivers/ADCBuf.h>
+#include <ti/drivers/PWM.h>
+#include <ti/drivers/SPI.h>
+#include <ti/drivers/UART.h>
+#include <ti/drivers/Watchdog.h>
+
+/* Includes */
+#include <ti/drivers/PIN.h>
+#include <ti/drivers/pin/PINCC26XX.h>
+#include <ti/drivers/gpio/GPIOCC26XX.h>
+#include <ti/devices/cc26x0r2/driverlib/ioc.h>
+
+/* Externs */
+extern const PIN_Config badge_pin_init_table[];
+
+/*
+ *  ============================================================================
+ *  RF Front End and Bias configuration symbols for TI reference designs and
+ *  kits. This symbol sets the RF Front End configuration in ble_user_config.h
+ *  and selects the appropriate PA table in ble_user_config.c.
+ *  Other configurations can be used by editing these files.
+ *
+ *  Define only one symbol:
+ *  CC2650EM_7ID    - Differential RF and internal biasing
+                      (default for CC2640R2 LaunchPad)
+ *  CC2650EM_5XD    – Differential RF and external biasing
+ *  CC2650EM_4XS    – Single-ended RF on RF-P and external biasing
+ *  CC2640R2DK_CXS  - WCSP: Single-ended RF on RF-N and external biasing
+ *                    (Note that the WCSP is only tested and characterized for
+ *                     single ended configuration, and it has a WCSP-specific
+ *                     PA table)
+ *
+ *  Note: CC2650EM_xxx reference designs apply to all CC26xx devices.
+ *  ==========================================================================
+ */
+#define CC2650EM_7ID
+
+/* Mapping of pins to board signals using general board aliases
+ *      <board signal alias>                  <pin mapping>
+ */
+
+// ADC - analog inputs
+#define VBAT_IO_ANALOG  IOID_23
+#define LIGHT_IO_ANALOG IOID_30
+
+// GPIO - digital I/O
+//  Note: the PIN API is preferred, but the SPI flash driver we're using
+//        requires the use of the GPIO API instead, so we will configure
+//        this single pin using it.
+#define BADGE_GPIO_SPIF_CSN      GPIOCC26XX_DIO_06
+
+// PIN - digital I/O
+#define BADGE_PIN_SERIAL_DIO1_PTX    PINCC26XX_DIO0 // B2B DIO1
+#define BADGE_PIN_SERIAL_DIO2_PRX    PINCC26XX_DIO3 // B2B DIO2
+
+#define BADGE_PIN_KP_COL_1       PINCC26XX_DIO8
+#define BADGE_PIN_KP_COL_2       PINCC26XX_DIO9
+#define BADGE_PIN_KP_COL_3       PINCC26XX_DIO10
+#define BADGE_PIN_KP_COL_4       PINCC26XX_DIO11
+#define BADGE_PIN_KP_COL_5       PINCC26XX_DIO12
+#define BADGE_PIN_KP_ROW_1       PINCC26XX_DIO13
+#define BADGE_PIN_KP_ROW_2       PINCC26XX_DIO14
+#define BADGE_PIN_KP_ROW_3       PINCC26XX_DIO15
+#define BADGE_PIN_KP_ROW_4       PINCC26XX_DIO16
+#define BADGE_PIN_EPAPER_CSN     PINCC26XX_DIO25
+#define BADGE_PIN_EPAPER_DC      PINCC26XX_DIO24
+#define BADGE_PIN_EPAPER_RESN    PINCC26XX_DIO22
+#define BADGE_PIN_EPAPER_BUSY    PINCC26XX_DIO21
+
+// I2C
+#define BADGE_I2C_HT16D_SCL      IOID_28
+#define BADGE_I2C_HT16D_SDA      IOID_29
+
+// SPI for the epaper display:
+/// EPD SPI MOSI
+#define BADGE_SPI_EPAPER_SDIO     IOID_27
+/// EPD SPI SCLK
+#define BADGE_SPI_EPAPER_SCLK     IOID_26
+
+// SPI for the external flash:
+#define BADGE_SPIF_MISO             IOID_7
+#define BADGE_SPIF_MOSI             IOID_5
+#define BADGE_SPI0_CLK              IOID_4
+#define BADGE_SPI0_CSN              PIN_UNASSIGNED // Actually 6
+
+
+/* UART Board */
+#define BADGE_UART_RX_BASE               IOID_2
+#define BADGE_UART_TX_BASE               IOID_1
+
+/* PWM Outputs */
+#define BADGE_PWMPIN0               PIN_UNASSIGNED
+#define BADGE_PWMPIN1               PIN_UNASSIGNED
+#define BADGE_PWMPIN2               PIN_UNASSIGNED
+#define BADGE_PWMPIN3               PIN_UNASSIGNED
+#define BADGE_PWMPIN4               PIN_UNASSIGNED
+#define BADGE_PWMPIN5               PIN_UNASSIGNED
+#define BADGE_PWMPIN6               PIN_UNASSIGNED
+#define BADGE_PWMPIN7               PIN_UNASSIGNED
+
+/*!
+ *  @brief  Initialize the general board specific settings
+ *
+ *  This function initializes the general board specific settings.
+ */
+void BADGE_initGeneral(void);
+
+/*!
+ *  @def    BADGE_ADCBufName
+ *  @brief  Enum of ADCs
+ */
+typedef enum BADGE_ADCBufName {
+    BADGE_ADCBUF0 = 0,
+
+    BADGE_ADCBUFCOUNT
+} BADGE_ADCBufName;
+
+/*!
+ *  @def    BADGE_ADCBuf0SourceName
+ *  @brief  Enum of ADCBuf channels
+ */
+typedef enum BADGE_ADCBuf0ChannelName {
+    ADCBUF_CH_VBAT = 0,
+    ADCBUF_CH_LIGHT,
+    BADGE_ADCBUF0CHANNELVDDS,
+    BADGE_ADCBUF0CHANNELDCOUPL,
+    BADGE_ADCBUF0CHANNELVSS,
+
+    BADGE_ADCBUF0CHANNELCOUNT
+} BADGE_ADCBuf0ChannelName;
+
+/*!
+ *  @def    BADGE_GPIOName
+ *  @brief  Enum of GPIO names
+ */
+typedef enum BADGE_GPIOName {
+    BADGE_GPIO_SPI_FLASH_CS = 0,
+    BADGE_GPIOCOUNT
+} BADGE_GPIOName;
+
+/*!
+ *  @def    BADGE_GPTimerName
+ *  @brief  Enum of GPTimer parts
+ */
+typedef enum BADGE_GPTimerName {
+    BADGE_GPTIMER0A = 0,
+    BADGE_GPTIMER0B,
+    BADGE_GPTIMER1A,
+    BADGE_GPTIMER1B,
+    BADGE_GPTIMER2A,
+    BADGE_GPTIMER2B,
+    BADGE_GPTIMER3A,
+    BADGE_GPTIMER3B,
+
+    BADGE_GPTIMERPARTSCOUNT
+} BADGE_GPTimerName;
+
+/*!
+ *  @def    BADGE_GPTimers
+ *  @brief  Enum of GPTimers
+ */
+typedef enum BADGE_GPTimers {
+    BADGE_GPTIMER0 = 0,
+    BADGE_GPTIMER1,
+    BADGE_GPTIMER2,
+    BADGE_GPTIMER3,
+
+    BADGE_GPTIMERCOUNT
+} BADGE_GPTimers;
+
+/*!
+ *  @def    BADGE_I2CName
+ *  @brief  Enum of I2C names
+ */
+typedef enum BADGE_I2CName {
+    BADGE_I2C0 = 0,
+
+    BADGE_I2CCOUNT
+} BADGE_I2CName;
+
+/*!
+ *  @def    BADGE_NVSName
+ *  @brief  Enum of NVS names
+ */
+typedef enum BADGE_NVSName {
+#ifndef Board_EXCLUDE_NVS_INTERNAL_FLASH
+    BADGE_NVSCC26XX0 = 0,
+#endif
+#ifndef Board_EXCLUDE_NVS_EXTERNAL_FLASH
+    BADGE_NVSSPI25X0,
+#endif
+
+    BADGE_NVSCOUNT
+} BADGE_NVSName;
+
+/*!
+ *  @def    BADGE_SPIName
+ *  @brief  Enum of SPI names
+ */
+typedef enum BADGE_SPIName {
+    BADGE_SPI0 = 0,
+    BADGE_SPI1,
+
+    BADGE_SPICOUNT
+} BADGE_SPIName;
+
+/*!
+ *  @def    BADGE_UARTName
+ *  @brief  Enum of UARTs
+ */
+typedef enum BADGE_UARTName {
+    BADGE_UART_PRX = 0,
+    BADGE_UART_PTX,
+
+    BADGE_UARTCOUNT
+} BADGE_UARTName;
+
+/*!
+ *  @def    BADGE_UDMAName
+ *  @brief  Enum of DMA buffers
+ */
+typedef enum BADGE_UDMAName {
+    BADGE_UDMA0 = 0,
+
+    BADGE_UDMACOUNT
+} BADGE_UDMAName;
+
+/*!
+ *  @def    BADGE_WatchdogName
+ *  @brief  Enum of Watchdogs
+ */
+typedef enum BADGE_WatchdogName {
+    BADGE_WATCHDOG0 = 0,
+
+    BADGE_WATCHDOGCOUNT
+} BADGE_WatchdogName;
+
+/*!
+ *  @def    CC2650_LAUNCHXL_TRNGName
+ *  @brief  Enum of TRNG names on the board
+ */
+typedef enum BADGE_TRNGName {
+    BADGE_TRNG0 = 0,
+    BADGE_TRNGCOUNT
+} BADGE_TRNGName;
+
+#define Board_init()            BADGE_initGeneral()
+#define Board_initGeneral()     BADGE_initGeneral()
+
+#endif /* STARTUP_BOARD_H_ */

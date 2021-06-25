@@ -328,13 +328,13 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
 const SPI_Config SPI_config[BADGE_SPICOUNT] = {
     {
          .fxnTablePtr = &SPICC26XXDMA_fxnTable,
-         .object      = &spiCC26XXDMAObjects[BADGE_SPI0],
-         .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI0]
+         .object      = &spiCC26XXDMAObjects[BADGE_SPI0_FLASH],
+         .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI0_FLASH]
     },
     {
          .fxnTablePtr = &SPICC26XXDMA_fxnTable,
-         .object      = &spiCC26XXDMAObjects[BADGE_SPI1],
-         .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI1]
+         .object      = &spiCC26XXDMAObjects[BADGE_SPI1_TLC],
+         .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI1_TLC]
     },
 };
 

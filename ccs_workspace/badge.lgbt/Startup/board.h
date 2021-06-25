@@ -176,8 +176,8 @@ typedef enum BADGE_NVSName {
  *  @brief  Enum of SPI names
  */
 typedef enum BADGE_SPIName {
-    BADGE_SPI0 = 0,
-    BADGE_SPI1,
+    BADGE_SPI0_FLASH = 0,
+    BADGE_SPI1_TLC,
 
     BADGE_SPICOUNT
 } BADGE_SPIName;

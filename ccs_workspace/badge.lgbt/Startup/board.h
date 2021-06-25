@@ -51,63 +51,39 @@ extern const PIN_Config badge_pin_init_table[];
  */
 
 // ADC - analog inputs
-#define VBAT_IO_ANALOG  IOID_23
 #define LIGHT_IO_ANALOG IOID_30
+
+// PIN - digital I/O
+#define BADGE_PIN_IR_ENDEC_SD       PINCC26XX_DIO0
+#define BADGE_PIN_IR_TRANS_RSTn     PINCC26XX_DIO1
+
+#define BADGE_PIN_B1                PINCC26XX_DIO29
+#define BADGE_PIN_B2                PINCC26XX_DIO28
+#define BADGE_PIN_B3                PINCC26XX_DIO27
 
 // GPIO - digital I/O
 //  Note: the PIN API is preferred, but the SPI flash driver we're using
 //        requires the use of the GPIO API instead, so we will configure
 //        this single pin using it.
-#define BADGE_GPIO_SPIF_CSN      GPIOCC26XX_DIO_06
+#define BADGE_GPIO_SPIF_CSN         GPIOCC26XX_DIO_11
 
-// PIN - digital I/O
-#define BADGE_PIN_SERIAL_DIO1_PTX    PINCC26XX_DIO0 // B2B DIO1
-#define BADGE_PIN_SERIAL_DIO2_PRX    PINCC26XX_DIO3 // B2B DIO2
-
-#define BADGE_PIN_KP_COL_1       PINCC26XX_DIO8
-#define BADGE_PIN_KP_COL_2       PINCC26XX_DIO9
-#define BADGE_PIN_KP_COL_3       PINCC26XX_DIO10
-#define BADGE_PIN_KP_COL_4       PINCC26XX_DIO11
-#define BADGE_PIN_KP_COL_5       PINCC26XX_DIO12
-#define BADGE_PIN_KP_ROW_1       PINCC26XX_DIO13
-#define BADGE_PIN_KP_ROW_2       PINCC26XX_DIO14
-#define BADGE_PIN_KP_ROW_3       PINCC26XX_DIO15
-#define BADGE_PIN_KP_ROW_4       PINCC26XX_DIO16
-#define BADGE_PIN_EPAPER_CSN     PINCC26XX_DIO25
-#define BADGE_PIN_EPAPER_DC      PINCC26XX_DIO24
-#define BADGE_PIN_EPAPER_RESN    PINCC26XX_DIO22
-#define BADGE_PIN_EPAPER_BUSY    PINCC26XX_DIO21
-
-// I2C
-#define BADGE_I2C_HT16D_SCL      IOID_28
-#define BADGE_I2C_HT16D_SDA      IOID_29
-
-// SPI for the epaper display:
-/// EPD SPI MOSI
-#define BADGE_SPI_EPAPER_SDIO     IOID_27
-/// EPD SPI SCLK
-#define BADGE_SPI_EPAPER_SCLK     IOID_26
+// SPI for the LED driver:
+#define BADGE_SPI_TLC_MISO          IOID_26
+#define BADGE_SPI_TLC_MOSI          IOID_25
+#define BADGE_SPI_TLC_SCLK          IOID_24
+#define BADGE_SPI_TLC_CSN           PIN_UNASSIGNED
 
 // SPI for the external flash:
-#define BADGE_SPIF_MISO             IOID_7
-#define BADGE_SPIF_MOSI             IOID_5
-#define BADGE_SPI0_CLK              IOID_4
-#define BADGE_SPI0_CSN              PIN_UNASSIGNED // Actually 6
+#define BADGE_SPIF_MISO             IOID_10
+#define BADGE_SPIF_MOSI             IOID_7
+#define BADGE_SPIF_CLK              IOID_5
+#define BADGE_SPIF_CSN              PIN_UNASSIGNED // Actually IOID_11 (see BADGE_GPIO_SPIF_CSN)
 
+// UART (IrDA)
+#define BADGE_UART_IR_RX            IOID_2
+#define BADGE_UART_IR_TX            IOID_3
 
-/* UART Board */
-#define BADGE_UART_RX_BASE               IOID_2
-#define BADGE_UART_TX_BASE               IOID_1
-
-/* PWM Outputs */
-#define BADGE_PWMPIN0               PIN_UNASSIGNED
-#define BADGE_PWMPIN1               PIN_UNASSIGNED
-#define BADGE_PWMPIN2               PIN_UNASSIGNED
-#define BADGE_PWMPIN3               PIN_UNASSIGNED
-#define BADGE_PWMPIN4               PIN_UNASSIGNED
-#define BADGE_PWMPIN5               PIN_UNASSIGNED
-#define BADGE_PWMPIN6               PIN_UNASSIGNED
-#define BADGE_PWMPIN7               PIN_UNASSIGNED
+// PWM outs
 
 /*!
  *  @brief  Initialize the general board specific settings
@@ -180,16 +156,6 @@ typedef enum BADGE_GPTimers {
 } BADGE_GPTimers;
 
 /*!
- *  @def    BADGE_I2CName
- *  @brief  Enum of I2C names
- */
-typedef enum BADGE_I2CName {
-    BADGE_I2C0 = 0,
-
-    BADGE_I2CCOUNT
-} BADGE_I2CName;
-
-/*!
  *  @def    BADGE_NVSName
  *  @brief  Enum of NVS names
  */
@@ -220,9 +186,7 @@ typedef enum BADGE_SPIName {
  *  @brief  Enum of UARTs
  */
 typedef enum BADGE_UARTName {
-    BADGE_UART_PRX = 0,
-    BADGE_UART_PTX,
-
+    BADGE_UART_PRX = 0, // TODO: Rename
     BADGE_UARTCOUNT
 } BADGE_UARTName;
 

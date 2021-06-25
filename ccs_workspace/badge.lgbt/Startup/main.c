@@ -3,7 +3,6 @@
 #include <ti/drivers/Power.h>
 #include <ti/drivers/power/PowerCC26XX.h>
 #include <ti/drivers/NVS.h>
-#include <ti/drivers/I2C.h>
 #include <ti/drivers/UART.h>
 #include <ti/drivers/uart/UARTCC26XX.h>
 #include <ti/sysbios/BIOS.h>
@@ -54,7 +53,6 @@ int main()
         while (1);
     }
     SPI_init();
-    I2C_init();
     ADCBuf_init();
     UART_init();
 

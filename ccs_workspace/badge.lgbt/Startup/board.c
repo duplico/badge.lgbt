@@ -35,7 +35,6 @@ ADCBufCC26XX_Object adcBufCC26xxObjects[BADGE_ADCBUFCOUNT];
  *  entries. The mapping of dio and internal signals is package dependent.
  */
 const ADCBufCC26XX_AdcChannelLutEntry ADCBufCC26XX_adcChannelLut[BADGE_ADCBUF0CHANNELCOUNT] = {
-    {VBAT_IO_ANALOG, ADC_COMPB_IN_AUXIO7},
     {LIGHT_IO_ANALOG, ADC_COMPB_IN_AUXIO0},
     {PIN_UNASSIGNED, ADC_COMPB_IN_VDDS},
     {PIN_UNASSIGNED, ADC_COMPB_IN_DCOUPL},
@@ -67,10 +66,11 @@ const uint_least8_t ADCBuf_count = BADGE_ADCBUFCOUNT;
 #include <ti/drivers/pin/PINCC26XX.h>
 
 const PIN_Config badge_pin_init_table[] = {
-    BADGE_PIN_EPAPER_CSN | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
-    BADGE_PIN_EPAPER_DC | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
-    BADGE_PIN_EPAPER_RESN | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
-    BADGE_PIN_EPAPER_BUSY | PIN_INPUT_EN,
+    BADGE_PIN_IR_ENDEC_SD | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_PIN_IR_TRANS_RSTn | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_PIN_B1 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B2 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B3 | PIN_INPUT_EN | PIN_PULLUP,
     PIN_TERMINATE
 };
 
@@ -78,7 +78,6 @@ const PINCC26XX_HWAttrs PINCC26XX_hwAttrs = {
     .intPriority = ~0,
     .swiPriority = 0
 };
-
 
 /*
  *  =============================== GPIO ===============================
@@ -117,6 +116,8 @@ const GPIOCC26XX_Config GPIOCC26XX_config = {
     .intPriority        = (~0)
 };
 
+// TODO:
+
 /*
  *  =============================== GPTimer ===============================
  *  Remove unused entries to reduce flash usage both in Board.c and Board.h
@@ -147,36 +148,7 @@ const GPTimerCC26XX_Config GPTimerCC26XX_config[BADGE_GPTIMERPARTSCOUNT] = {
     { &gptimerCC26XXObjects[BADGE_GPTIMER3], &gptimerCC26xxHWAttrs[BADGE_GPTIMER3B], GPT_B },
 };
 
-/*
- *  =============================== I2C ===============================
-*/
-#include <ti/drivers/I2C.h>
-#include <ti/drivers/i2c/I2CCC26XX.h>
-
-I2CCC26XX_Object i2cCC26xxObjects[BADGE_I2CCOUNT];
-
-const I2CCC26XX_HWAttrsV1 i2cCC26xxHWAttrs[BADGE_I2CCOUNT] = {
-    {
-        .baseAddr    = I2C0_BASE,
-        .powerMngrId = PowerCC26XX_PERIPH_I2C0,
-        .intNum      = INT_I2C_IRQ,
-        .intPriority = ~0,
-        .swiPriority = 0,
-        .sdaPin      = BADGE_I2C_HT16D_SDA,
-        .sclPin      = BADGE_I2C_HT16D_SCL,
-    }
-};
-
-const I2C_Config I2C_config[BADGE_I2CCOUNT] = {
-    {
-        .fxnTablePtr = &I2CCC26XX_fxnTable,
-        .object      = &i2cCC26xxObjects[BADGE_I2C0],
-        .hwAttrs     = &i2cCC26xxHWAttrs[BADGE_I2C0]
-    },
-};
-
-const uint_least8_t I2C_count = BADGE_I2CCOUNT;
-
+// TODO: Deal with NVS:
 /*
  *  =============================== NVS ===============================
  */
@@ -189,7 +161,6 @@ const uint_least8_t I2C_count = BADGE_I2CCOUNT;
 #define REGIONSIZE       (SECTORSIZE * 4)
 
 #ifndef Board_EXCLUDE_NVS_INTERNAL_FLASH
-
 
 /*
  * Reserve flash sectors for NVS driver use by placing an uninitialized byte
@@ -335,8 +306,8 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
         .txChannelBitMask   = 1<<UDMA_CHAN_SSI0_TX,
         .mosiPin            = BADGE_SPIF_MOSI,
         .misoPin            = BADGE_SPIF_MISO,
-        .clkPin             = BADGE_SPI0_CLK,
-        .csnPin             = BADGE_SPI0_CSN,
+        .clkPin             = BADGE_SPIF_CLK,
+        .csnPin             = BADGE_SPIF_CSN,
         .minDmaTransferSize = 10
     },
     {
@@ -348,10 +319,10 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
         .defaultTxBufValue  = 0xFF,
         .rxChannelBitMask   = 1<<UDMA_CHAN_SSI1_RX,
         .txChannelBitMask   = 1<<UDMA_CHAN_SSI1_TX,
-        .mosiPin            = BADGE_SPI_EPAPER_SDIO,
-        .misoPin            = PIN_UNASSIGNED,
-        .clkPin             = BADGE_SPI_EPAPER_SCLK,
-        .csnPin             = PIN_UNASSIGNED,
+        .mosiPin            = BADGE_SPI_TLC_MOSI,
+        .misoPin            = BADGE_SPI_TLC_MISO,
+        .clkPin             = BADGE_SPI_TLC_SCLK,
+        .csnPin             = BADGE_SPI_TLC_CSN,
         .minDmaTransferSize = 10
     }
 };
@@ -388,8 +359,8 @@ const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
         .intNum         = INT_UART0_COMB,
         .intPriority    = ~0,
         .swiPriority    = 0,
-        .txPin          = BADGE_UART_TX_BASE,
-        .rxPin          = BADGE_UART_RX_BASE,
+        .txPin          = BADGE_UART_IR_RX,
+        .rxPin          = BADGE_UART_IR_TX,
         .ctsPin         = PIN_UNASSIGNED,
         .rtsPin         = PIN_UNASSIGNED,
         .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_PRX],
@@ -398,22 +369,6 @@ const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
         .rxIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_4_8,
         .errorFxn       = NULL
     },
-    { // PTX
-        .baseAddr       = UART0_BASE,
-        .powerMngrId    = PowerCC26XX_PERIPH_UART0,
-        .intNum         = INT_UART0_COMB,
-        .intPriority    = ~0,
-        .swiPriority    = 0,
-        .txPin          = BADGE_UART_RX_BASE, // Note reversed direction
-        .rxPin          = BADGE_UART_TX_BASE, // Note reversed direction.
-        .ctsPin         = PIN_UNASSIGNED,
-        .rtsPin         = PIN_UNASSIGNED,
-        .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_PTX],
-        .ringBufSize    = sizeof(uartCC26XXRingBuffer[BADGE_UART_PTX]),
-        .txIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_1_8,
-        .rxIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_4_8,
-        .errorFxn       = NULL
-    }
 };
 
 const UART_Config UART_config[BADGE_UARTCOUNT] = {
@@ -421,11 +376,6 @@ const UART_Config UART_config[BADGE_UARTCOUNT] = {
         .fxnTablePtr = &UARTCC26XX_fxnTable,
         .object      = &uartCC26XXObjects[BADGE_UART_PRX],
         .hwAttrs     = &uartCC26XXHWAttrs[BADGE_UART_PRX]
-    },
-    {
-        .fxnTablePtr = &UARTCC26XX_fxnTable,
-        .object      = &uartCC26XXObjects[BADGE_UART_PTX],
-        .hwAttrs     = &uartCC26XXHWAttrs[BADGE_UART_PTX]
     },
 };
 

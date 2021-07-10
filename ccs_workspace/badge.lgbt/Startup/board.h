@@ -54,8 +54,8 @@ extern const PIN_Config badge_pin_init_table[];
 #define LIGHT_IO_ANALOG IOID_30
 
 // PIN - digital I/O
-#define BADGE_PIN_IR_ENDEC_SD       PINCC26XX_DIO0
-#define BADGE_PIN_IR_TRANS_RSTn     PINCC26XX_DIO1
+#define BADGE_PIN_IR_TRANS_SD       PINCC26XX_DIO0
+#define BADGE_PIN_IR_ENDEC_RSTn     PINCC26XX_DIO1
 
 #define BADGE_PIN_B1                PINCC26XX_DIO29
 #define BADGE_PIN_B2                PINCC26XX_DIO28
@@ -68,9 +68,9 @@ extern const PIN_Config badge_pin_init_table[];
 #define BADGE_GPIO_SPIF_CSN         GPIOCC26XX_DIO_11
 
 // SPI for the LED driver:
-#define BADGE_SPI_TLC_MISO          IOID_26
+#define BADGE_SPI_TLC_MISO          PIN_UNASSIGNED // IOID_26 // TODO
 #define BADGE_SPI_TLC_MOSI          IOID_25
-#define BADGE_SPI_TLC_SCLK          IOID_24
+#define BADGE_SPI_TLC_SCLK          IOID_24 // PIN_UNASSIGNED // TODO
 #define BADGE_SPI_TLC_CSN           PIN_UNASSIGNED
 
 // SPI for the external flash:
@@ -84,6 +84,8 @@ extern const PIN_Config badge_pin_init_table[];
 #define BADGE_UART_IR_TX            IOID_3
 
 // PWM outs
+#define BADGE_PWM_IR_16CLK          IOID_4
+#define BADGE_PWM_TLC_CLK           PIN_UNASSIGNED //IOID_24 // TODO
 
 /*!
  *  @brief  Initialize the general board specific settings
@@ -187,9 +189,16 @@ typedef enum BADGE_SPIName {
  *  @brief  Enum of UARTs
  */
 typedef enum BADGE_UARTName {
-    BADGE_UART_PRX = 0, // TODO: Rename
+    BADGE_UART_IRDA = 0,
     BADGE_UARTCOUNT
 } BADGE_UARTName;
+
+
+typedef enum BADGE_PWMName {
+    BADGE_PWM0 = 0,
+    BADGE_PWM1,
+    BADGE_PWMCOUNT
+} BADGE_PWMName;
 
 /*!
  *  @def    BADGE_UDMAName

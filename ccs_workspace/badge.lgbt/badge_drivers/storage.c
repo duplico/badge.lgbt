@@ -9,10 +9,12 @@
 
 #include <third_party/spiffs/SPIFFSNVS.h>
 #include <third_party/spiffs/spiffs.h>
+#include <ti/drivers/NVS.h>
 
 #include "board.h"
 #include "storage.h"
-//#include <post.h>
+#include <post.h>
+#include "ExtFlash.h"
 
 #include "badge.h"
 
@@ -72,12 +74,56 @@ void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
     SPIFFS_close(&fs, fd);
 }
 
+
+#define FOOTER "=================================================="
+
+/* Buffer placed in RAM to hold bytes read from non-volatile storage. */
+static char buffer[64];
+static const char signature[] =
+    {"SimpleLink SDK Non-Volatile Storage (NVS) SPI Example."};
+
 void storage_init() {
+    while (1) {
+        ExtFlash_test();
+    }
+}
+
+
+//    NVS_Handle nvsHandle;
+//    NVS_Attrs regionAttrs;
+//    NVS_Params nvsParams;
+//    NVS_init();
+//    NVS_Params_init(&nvsParams);
+//    nvsHandle = NVS_open(BADGE_NVSSPI25X0, &nvsParams);
+//    NVS_getAttrs(nvsHandle, &regionAttrs);
+//    /*
+//     * Copy "sizeof(signature)" bytes from the NVS region base address into
+//     * buffer.
+//     */
+//    NVS_read(nvsHandle, 0, (void*) buffer, sizeof(signature));
+//
+//    /*
+//     * Determine if the NVS region contains the signature string.
+//     * Compare the string with the contents copied into buffer.
+//     */
+//    if (strcmp((char*) buffer, (char*) signature) == 0)
+//    {
+//        /* Erase the entire flash sector. */
+//        NVS_erase(nvsHandle, 0, regionAttrs.sectorSize);
+//    }
+//    else
+//    {
+//        NVS_write(nvsHandle, 0, (void*) signature, sizeof(signature),
+//        NVS_WRITE_ERASE | NVS_WRITE_POST_VERIFY);
+//    }
+//}
+
+/*
     volatile int32_t status;
     status = SPIFFSNVS_config(&spiffsnvs, BADGE_NVSSPI25X0, &fs, &fsConfig,
                               SPIFFS_LOGICAL_BLOCK_SIZE, SPIFFS_LOGICAL_PAGE_SIZE);
     if (status != SPIFFSNVS_STATUS_SUCCESS) {
-//        post_status_spiffs = status; // Couldn't open the SPIFFS config. // TODO
+        post_status_spiffs = status; // Couldn't open the SPIFFS config.
         post_errors++;
         return;
     }
@@ -90,7 +136,7 @@ void storage_init() {
         status = SPIFFS_format(&fs);
 
         if (status != SPIFFSNVS_STATUS_SUCCESS) {
-//            post_status_spiffs = status; // TODO
+            post_status_spiffs = status;
             post_errors++;
             return;
         }
@@ -100,7 +146,7 @@ void storage_init() {
             spiffsReadWriteCache, sizeof(spiffsReadWriteCache), NULL);
 
         if (status != SPIFFSNVS_STATUS_SUCCESS) {
-//            post_status_spiffs = status; // TODO
+            post_status_spiffs = status;
             post_errors++;
             return;
         }
@@ -114,10 +160,11 @@ void storage_init() {
     uint32_t used;
     status = SPIFFS_info(&fs, &total, &used);
     if ((used*100) / total > 95) {
-//        post_status_spiffs = -100;
-//        post_errors++;
+        post_status_spiffs = -100;
+        post_errors++;
         return;
     }
-//
-//    post_status_spiffs = 1;
+
+    post_status_spiffs = 1;
 }
+*/

@@ -9,7 +9,7 @@
 #define BADGE_DRIVERS_STORAGE_H_
 
 #include <third_party/spiffs/spiffs.h>
-//#include <qbadge.h>
+#include <badge.h>
 
 // TODO: Move these to badge.h
 #define SPIFFS_LOGICAL_BLOCK_SIZE    (4096)

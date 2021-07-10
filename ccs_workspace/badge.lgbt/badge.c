@@ -7,4 +7,3 @@
 
 #include "badge.h"
 
-uint16_t post_errors = 0;

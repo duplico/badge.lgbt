@@ -66,8 +66,11 @@ const uint_least8_t ADCBuf_count = BADGE_ADCBUFCOUNT;
 #include <ti/drivers/pin/PINCC26XX.h>
 
 const PIN_Config badge_pin_init_table[] = {
-    BADGE_PIN_IR_ENDEC_SD | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
-    BADGE_PIN_IR_TRANS_RSTn | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_PIN_IR_TRANS_SD | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_PIN_IR_ENDEC_RSTn | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_SPI_TLC_MOSI | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN, // TODO
+    BADGE_SPI_TLC_SCLK | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN, // TODO
+    IOID_26 | PIN_INPUT_EN, // TODO
     BADGE_PIN_B1 | PIN_INPUT_EN | PIN_PULLUP,
     BADGE_PIN_B2 | PIN_INPUT_EN | PIN_PULLUP,
     BADGE_PIN_B3 | PIN_INPUT_EN | PIN_PULLUP,
@@ -236,6 +239,28 @@ const NVS_Config NVS_config[BADGE_NVSCOUNT] = {
 };
 
 const uint_least8_t NVS_count = BADGE_NVSCOUNT;
+
+/*
+ *  =============================== PWM ===============================
+ *  Remove unused entries to reduce flash usage both in Board.c and Board.h
+ */
+#include <ti/drivers/PWM.h>
+#include <ti/drivers/pwm/PWMTimerCC26XX.h>
+
+PWMTimerCC26XX_Object pwmtimerCC26xxObjects[BADGE_PWMCOUNT];
+
+const PWMTimerCC26XX_HwAttrs pwmtimerCC26xxHWAttrs[BADGE_PWMCOUNT] = {
+    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER0A },
+    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER0B },
+};
+
+const PWM_Config PWM_config[BADGE_PWMCOUNT] = {
+    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0], &pwmtimerCC26xxHWAttrs[BADGE_PWM0] },
+    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM1], &pwmtimerCC26xxHWAttrs[BADGE_PWM1] },
+};
+
+const uint_least8_t PWM_count = BADGE_PWMCOUNT;
+
 /*
  *  =============================== Power ===============================
  */
@@ -361,8 +386,8 @@ const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
         .rxPin          = BADGE_UART_IR_TX,
         .ctsPin         = PIN_UNASSIGNED,
         .rtsPin         = PIN_UNASSIGNED,
-        .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_PRX],
-        .ringBufSize    = sizeof(uartCC26XXRingBuffer[BADGE_UART_PRX]),
+        .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_IRDA],
+        .ringBufSize    = sizeof(uartCC26XXRingBuffer[BADGE_UART_IRDA]),
         .txIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_7_8,
         .rxIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_4_8,
         .errorFxn       = NULL
@@ -372,8 +397,8 @@ const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
 const UART_Config UART_config[BADGE_UARTCOUNT] = {
     {
         .fxnTablePtr = &UARTCC26XX_fxnTable,
-        .object      = &uartCC26XXObjects[BADGE_UART_PRX],
-        .hwAttrs     = &uartCC26XXHWAttrs[BADGE_UART_PRX]
+        .object      = &uartCC26XXObjects[BADGE_UART_IRDA],
+        .hwAttrs     = &uartCC26XXHWAttrs[BADGE_UART_IRDA]
     },
 };
 

@@ -27,6 +27,7 @@
 #include "uble_bcast_scan.h"
 #include "storage.h"
 #include "post.h"
+#include "adc.h"
 
 extern assertCback_t halAssertCback;
 
@@ -40,6 +41,7 @@ uint8_t ui_task_stack[UI_STACKSIZE];
 
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
+    adc_init();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -67,7 +69,7 @@ int main()
     SPI_init();
     GPIO_init();
     NVS_init();
-//    ADCBuf_init();
+    ADCBuf_init();
 //    UART_init();
 //    PWM_init();
 

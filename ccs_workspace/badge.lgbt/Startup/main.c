@@ -365,7 +365,7 @@ void ui_task_fn(UArg a0, UArg a1) {
     uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 //    uint16_t fc0[3] =       {0x5000, 0x7046, 0x0100};
 //    uint16_t fc0[3] =       {0x5000, 0x7006, 0x0000};
-    uint16_t fc0[3] =       {0b0101000000000000, 0b0000000001111, 0b0000000100000000};
+    uint16_t fc0[3] =       {0b0101000000000000, 0b0000000000000110, 0b0000000100000000};
 
 
     uint16_t in_buf[64] = {0,};
@@ -382,9 +382,9 @@ void ui_task_fn(UArg a0, UArg a1) {
 
     for (uint8_t row=0; row<7; row++) {
         for (uint8_t col=0; col<16; col++) {
-//            if (col == 15)
-//                spitx(W_SRAM, all_off, 3);
-//            else
+            if (col == 15)
+                spitx(W_SRAM, all_off, 3);
+            else
                 spitx(W_SRAM, all_r, 3);
         }
     }

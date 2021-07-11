@@ -41,14 +41,12 @@ uint8_t ui_task_stack[UI_STACKSIZE];
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
 
-//    if (post_status_spiffs == 1) {
-//        // Don't do our config unless SPIFFS is working.
-//        config_init();
-//        if (post_status_config == -1) {
-//            // TODO: block us here
-//        }
-//    }
-//
+    // TODO: Check for post_status_spiffs != 0
+    // TODO: Check for post_status_spiffs == -100 (low disk)
+
+    // TODO: Call config_init() or similar
+    // TODO: Check for success of config_init()
+
     while (1) {
         Task_yield();
     }

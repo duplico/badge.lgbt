@@ -3,6 +3,7 @@
 #include <ti/drivers/pin/PINCC26XX.h>
 #include <ti/drivers/Power.h>
 #include <ti/drivers/power/PowerCC26XX.h>
+#include <ti/sysbios/knl/Event.h>
 #include <ti/drivers/NVS.h>
 #include <ti/drivers/UART.h>
 #include <ti/drivers/uart/UARTCC26XX.h>
@@ -27,6 +28,7 @@
 #include "uble_bcast_scan.h"
 #include "storage.h"
 #include "post.h"
+#include "adc.h"
 
 extern assertCback_t halAssertCback;
 
@@ -38,8 +40,22 @@ extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
+
+#define UI_EVENT_BUT Event_Id_30
+Event_Handle ui_event_h;
+Clock_Handle button_debounce_clock_h;
+PIN_Handle button_pin_h;
+PIN_State button_state;
+PIN_Config button_pin_config[] = {
+    BADGE_PIN_B1 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B2 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B3 | PIN_INPUT_EN | PIN_PULLUP,
+    PIN_TERMINATE
+};
+
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
+    adc_init();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -49,7 +65,46 @@ void ui_task_fn(UArg a0, UArg a1) {
 
     while (1) {
         Task_yield();
+        Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
     }
+}
+
+void button_clock_swi(UArg a0) {
+    // current state
+    // last state
+    // next state
+
+    // if last == next and next != current,
+    //  set current and fire the change event.
+
+    static uint8_t button_state_curr = 0b000;
+    static uint8_t button_state_last = 0b000;
+    static uint8_t button_state_next = 0b000;
+
+    button_state_next = 0;
+
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B1) << 0;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B2) << 1;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B3) << 2;
+
+    if (button_state_next == button_state_last && button_state_last != button_state_curr) {
+        // TODO: replace with press/release events for each button:
+        button_state_curr = button_state_next;
+        Event_post(ui_event_h, UI_EVENT_BUT);
+    }
+
+    button_state_last = button_state_next;
+}
+
+
+void button_init() {
+    button_pin_h = PIN_open(&button_state, button_pin_config);
+
+    Clock_Params clockParams;
+    Clock_Params_init(&clockParams);
+    clockParams.period = UI_CLOCK_TICKS;
+    clockParams.startFlag = TRUE;
+    button_debounce_clock_h = Clock_create(button_clock_swi, 2, &clockParams, NULL);
 }
 
 int main()
@@ -67,7 +122,7 @@ int main()
     SPI_init();
     GPIO_init();
     NVS_init();
-//    ADCBuf_init();
+    ADCBuf_init();
 //    UART_init();
 //    PWM_init();
 
@@ -86,8 +141,10 @@ int main()
 //    // Create the events:
 //    led_event_h = Event_create(NULL, NULL);
 //    uble_event_h = Event_create(NULL, NULL);
-//    ui_event_h = Event_create(NULL, NULL);
+    ui_event_h = Event_create(NULL, NULL);
 //    serial_event_h = Event_create(NULL, NULL);
+
+    button_init();
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

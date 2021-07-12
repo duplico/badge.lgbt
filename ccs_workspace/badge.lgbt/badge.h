@@ -18,8 +18,10 @@ extern Event_Handle uble_event_h;
 
 // Configuration:
 #define ADC_INTERVAL_MS 250
+#define UI_CLOCK_MS 25
 
 // Derived values:
 #define ADC_INTERVAL (ADC_INTERVAL_MS*100)
+#define UI_CLOCK_TICKS (UI_CLOCK_MS * 100) // derived // TODO: is this right? 10us vs 1ms?
 
 #endif /* BADGE_H_ */

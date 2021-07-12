@@ -57,6 +57,9 @@ void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
     adc_init();
 
+    // Create and start the BLE task:
+    UBLEBcastScan_createTask();
+
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
 
@@ -140,7 +143,7 @@ int main()
 //
 //    // Create the events:
 //    led_event_h = Event_create(NULL, NULL);
-//    uble_event_h = Event_create(NULL, NULL);
+    uble_event_h = Event_create(NULL, NULL);
     ui_event_h = Event_create(NULL, NULL);
 //    serial_event_h = Event_create(NULL, NULL);
 

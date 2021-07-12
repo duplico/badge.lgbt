@@ -66,6 +66,28 @@ void ui_task_fn(UArg a0, UArg a1) {
     // TODO: Call config_init() or similar
     // TODO: Check for success of config_init()
 
+    // IrDA:
+
+    // 16XCLK must be 16x the data rate of the UART to the ENDEC.
+    // e.g. 9600 baud -> 153600 16CLK
+    //    115200 baud -> 1843200 16CLK (See appnote page 2)
+    PWM_Handle pwm;
+    PWM_Params pwmParams;
+    // Initialize the PWM parameters
+    PWM_Params_init(&pwmParams);
+    pwmParams.idleLevel = PWM_IDLE_LOW;      // Output low when PWM is not running // TODO
+    pwmParams.periodUnits = PWM_PERIOD_HZ;   // Period is in Hz
+    pwmParams.periodValue = 153600;          // 16 x 9600
+    pwmParams.dutyUnits = PWM_DUTY_FRACTION; // Duty is in fractional percentage
+    pwmParams.dutyValue = 0; // PWM_DUTY_FRACTION_MAX/2; // 50%
+
+    pwm = PWM_open(BADGE_PWM0_IRDA, &pwmParams);
+    if (pwm == NULL) {
+        // PWM_open() failed
+        while (1);
+    }
+    PWM_start(pwm);
+
     while (1) {
         Task_yield();
         Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
@@ -126,8 +148,8 @@ int main()
     GPIO_init();
     NVS_init();
     ADCBuf_init();
-//    UART_init();
-//    PWM_init();
+    UART_init();
+    PWM_init();
 
 #ifdef CACHE_AS_RAM
     // retain cache during standby

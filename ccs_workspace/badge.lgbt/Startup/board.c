@@ -249,7 +249,7 @@ const PWMTimerCC26XX_HwAttrs pwmtimerCC26xxHWAttrs[BADGE_PWMCOUNT] = {
 };
 
 const PWM_Config PWM_config[BADGE_PWMCOUNT] = {
-    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0], &pwmtimerCC26xxHWAttrs[BADGE_PWM0] },
+    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0_IRDA], &pwmtimerCC26xxHWAttrs[BADGE_PWM0_IRDA] },
     { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM1], &pwmtimerCC26xxHWAttrs[BADGE_PWM1] },
 };
 

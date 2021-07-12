@@ -195,7 +195,7 @@ typedef enum BADGE_UARTName {
 
 
 typedef enum BADGE_PWMName {
-    BADGE_PWM0 = 0,
+    BADGE_PWM0_IRDA = 0,
     BADGE_PWM1,
     BADGE_PWMCOUNT
 } BADGE_PWMName;

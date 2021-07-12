@@ -1,0 +1,305 @@
+//*****************************************************************************
+//
+// Copyright (c) 2014 Dimitar Toshkov Zhekov,
+// with Reserved Font Name "Terminus Font".
+// 
+// This Font Software is licensed under the SIL Open Font License, Version 1.1.
+// This license is copied below, and is also available with a FAQ at:
+// http://scripts.sil.org/OFL
+// 
+// 
+// -----------------------------------------------------------
+// SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+// -----------------------------------------------------------
+// 
+// PREAMBLE
+// The goals of the Open Font License (OFL) are to stimulate worldwide
+// development of collaborative font projects, to support the font creation
+// efforts of academic and linguistic communities, and to provide a free and
+// open framework in which fonts may be shared and improved in partnership
+// with others.
+// 
+// The OFL allows the licensed fonts to be used, studied, modified and
+// redistributed freely as long as they are not sold by themselves. The
+// fonts, including any derivative works, can be bundled, embedded, 
+// redistributed and/or sold with any software provided that any reserved
+// names are not used by derivative works. The fonts and derivatives,
+// however, cannot be released under any other type of license. The
+// requirement for fonts to remain under this license does not apply
+// to any document created using the fonts or their derivatives.
+// 
+// DEFINITIONS
+// "Font Software" refers to the set of files released by the Copyright
+// Holder(s) under this license and clearly marked as such. This may
+// include source files, build scripts and documentation.
+// 
+// "Reserved Font Name" refers to any names specified as such after the
+// copyright statement(s).
+// 
+// "Original Version" refers to the collection of Font Software components as
+// distributed by the Copyright Holder(s).
+// 
+// "Modified Version" refers to any derivative made by adding to, deleting,
+// or substituting -- in part or in whole -- any of the components of the
+// Original Version, by changing formats or by porting the Font Software to a
+// new environment.
+// 
+// "Author" refers to any designer, engineer, programmer, technical
+// writer or other person who contributed to the Font Software.
+// 
+// PERMISSION & CONDITIONS
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of the Font Software, to use, study, copy, merge, embed, modify,
+// redistribute, and sell modified and unmodified copies of the Font
+// Software, subject to the following conditions:
+// 
+// 1) Neither the Font Software nor any of its individual components,
+// in Original or Modified Versions, may be sold by itself.
+// 
+// 2) Original or Modified Versions of the Font Software may be bundled,
+// redistributed and/or sold with any software, provided that each copy
+// contains the above copyright notice and this license. These can be
+// included either as stand-alone text files, human-readable headers or
+// in the appropriate machine-readable metadata fields within text or
+// binary files as long as those fields can be easily viewed by the user.
+// 
+// 3) No Modified Version of the Font Software may use the Reserved Font
+// Name(s) unless explicit written permission is granted by the corresponding
+// Copyright Holder. This restriction only applies to the primary font name as
+// presented to the users.
+// 
+// 4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+// Software shall not be used to promote, endorse or advertise any
+// Modified Version, except to acknowledge the contribution(s) of the
+// Copyright Holder(s) and the Author(s) or with their explicit written
+// permission.
+// 
+// 5) The Font Software, modified or unmodified, in part or in whole,
+// must be distributed entirely under this license, and must not be
+// distributed under any other license. The requirement for fonts to
+// remain under this license does not apply to any document created
+// using the Font Software.
+// 
+// TERMINATION
+// This license becomes null and void if any of the above conditions are
+// not met.
+// 
+// DISCLAIMER
+// THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+// OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+// DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+// OTHER DEALINGS IN THE FONT SOFTWARE.
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// This file is generated by ftrasterize; DO NOT EDIT BY HAND!
+//
+//*****************************************************************************
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "grlib/grlib.h"
+
+//*****************************************************************************
+//
+// Details of this font:
+//     Characters: 32 to 126 inclusive
+//     Style: Terminus
+//     Size: 8x16
+//     Bold: no
+//     Italic: no
+//     Memory usage: 1832 bytes
+//
+//*****************************************************************************
+
+static const uint8_t g_pui8terminus8x16Data[1629] =
+{
+      4,   8,   0,  16,  13,   5, 161,  65,  65,  65,  65,  65,
+     65, 145,  65, 240, 144,  11,   6,  97,  33,  33,  33,  33,
+     33,   0,   9,  32,  22,   7, 241,  33,  49,  33,  49,  33,
+     38,  33,  33,  49,  33,  38,  33,  33,  49,  33,  49,  33,
+    240, 240,  25,   8, 177, 113,  85,  33,  33,  33,  17,  33,
+     65,  33,  85,  81,  33,  65,  33,  17,  33,  33,  37,  81,
+    113, 240,  80,  24,   8, 240,  34,  33,  33,  33,  17,  50,
+     17, 113,  97, 113,  97, 113,  18,  49,  17,  33,  33,  34,
+    240, 240,  64,  23,   7, 240,  18,  65,  33,  49,  33,  66,
+     66,  65,  33,  17,  17,  49,  33,  49,  33,  49,  51,  17,
+    240, 224,   7,   5,  81,  65,  65,   0,   8,  14,   6, 225,
+     65,  65,  81,  81,  81,  81,  81,  97,  97, 240, 192,  14,
+      6, 193,  97,  97,  81,  81,  81,  81,  81,  65,  65, 240,
+    224,  14,   7, 240, 240,  97,  33,  66,  54,  50,  65,  33,
+    240, 240, 224,  12,   7, 240, 240, 113,  97,  69,  65,  97,
+      0,   5,  96,   9,   6,   0,   7,  81,  81,  65, 240, 128,
+      8,   7,   0,   6,  22,   0,   7,  16,   8,   5,   0,   6,
+     33,  65, 240, 144,  16,   7, 240,  49,  97,  81,  97,  81,
+     97,  81,  97,  81,  97, 240, 240,  64,  24,   7, 244,  33,
+     65,  17,  65,  17,  50,  17,  33,  17,  17,  17,  33,  18,
+     49,  17,  65,  17,  65,  36, 240, 240,  15,   6, 225,  66,
+     49,  17,  81,  81,  81,  81,  81,  81,  53, 240, 160,  16,
+      7, 244,  33,  65,  17,  65,  97,  81,  81,  81,  81,  81,
+    102, 240, 224,  18,   7, 244,  33,  65,  17,  65,  97,  51,
+    113,  97,  17,  65,  17,  65,  36, 240, 240,  19,   7, 240,
+     65,  82,  65,  17,  49,  33,  33,  49,  17,  65,  22,  97,
+     97,  97, 240, 224,  15,   7, 230,  17,  97,  97, 101, 113,
+     97,  97,  17,  65,  36, 240, 240,  19,   7, 240,  19,  49,
+     81,  97, 101,  33,  65,  17,  65,  17,  65,  17,  65,  36,
+    240, 240,  15,   7, 230,  97,  97,  81,  97,  81,  97,  81,
+     97,  97, 240, 240,  32,  21,   7, 244,  33,  65,  17,  65,
+     17,  65,  36,  33,  65,  17,  65,  17,  65,  17,  65,  36,
+    240, 240,  19,   7, 244,  33,  65,  17,  65,  17,  65,  17,
+     65,  37,  97,  97,  81,  51, 240, 240,  16,  10,   5, 240,
+    161,  65, 240,  65,  65, 240, 144,  12,   6, 240, 240,  17,
+     81, 240, 129,  81,  65, 240, 128,  14,   7, 240, 161,  81,
+     81,  81,  81, 113, 113, 113, 113, 240, 240,   9,   7, 240,
+    240,  86, 246,   0,   6,  32,  15,   7, 240,  97, 113, 113,
+    113, 113,  81,  81,  81,  81, 240, 240,  64,  17,   7, 244,
+     33,  65,  17,  65,  17,  65,  81,  81,  97, 209,  97, 240,
+    240,  16,  28,   8, 240,  37,  33,  81,  17,  36,  17,  17,
+     49,  17,  17,  49,  17,  17,  49,  17,  17,  34,  17,  34,
+     17,  17, 134, 240, 240,  48,  22,   7, 244,  33,  65,  17,
+     65,  17,  65,  17,  65,  22,  17,  65,  17,  65,  17,  65,
+     17,  65, 240, 224,  21,   7, 229,  33,  65,  17,  65,  17,
+     65,  21,  33,  65,  17,  65,  17,  65,  17,  65,  21, 240,
+    240,  18,   7, 244,  33,  65,  17,  65,  17,  97,  97,  97,
+     97,  65,  17,  65,  36, 240, 240,  23,   7, 228,  49,  49,
+     33,  65,  17,  65,  17,  65,  17,  65,  17,  65,  17,  65,
+     17,  49,  36, 240, 240,  16,  14,   7, 230,  17,  97,  97,
+    100,  49,  97,  97,  97, 102, 240, 224,  15,   7, 230,  17,
+     97,  97, 100,  49,  97,  97,  97,  97, 240, 240,  64,  20,
+      7, 244,  33,  65,  17,  65,  17,  97,  97,  35,  17,  65,
+     17,  65,  17,  65,  36, 240, 240,  23,   7, 225,  65,  17,
+     65,  17,  65,  17,  65,  22,  17,  65,  17,  65,  17,  65,
+     17,  65,  17,  65, 240, 224,  14,   6, 195,  65,  81,  81,
+     81,  81,  81,  81,  81,  67, 240, 192,  18,   7, 240,  35,
+     81,  97,  97,  97,  97,  97,  33,  49,  33,  49,  51, 240,
+    240,  16,  22,   7, 225,  65,  17,  49,  33,  33,  49,  17,
+     66,  82,  81,  17,  65,  33,  49,  49,  33,  65, 240, 224,
+     14,   7, 225,  97,  97,  97,  97,  97,  97,  97,  97, 102,
+    240, 224,  30,   8, 240,  17,  81,  18,  50,  17,  17,  17,
+     17,  17,  33,  33,  17,  33,  33,  17,  81,  17,  81,  17,
+     81,  17,  81,  17,  81, 240, 240,  48,  26,   7, 225,  65,
+     17,  65,  17,  65,  18,  49,  17,  17,  33,  17,  33,  17,
+     17,  50,  17,  65,  17,  65,  17,  65, 240, 224,  22,   7,
+    244,  33,  65,  17,  65,  17,  65,  17,  65,  17,  65,  17,
+     65,  17,  65,  17,  65,  36, 240, 240,  19,   7, 229,  33,
+     65,  17,  65,  17,  65,  17,  65,  21,  33,  97,  97,  97,
+    240, 240,  64,  24,   7, 244,  33,  65,  17,  65,  17,  65,
+     17,  65,  17,  65,  17,  65,  17,  65,  17,  33,  17,  36,
+    113, 240, 112,  22,   7, 229,  33,  65,  17,  65,  17,  65,
+     17,  65,  21,  33,  17,  65,  33,  49,  49,  33,  65, 240,
+    224,  17,   7, 244,  33,  65,  17,  97, 116, 113,  97,  17,
+     65,  17,  65,  36, 240, 240,  16,   8, 240,  23,  65, 113,
+    113, 113, 113, 113, 113, 113, 113, 240, 240,  96,  23,   7,
+    225,  65,  17,  65,  17,  65,  17,  65,  17,  65,  17,  65,
+     17,  65,  17,  65,  17,  65,  36, 240, 240,  23,   7, 225,
+     65,  17,  65,  17,  65,  17,  65,  17,  65,  33,  33,  49,
+     33,  49,  33,  66,  82, 240, 240,  16,  30,   8, 240,  17,
+     81,  17,  81,  17,  81,  17,  81,  17,  81,  17,  33,  33,
+     17,  33,  33,  17,  17,  17,  17,  18,  50,  17,  81, 240,
+    240,  48,  22,   7, 225,  65,  17,  65,  33,  33,  49,  33,
+     66,  82,  65,  33,  49,  33,  33,  65,  17,  65, 240, 224,
+     21,   8, 240,  17,  81,  17,  81,  33,  49,  49,  49,  65,
+     17,  97, 113, 113, 113, 113, 240, 240,  96,  14,   7, 230,
+     97,  97,  81,  81,  81,  81,  81,  97, 102, 240, 224,  14,
+      6, 195,  49,  81,  81,  81,  81,  81,  81,  81,  83, 240,
+    192,  14,   7, 225,  97, 113,  97, 113,  97, 113,  97, 113,
+     97, 240, 240,  14,   6, 195,  81,  81,  81,  81,  81,  81,
+     81,  81,  51, 240, 192,  10,   7, 145,  81,  17,  49,  49,
+      0,  10,  96,   6,   7,   0,  11,  54, 240,   7,   5,   1,
+     81,   0,   9,  16,  16,   7, 240, 240, 100, 113,  37,  17,
+     65,  17,  65,  17,  65,  37, 240, 224,  19,   7, 225,  97,
+     97, 101,  33,  65,  17,  65,  17,  65,  17,  65,  17,  65,
+     21, 240, 240,  15,   7, 240, 240, 100,  33,  65,  17,  97,
+     97,  97,  65,  36, 240, 240,  20,   7, 240,  65,  97,  97,
+     37,  17,  65,  17,  65,  17,  65,  17,  65,  17,  65,  37,
+    240, 224,  15,   7, 240, 240, 100,  33,  65,  17,  65,  22,
+     17,  97, 116, 240, 240,  16,   7, 240,  35,  49,  97,  69,
+     65,  97,  97,  97,  97,  97, 240, 240,  32,  20,   7, 240,
+    240, 101,  17,  65,  17,  65,  17,  65,  17,  65,  17,  65,
+     37,  97,  97,  36, 144,  20,   7, 225,  97,  97, 101,  33,
+     65,  17,  65,  17,  65,  17,  65,  17,  65,  17,  65, 240,
+    224,  13,   6, 209,  81, 162,  81,  81,  81,  81,  81,  67,
+    240, 192,  18,   7, 240,  49,  97, 194,  97,  97,  97,  97,
+     97,  97,  33,  49,  33,  49,  51, 160,  20,   7, 225,  97,
+     97,  97,  65,  17,  49,  33,  33,  51,  65,  33,  49,  49,
+     33,  65, 240, 224,  14,   6, 194,  81,  81,  81,  81,  81,
+     81,  81,  81,  67, 240, 192,  26,   8, 240, 240, 166,  33,
+     33,  33,  17,  33,  33,  17,  33,  33,  17,  33,  33,  17,
+     33,  33,  17,  33,  33, 240, 240,  48,  19,   7, 240, 240,
+     85,  33,  65,  17,  65,  17,  65,  17,  65,  17,  65,  17,
+     65, 240, 224,  18,   7, 240, 240, 100,  33,  65,  17,  65,
+     17,  65,  17,  65,  17,  65,  36, 240, 240,  20,   7, 240,
+    240,  85,  33,  65,  17,  65,  17,  65,  17,  65,  17,  65,
+     21,  33,  97,  97, 208,  20,   7, 240, 240, 101,  17,  65,
+     17,  65,  17,  65,  17,  65,  17,  65,  37,  97,  97,  97,
+    128,  15,   7, 240, 240,  81,  20,  18,  81,  97,  97,  97,
+     97, 240, 240,  64,  13,   7, 240, 240, 101,  17,  97, 116,
+    113,  97,  21, 240, 240,  15,   7, 240,  17,  97,  97,  69,
+     65,  97,  97,  97,  97, 115, 240, 224,  19,   7, 240, 240,
+     81,  65,  17,  65,  17,  65,  17,  65,  17,  65,  17,  65,
+     37, 240, 224,  19,   7, 240, 240,  81,  65,  17,  65,  17,
+     65,  33,  33,  49,  33,  66,  82, 240, 240,  16,  24,   8,
+    240, 240, 161,  81,  17,  81,  17,  33,  33,  17,  33,  33,
+     17,  33,  33,  17,  33,  33,  37, 240, 240,  64,  19,   7,
+    240, 240,  81,  65,  17,  65,  33,  33,  66,  65,  33,  33,
+     65,  17,  65, 240, 224,  21,   7, 240, 240,  81,  65,  17,
+     65,  17,  65,  17,  65,  17,  65,  17,  65,  37,  97,  97,
+     36, 144,  13,   7, 240, 240,  86,  81,  81,  81,  81,  81,
+    102, 240, 224,  14,   6, 226,  49,  81,  81,  65,  97,  81,
+     81,  81,  98, 240, 176,  14,   5, 161,  65,  65,  65,  65,
+     65,  65,  65,  65,  65, 240, 144,  14,   6, 194,  97,  81,
+     81,  97,  65,  81,  81,  81,  50, 240, 208,  12,   8, 146,
+     49,  17,  33,  33,  17,  50,   0,  12,  32,
+};
+
+const tFont g_sFontterminus8x16 =
+{
+    //
+    // The format of the font.
+    //
+    FONT_FMT_PIXEL_RLE,
+
+    //
+    // The maximum width of the font.
+    //
+    8,
+
+    //
+    // The height of the font.
+    //
+    16,
+
+    //
+    // The baseline of the font.
+    //
+    12,
+
+    //
+    // The offset to each character in the font.
+    //
+    {
+           0,    4,   17,   28,   50,   75,   99,  122,
+         129,  143,  157,  171,  183,  192,  200,  208,
+         224,  248,  263,  279,  297,  316,  331,  350,
+         365,  386,  405,  415,  427,  441,  450,  465,
+         482,  510,  532,  553,  571,  594,  608,  623,
+         643,  666,  680,  698,  720,  734,  764,  790,
+         812,  831,  855,  877,  894,  910,  933,  956,
+         986, 1008, 1029, 1043, 1057, 1071, 1085, 1095,
+        1101, 1108, 1124, 1143, 1158, 1178, 1193, 1209,
+        1229, 1249, 1262, 1280, 1300, 1314, 1340, 1359,
+        1377, 1397, 1417, 1432, 1445, 1460, 1479, 1498,
+        1522, 1541, 1562, 1575, 1589, 1603, 1617,
+    },
+
+    //
+    // A pointer to the actual font data
+    //
+    g_pui8terminus8x16Data
+};

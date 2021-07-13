@@ -67,13 +67,10 @@ const uint_least8_t ADCBuf_count = BADGE_ADCBUFCOUNT;
 
 const PIN_Config badge_pin_init_table[] = {
     BADGE_PIN_IR_TRANS_SD | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
-    BADGE_PIN_IR_ENDEC_RSTn | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_PIN_IR_ENDEC_RSTn | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
     BADGE_SPI_TLC_MOSI | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN, // TODO
     BADGE_SPI_TLC_SCLK | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN, // TODO
     IOID_26 | PIN_INPUT_EN, // TODO
-    BADGE_PIN_B1 | PIN_INPUT_EN | PIN_PULLUP,
-    BADGE_PIN_B2 | PIN_INPUT_EN | PIN_PULLUP,
-    BADGE_PIN_B3 | PIN_INPUT_EN | PIN_PULLUP,
     PIN_TERMINATE
 };
 
@@ -250,12 +247,12 @@ const uint_least8_t NVS_count = BADGE_NVSCOUNT;
 PWMTimerCC26XX_Object pwmtimerCC26xxObjects[BADGE_PWMCOUNT];
 
 const PWMTimerCC26XX_HwAttrs pwmtimerCC26xxHWAttrs[BADGE_PWMCOUNT] = {
-    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER0A },
-    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER0B },
+    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER1A },
+    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER1B },
 };
 
 const PWM_Config PWM_config[BADGE_PWMCOUNT] = {
-    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0], &pwmtimerCC26xxHWAttrs[BADGE_PWM0] },
+    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0_IRDA], &pwmtimerCC26xxHWAttrs[BADGE_PWM0_IRDA] },
     { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM1], &pwmtimerCC26xxHWAttrs[BADGE_PWM1] },
 };
 
@@ -376,14 +373,14 @@ UARTCC26XX_Object uartCC26XXObjects[BADGE_UARTCOUNT];
 uint8_t uartCC26XXRingBuffer[BADGE_UARTCOUNT][32];
 
 const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
-    { // PRX
+    {
         .baseAddr       = UART0_BASE,
         .powerMngrId    = PowerCC26XX_PERIPH_UART0,
         .intNum         = INT_UART0_COMB,
         .intPriority    = ~0,
         .swiPriority    = 0,
-        .txPin          = BADGE_UART_IR_RX,
-        .rxPin          = BADGE_UART_IR_TX,
+        .txPin          = BADGE_UART_IR_TX,
+        .rxPin          = BADGE_UART_IR_RX,
         .ctsPin         = PIN_UNASSIGNED,
         .rtsPin         = PIN_UNASSIGNED,
         .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_IRDA],

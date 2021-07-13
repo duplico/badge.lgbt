@@ -66,7 +66,7 @@ void ui_task_fn(UArg a0, UArg a1) {
     // TODO: Call config_init() or similar
     // TODO: Check for success of config_init()
 
-    // IrDA:
+    ////////////////// IrDA ///////////////////////////////////////////////
 
     // 16XCLK must be 16x the data rate of the UART to the ENDEC.
     // e.g. 9600 baud -> 153600 16CLK
@@ -77,20 +77,48 @@ void ui_task_fn(UArg a0, UArg a1) {
     PWM_Params_init(&pwmParams);
     pwmParams.idleLevel = PWM_IDLE_LOW;      // Output low when PWM is not running // TODO
     pwmParams.periodUnits = PWM_PERIOD_HZ;   // Period is in Hz
-    pwmParams.periodValue = 153600;          // 16 x 9600
+    pwmParams.periodValue = 153600;          // 16 x 9600 // TODO
     pwmParams.dutyUnits = PWM_DUTY_FRACTION; // Duty is in fractional percentage
-    pwmParams.dutyValue = 0; // PWM_DUTY_FRACTION_MAX/2; // 50%
+    pwmParams.dutyValue = PWM_DUTY_FRACTION_MAX/2; // 50%
 
     pwm = PWM_open(BADGE_PWM0_IRDA, &pwmParams);
     if (pwm == NULL) {
         // PWM_open() failed
         while (1);
     }
+
+    UART_Params uart_params;
+    UART_Params_init(&uart_params);
+    uart_params.readReturnMode = UART_RETURN_FULL; // unused in binary mode
+    uart_params.readDataMode = UART_DATA_BINARY;
+    uart_params.writeDataMode = UART_DATA_BINARY;
+    uart_params.stopBits = UART_STOP_ONE;
+    uart_params.baudRate = 9600; // TODO
+    uart_params.readMode = UART_MODE_BLOCKING;
+    uart_params.readTimeout = UART_WAIT_FOREVER;
+    uart_params.writeMode = UART_MODE_BLOCKING;
+    uart_params.writeTimeout = UART_WAIT_FOREVER;
+
+    UART_Handle uart;
+    uart = UART_open(BADGE_UART_IRDA, &uart_params);
+
+    uint8_t uart_buf[32] = {1,3,5,7,11,13,17,23,31,0xff, 0xaa, 0xbb, 0xcc, 0xdd, 0x00};
+    uint8_t uart_rbuf[32] = {0,};
+    volatile int_fast32_t ret;
+
+    PINCC26XX_setOutputValue(BADGE_PIN_IR_ENDEC_RSTn, 1); // Un-reset.
+    Task_sleep(2); // TODO
     PWM_start(pwm);
+//    ret = UART_write(uart, uart_buf, 16);
 
     while (1) {
+//        PWM_start(pwm);
+//        ret = UART_write(uart, uart_buf, 16);
+//        PWM_stop(pwm);
         Task_yield();
         Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
+        ret = UART_read(uart, uart_rbuf, 16);
+
     }
 }
 

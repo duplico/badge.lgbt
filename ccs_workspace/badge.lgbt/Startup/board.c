@@ -244,8 +244,8 @@ const uint_least8_t NVS_count = BADGE_NVSCOUNT;
 PWMTimerCC26XX_Object pwmtimerCC26xxObjects[BADGE_PWMCOUNT];
 
 const PWMTimerCC26XX_HwAttrs pwmtimerCC26xxHWAttrs[BADGE_PWMCOUNT] = {
-    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER0A },
-    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER0B },
+    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER1A },
+    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER1B },
 };
 
 const PWM_Config PWM_config[BADGE_PWMCOUNT] = {

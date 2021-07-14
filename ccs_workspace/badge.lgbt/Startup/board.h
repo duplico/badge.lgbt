@@ -85,7 +85,7 @@ extern const PIN_Config badge_pin_init_table[];
 
 // PWM outs
 #define BADGE_PWM_IR_16CLK          IOID_4
-#define BADGE_PWM_TLC_CLK           PIN_UNASSIGNED //IOID_24 // TODO
+#define BADGE_PWM_TLC_CLK           IOID_24 // TODO
 
 /*!
  *  @brief  Initialize the general board specific settings

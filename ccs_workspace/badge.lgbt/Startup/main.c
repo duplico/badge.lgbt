@@ -117,15 +117,11 @@ int main()
     // Do the basic initialization of peripherals.
     Power_init();
     if (PIN_init(badge_pin_init_table) != PIN_SUCCESS) {
-        // TODO: Not this:
-        // If this fails, our EPD connection will be broken.
-        //  We have to have it functioning for the badge to work,
-        //  really, and there won't be a way to indicate an error,
-        //  so I'm OK with just spinning forever.
+        // TODO: Not this, probably?
         while (1);
     }
     NVS_init();
-//    SPI_init();
+    SPI_init();
     ADCBuf_init();
     UART_init();
     PWM_init();

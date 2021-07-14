@@ -21,6 +21,7 @@ uint8_t tlc_task_stack[TLC_STACKSIZE];
 uint8_t tlc_sclk_val = 0;
 Clock_Handle tlc_frame_clock_h;
 uint8_t sclk_val = 0;
+PWM_Handle hTlcPwm;
 
 enum WRITE_COMMAND_ID{
     W_FC0 = 0xAA00,
@@ -136,6 +137,7 @@ void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 }
 
 void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
+    PWM_stop(hTlcPwm);
     // The bit-banging way:
 
     // SCLK: DIO_24
@@ -242,6 +244,8 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 //        // Error in SPI or transfer already in progress.
 //        while (1);
 //    }
+
+    PWM_start(hTlcPwm);
 }
 
 void tlc_frame_swi(UArg a0) {
@@ -282,22 +286,20 @@ void tlc_init() {
     Clock_Params_init(&clockParams);
     clockParams.period = TLC_FRAME_TICKS;
     clockParams.startFlag = TRUE;
-    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
+//    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
 
     // Set up the timer output
-    //    PWM_Handle hTlcPwm;
-    //    PWM_Params tlcPwmParams;
-    //    PWM_Params_init(&tlcPwmParams);
-    //    tlcPwmParams.idleLevel      = PWM_IDLE_LOW;
-    //    tlcPwmParams.periodUnits    = PWM_PERIOD_HZ;
-    //    tlcPwmParams.periodValue    = LED_CLK;
-    //    tlcPwmParams.dutyUnits      = PWM_DUTY_FRACTION;
-    //    tlcPwmParams.dutyValue      = PWM_DUTY_FRACTION_MAX / 2;
-    //    hTlcPwm = PWM_open(BADGE_PWM1, &tlcPwmParams);
-    //    if(hTlcPwm == NULL) {
-    //      Task_exit();
-    //    }
-    //    PWM_start(hTlcPwm);
+        PWM_Params tlcPwmParams;
+        PWM_Params_init(&tlcPwmParams);
+        tlcPwmParams.idleLevel      = PWM_IDLE_LOW;
+        tlcPwmParams.periodUnits    = PWM_PERIOD_HZ;
+        tlcPwmParams.periodValue    = LED_CLK;
+        tlcPwmParams.dutyUnits      = PWM_DUTY_FRACTION;
+        tlcPwmParams.dutyValue      = PWM_DUTY_FRACTION_MAX / 2;
+        hTlcPwm = PWM_open(BADGE_PWM1, &tlcPwmParams);
+        if(hTlcPwm == NULL) {
+          while (1); // spin forever // TODO
+        }
     //
     //    // SPI setup:
     //    SPI_Params      spiParams;
@@ -327,8 +329,8 @@ void tlc_init() {
     spitx(W_FC0, fc0, 3); // Set main config register
     spitx(W_VSYNC, 0x00, 0);
 
-    spirx(R_FC0, in_buf, 4);
-    spirx(R_CHIP_INDEX, in_buf, 64);
+//    spirx(R_FC0, in_buf, 4);
+//    spirx(R_CHIP_INDEX, in_buf, 64);
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

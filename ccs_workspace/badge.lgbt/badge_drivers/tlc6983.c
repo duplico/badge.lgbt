@@ -75,7 +75,8 @@ SPI_Handle hSpiTlc;
 
 
 //#define LED_CLK 2500000
-#define LED_CLK 9600
+//#define LED_CLK 9600
+#define LED_CLK 100000
 
 // SCLK: DIO_24
 // SIMO: DIO_25
@@ -137,8 +138,10 @@ void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 }
 
 void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
+
+
+    // The bit-banging way: ////////////////////////////////////
     PWM_stop(hTlcPwm);
-    // The bit-banging way:
 
     // SCLK: DIO_24
     // SIMO: DIO_25
@@ -186,71 +189,70 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
         SCLK_toggle();
     }
 
-    return;
-
-
-//    SPI_Transaction spiTransaction;
-//    bool            transferOK;
-//
-//    uint8_t tx_buf[11] = {0,};
-//    uint8_t rx_buf[11] = {0,};
-//    uint8_t send_len;
-//
-//    tx_buf[0] |= (cmd >> 9) & 0x007f; // most significant 7 bits
-//    tx_buf[1] |= (cmd >> 1) & 0x00ff; // next 8 bits
-//    tx_buf[2] |= (cmd << 7) & 0x0080; // least significant bit
-//    if ((tx_buf[2] & 0x80) == 0) {
-//        // check bit
-//        tx_buf[2] |= 0x40;
-//    }
-//
-//    if (len == 0) {
-//        tx_buf[2] |= 0x003F;
-//        tx_buf[3] |= 0xFF;
-//        tx_buf[4] |= 0xFF;
-//        send_len = 5;
-//    } else if (len == 3){
-//        tx_buf[2] |= (payload[0] >> 10) & 0x003F;//6 bits
-//        tx_buf[3] |= (payload[0] >> 2) & 0x00FF;//8 bits
-//        tx_buf[4] |= (payload[0] << 6) & 0x00C0;//2 bits
-//        if ((tx_buf[4] & 0x0040) == 0) {
-//            tx_buf[4] |= 0x0020;
-//        }
-//
-//        tx_buf[4] |= (payload[1] >> 11) & 0x001F;//5 bits
-//        tx_buf[5] |= (payload[1] >> 3) & 0x00FF;//8 bits
-//        tx_buf[6] |= (payload[1] << 5) & 0x00E0;//3 bits
-//        if ((tx_buf[6] & 0x0020) == 0) {
-//            tx_buf[6] |= 0x0010;
-//        }
-//
-//        tx_buf[6] |= (payload[2] >> 12) & 0x000F;//4 bits//0x001F
-//        tx_buf[7] |= (payload[2] >> 4) & 0x00FF;//8 bits
-//        tx_buf[8] |= (payload[2] << 4) & 0x00F0;//4 bits
-//        if ((tx_buf[8] & 0x0010) == 0) {
-//            tx_buf[8] |= 0x0008;
-//        }
-//
-//        tx_buf[8] |= 0x0007;
-//        tx_buf[9] |= 0xFF;
-//        tx_buf[10] |= 0xFF;
-//        send_len = 11;
-//    }
-//    spiTransaction.count = send_len;
-//    spiTransaction.txBuf = tx_buf;
-//    spiTransaction.rxBuf = rx_buf;
-//    transferOK = SPI_transfer(hSpiTlc, &spiTransaction);
-//    if (!transferOK) {
-//        // Error in SPI or transfer already in progress.
-//        while (1);
-//    }
-
     PWM_start(hTlcPwm);
+    return;
+    // End bit-banging ///////////////////////////////////////
+
+
+
+    SPI_Transaction spiTransaction;
+    bool            transferOK;
+
+    uint8_t tx_buf[11] = {0,};
+    uint8_t rx_buf[11] = {0,};
+    uint8_t send_len;
+
+    tx_buf[0] |= (cmd >> 9) & 0x007f; // most significant 7 bits
+    tx_buf[1] |= (cmd >> 1) & 0x00ff; // next 8 bits
+    tx_buf[2] |= (cmd << 7) & 0x0080; // least significant bit
+    if ((tx_buf[2] & 0x80) == 0) {
+        // check bit
+        tx_buf[2] |= 0x40;
+    }
+
+    if (len == 0) {
+        tx_buf[2] |= 0x003F;
+        tx_buf[3] |= 0xFF;
+        tx_buf[4] |= 0xFF;
+        send_len = 5;
+    } else if (len == 3){
+        tx_buf[2] |= (payload[0] >> 10) & 0x003F;//6 bits
+        tx_buf[3] |= (payload[0] >> 2) & 0x00FF;//8 bits
+        tx_buf[4] |= (payload[0] << 6) & 0x00C0;//2 bits
+        if ((tx_buf[4] & 0x0040) == 0) {
+            tx_buf[4] |= 0x0020;
+        }
+
+        tx_buf[4] |= (payload[1] >> 11) & 0x001F;//5 bits
+        tx_buf[5] |= (payload[1] >> 3) & 0x00FF;//8 bits
+        tx_buf[6] |= (payload[1] << 5) & 0x00E0;//3 bits
+        if ((tx_buf[6] & 0x0020) == 0) {
+            tx_buf[6] |= 0x0010;
+        }
+
+        tx_buf[6] |= (payload[2] >> 12) & 0x000F;//4 bits//0x001F
+        tx_buf[7] |= (payload[2] >> 4) & 0x00FF;//8 bits
+        tx_buf[8] |= (payload[2] << 4) & 0x00F0;//4 bits
+        if ((tx_buf[8] & 0x0010) == 0) {
+            tx_buf[8] |= 0x0008;
+        }
+
+        tx_buf[8] |= 0x0007;
+        tx_buf[9] |= 0xFF;
+        tx_buf[10] |= 0xFF;
+        send_len = 11;
+    }
+    spiTransaction.count = send_len;
+    spiTransaction.txBuf = tx_buf;
+    spiTransaction.rxBuf = rx_buf;
+    transferOK = SPI_transfer(hSpiTlc, &spiTransaction);
+    if (!transferOK) {
+        // Error in SPI or transfer already in progress.
+        while (1);
+    }
 }
 
 void tlc_frame_swi(UArg a0) {
-    // TODO: PWM off
-
     for (uint8_t row=0; row<7; row++) {
         for (uint8_t col=0; col<16; col++) {
             if (col == 15)
@@ -261,22 +263,21 @@ void tlc_frame_swi(UArg a0) {
     }
 
     spitx(W_VSYNC, 0x00, 0);
-    // TODO: PWM on
 }
 
 void tlc_task_fn(UArg a0, UArg a1) {
     //////////////////////////// LED TEST /////////////////////////////////////////
 
 
-    while (1) {
-        volatile uint16_t val = 0;
-        for (uint8_t i = 0; i<16; i++) {
-            SCLK_toggle(); // TODO: Replace with PWM
-            val |= (PINCC26XX_getInputValue(26)? 1 : 0) << (15-i); // TODO
-        }
-        val;
-        Task_yield();
-    }
+//    while (1) {
+//        volatile uint16_t val = 0;
+//        for (uint8_t i = 0; i<16; i++) {
+//            SCLK_toggle(); // TODO: Replace with PWM
+//            val |= (PINCC26XX_getInputValue(26)? 1 : 0) << (15-i); // TODO
+//        }
+//        val;
+//        Task_yield();
+//    }
 }
 
 #define TLC_FRAME_TICKS 5000
@@ -286,39 +287,43 @@ void tlc_init() {
     Clock_Params_init(&clockParams);
     clockParams.period = TLC_FRAME_TICKS;
     clockParams.startFlag = TRUE;
-//    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
+    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
 
     // Set up the timer output
-        PWM_Params tlcPwmParams;
-        PWM_Params_init(&tlcPwmParams);
-        tlcPwmParams.idleLevel      = PWM_IDLE_LOW;
-        tlcPwmParams.periodUnits    = PWM_PERIOD_HZ;
-        tlcPwmParams.periodValue    = LED_CLK;
-        tlcPwmParams.dutyUnits      = PWM_DUTY_FRACTION;
-        tlcPwmParams.dutyValue      = PWM_DUTY_FRACTION_MAX / 2;
-        hTlcPwm = PWM_open(BADGE_PWM1, &tlcPwmParams);
-        if(hTlcPwm == NULL) {
-          while (1); // spin forever // TODO
-        }
-    //
-    //    // SPI setup:
-    //    SPI_Params      spiParams;
-    //    SPI_Params_init(&spiParams);
-    //    spiParams.bitRate = LED_CLK*2;
-    //    spiParams.transferMode = SPI_MODE_BLOCKING;
-    //    spiParams.frameFormat = SPI_POL1_PHA0;
-    //    spiParams.
-    //    hSpiTlc = SPI_open(BADGE_SPI1_TLC, &spiParams);
+    PWM_Params tlcPwmParams;
+    PWM_Params_init(&tlcPwmParams);
+    tlcPwmParams.idleLevel      = PWM_IDLE_LOW;
+    tlcPwmParams.periodUnits    = PWM_PERIOD_HZ;
+    tlcPwmParams.periodValue    = LED_CLK;
+    tlcPwmParams.dutyUnits      = PWM_DUTY_FRACTION;
+    tlcPwmParams.dutyValue      = PWM_DUTY_FRACTION_MAX / 2;
+    hTlcPwm = PWM_open(BADGE_PWM1, &tlcPwmParams);
+    if(hTlcPwm == NULL) {
+        while (1); // spin forever // TODO
+    }
 
     // Set SIMO high
     PINCC26XX_setOutputValue(25, 1);
+    PWM_start(hTlcPwm);
     // Start toggling SCLK (for a while)
-    for (uint16_t i=3; i; i--) {
-        volatile uint16_t val = 0;
-        for (uint8_t i = 0; i<16; i++) {
-            SCLK_toggle();
-        }
-    }
+//    for (uint16_t i=3; i; i--) {
+//        volatile uint16_t val = 0;
+//        for (uint8_t i = 0; i<16; i++) {
+//            SCLK_toggle();
+//        }
+//    }
+
+    // with pwm on, we should just wait a bit.
+    Task_sleep(1000); // TODO: calculate
+
+
+    // SPI setup:
+//    SPI_Params      spiParams;
+//    SPI_Params_init(&spiParams);
+//    spiParams.bitRate = LED_CLK*2;
+//    spiParams.transferMode = SPI_MODE_BLOCKING;
+//    spiParams.frameFormat = SPI_POL0_PHA0;
+//    hSpiTlc = SPI_open(BADGE_SPI1_TLC, &spiParams);
 
     uint16_t in_buf[64] = {0,};
 
@@ -337,6 +342,6 @@ void tlc_init() {
     taskParams.stack = tlc_task_stack;
     taskParams.stackSize = TLC_STACKSIZE;
     taskParams.priority = 1;
-    Task_construct(&tlc_task, tlc_task_fn, &taskParams, NULL);
+//    Task_construct(&tlc_task, tlc_task_fn, &taskParams, NULL);
 
 }

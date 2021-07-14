@@ -68,9 +68,9 @@ extern const PIN_Config badge_pin_init_table[];
 #define BADGE_GPIO_SPIF_CSN         GPIOCC26XX_DIO_11
 
 // SPI for the LED driver:
-#define BADGE_SPI_TLC_MISO          PIN_UNASSIGNED // IOID_26 // TODO
-#define BADGE_SPI_TLC_MOSI          IOID_25
-#define BADGE_SPI_TLC_SCLK          IOID_24 // PIN_UNASSIGNED // TODO
+#define BADGE_SPI_TLC_MISO          IOID_26 // TODO
+#define BADGE_SPI_TLC_MOSI          IOID_25 // TODO
+#define BADGE_SPI_TLC_SCLK          IOID_24 // TODO
 #define BADGE_SPI_TLC_CSN           PIN_UNASSIGNED
 
 // SPI for the external flash:

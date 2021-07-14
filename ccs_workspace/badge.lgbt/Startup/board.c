@@ -339,10 +339,10 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
         .defaultTxBufValue  = 0xFF,
         .rxChannelBitMask   = 1<<UDMA_CHAN_SSI1_RX,
         .txChannelBitMask   = 1<<UDMA_CHAN_SSI1_TX,
-        .mosiPin            = BADGE_SPI_TLC_MOSI,
-        .misoPin            = BADGE_SPI_TLC_MISO,
-        .clkPin             = BADGE_SPI_TLC_SCLK,
-        .csnPin             = BADGE_SPI_TLC_CSN,
+        .mosiPin            = PIN_UNASSIGNED, // BADGE_SPI_TLC_MOSI, // TODO: all of these
+        .misoPin            = PIN_UNASSIGNED, // BADGE_SPI_TLC_MISO,
+        .clkPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_SCLK,
+        .csnPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_CSN,
         .minDmaTransferSize = 10
     }
 };

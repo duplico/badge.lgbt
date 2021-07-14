@@ -246,11 +246,6 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 
 void tlc_frame_swi(UArg a0) {
     // TODO: PWM off
-    // TODO: PWM on
-}
-
-void tlc_task_fn(UArg a0, UArg a1) {
-    //////////////////////////// LED TEST /////////////////////////////////////////
 
     for (uint8_t row=0; row<7; row++) {
         for (uint8_t col=0; col<16; col++) {
@@ -262,6 +257,12 @@ void tlc_task_fn(UArg a0, UArg a1) {
     }
 
     spitx(W_VSYNC, 0x00, 0);
+    // TODO: PWM on
+}
+
+void tlc_task_fn(UArg a0, UArg a1) {
+    //////////////////////////// LED TEST /////////////////////////////////////////
+
 
     while (1) {
         volatile uint16_t val = 0;
@@ -274,14 +275,14 @@ void tlc_task_fn(UArg a0, UArg a1) {
     }
 }
 
-#define TLC_FRAME_TICKS 100
+#define TLC_FRAME_TICKS 5000
 
 void tlc_init() {
     Clock_Params clockParams;
     Clock_Params_init(&clockParams);
     clockParams.period = TLC_FRAME_TICKS;
     clockParams.startFlag = TRUE;
-//    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
+    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
 
     // Set up the timer output
     //    PWM_Handle hTlcPwm;

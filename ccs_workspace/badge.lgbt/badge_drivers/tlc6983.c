@@ -76,7 +76,7 @@ SPI_Handle hSpiTlc;
 
 //#define LED_CLK 2500000
 //#define LED_CLK 9600
-#define LED_CLK 100000
+#define LED_CLK 2500000
 
 // SCLK: DIO_24
 // SIMO: DIO_25
@@ -84,9 +84,9 @@ SPI_Handle hSpiTlc;
 
 inline void SCLK_toggle() {
     uint16_t i;
-    for (i=3; i; i--);
+    for (i=1; i; i--);
     PINCC26XX_setOutputValue(24, sclk_val); sclk_val = !sclk_val;
-    for (i=3; i; i--);
+    for (i=1; i; i--);
 }
 
 void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
@@ -138,8 +138,6 @@ void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 }
 
 void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
-
-
     // The bit-banging way: ////////////////////////////////////
     PWM_stop(hTlcPwm);
 
@@ -194,6 +192,12 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // End bit-banging ///////////////////////////////////////
 
 
+    SPI_Params      spiParams;
+    SPI_Params_init(&spiParams);
+    spiParams.bitRate = LED_CLK*2;
+    spiParams.transferMode = SPI_MODE_BLOCKING;
+    spiParams.frameFormat = SPI_POL0_PHA0;
+    hSpiTlc = SPI_open(BADGE_SPI1_TLC, &spiParams);
 
     SPI_Transaction spiTransaction;
     bool            transferOK;
@@ -250,6 +254,8 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
         // Error in SPI or transfer already in progress.
         while (1);
     }
+    SPI_close(hSpiTlc);
+    PINCC26XX_setOutputValue(25, 1);
 }
 
 void tlc_frame_swi(UArg a0) {
@@ -280,7 +286,7 @@ void tlc_task_fn(UArg a0, UArg a1) {
 //    }
 }
 
-#define TLC_FRAME_TICKS 5000
+#define TLC_FRAME_TICKS 1500
 
 void tlc_init() {
     Clock_Params clockParams;
@@ -318,12 +324,6 @@ void tlc_init() {
 
 
     // SPI setup:
-//    SPI_Params      spiParams;
-//    SPI_Params_init(&spiParams);
-//    spiParams.bitRate = LED_CLK*2;
-//    spiParams.transferMode = SPI_MODE_BLOCKING;
-//    spiParams.frameFormat = SPI_POL0_PHA0;
-//    hSpiTlc = SPI_open(BADGE_SPI1_TLC, &spiParams);
 
     uint16_t in_buf[64] = {0,};
 

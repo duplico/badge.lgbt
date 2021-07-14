@@ -146,7 +146,6 @@ const GPTimerCC26XX_Config GPTimerCC26XX_config[BADGE_GPTIMERPARTSCOUNT] = {
     { &gptimerCC26XXObjects[BADGE_GPTIMER3], &gptimerCC26xxHWAttrs[BADGE_GPTIMER3B], GPT_B },
 };
 
-// TODO: Deal with NVS:
 /*
  *  =============================== NVS ===============================
  */
@@ -339,9 +338,9 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
         .defaultTxBufValue  = 0xFF,
         .rxChannelBitMask   = 1<<UDMA_CHAN_SSI1_RX,
         .txChannelBitMask   = 1<<UDMA_CHAN_SSI1_TX,
-        .mosiPin            = PIN_UNASSIGNED, // BADGE_SPI_TLC_MOSI, // TODO: all of these
-        .misoPin            = PIN_UNASSIGNED, // BADGE_SPI_TLC_MISO,
-        .clkPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_SCLK,
+        .mosiPin            = BADGE_SPI_TLC_MOSI,
+        .misoPin            = BADGE_SPI_TLC_MISO,
+        .clkPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_SCLK, // TODO
         .csnPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_CSN,
         .minDmaTransferSize = 10
     }

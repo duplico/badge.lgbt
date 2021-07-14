@@ -7,8 +7,12 @@
 
 #include <ti/drivers/pin/PINCC26XX.h>
 #include <ti/drivers/PWM.h>
+
+#include <ti/sysbios/BIOS.h>
+
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/knl/Event.h>
 
 #include <board.h>
 
@@ -22,6 +26,8 @@ uint8_t tlc_sclk_val = 0;
 Clock_Handle tlc_frame_clock_h;
 uint8_t sclk_val = 0;
 PWM_Handle hTlcPwm;
+
+Event_Handle tlc_event_h;
 
 enum WRITE_COMMAND_ID{
     W_FC0 = 0xAA00,
@@ -259,36 +265,31 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 }
 
 void tlc_frame_swi(UArg a0) {
-    for (uint8_t row=0; row<7; row++) {
-        for (uint8_t col=0; col<16; col++) {
-            if (col == 15)
-                spitx(W_SRAM, all_off, 3);
-            else
-                spitx(W_SRAM, all_r, 3);
-        }
-    }
-
-    spitx(W_VSYNC, 0x00, 0);
+    Event_post(tlc_event_h, Event_Id_00);
 }
 
 void tlc_task_fn(UArg a0, UArg a1) {
-    //////////////////////////// LED TEST /////////////////////////////////////////
+    UInt events;
+    while (1) {
+        events = Event_pend(tlc_event_h, Event_Id_NONE, Event_Id_00, BIOS_WAIT_FOREVER);
 
-
-//    while (1) {
-//        volatile uint16_t val = 0;
-//        for (uint8_t i = 0; i<16; i++) {
-//            SCLK_toggle(); // TODO: Replace with PWM
-//            val |= (PINCC26XX_getInputValue(26)? 1 : 0) << (15-i); // TODO
-//        }
-//        val;
-//        Task_yield();
-//    }
+        for (uint8_t row=0; row<7; row++) {
+            for (uint8_t col=0; col<16; col++) {
+                if (col == 15)
+                    spitx(W_SRAM, all_off, 3);
+                else
+                    spitx(W_SRAM, all_r, 3);
+            }
+        }
+        spitx(W_VSYNC, 0x00, 0);
+    }
 }
 
 #define TLC_FRAME_TICKS 1500
 
 void tlc_init() {
+    tlc_event_h = Event_create(NULL, NULL);
+
     Clock_Params clockParams;
     Clock_Params_init(&clockParams);
     clockParams.period = TLC_FRAME_TICKS;
@@ -342,6 +343,6 @@ void tlc_init() {
     taskParams.stack = tlc_task_stack;
     taskParams.stackSize = TLC_STACKSIZE;
     taskParams.priority = 1;
-//    Task_construct(&tlc_task, tlc_task_fn, &taskParams, NULL);
+    Task_construct(&tlc_task, tlc_task_fn, &taskParams, NULL);
 
 }

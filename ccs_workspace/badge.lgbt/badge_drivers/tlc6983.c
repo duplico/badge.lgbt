@@ -80,9 +80,9 @@ uint16_t fc0[3] =       {0b0101000000000000, 0b0000000000000110, 0b0000000100000
 SPI_Handle hSpiTlc;
 
 
-//#define LED_CLK 2500000
-//#define LED_CLK 9600
-#define LED_CLK 2500000
+//#define   LED_CLK  2500000
+#define     LED_CLK     9600
+//#define     LED_CLK   100000
 
 // SCLK: DIO_24
 // SIMO: DIO_25
@@ -143,7 +143,7 @@ void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 
 }
 
-void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
+void spitx_bb(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // The bit-banging way: ////////////////////////////////////
     PWM_stop(hTlcPwm);
 
@@ -196,14 +196,9 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     PWM_start(hTlcPwm);
     return;
     // End bit-banging ///////////////////////////////////////
+}
 
-
-    SPI_Params      spiParams;
-    SPI_Params_init(&spiParams);
-    spiParams.bitRate = LED_CLK*2;
-    spiParams.transferMode = SPI_MODE_BLOCKING;
-    spiParams.frameFormat = SPI_POL0_PHA0;
-    hSpiTlc = SPI_open(BADGE_SPI1_TLC, &spiParams);
+void spitx_spi(uint16_t cmd, uint16_t *payload, uint8_t len) {
 
     SPI_Transaction spiTransaction;
     bool            transferOK;
@@ -255,6 +250,14 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     spiTransaction.count = send_len;
     spiTransaction.txBuf = tx_buf;
     spiTransaction.rxBuf = rx_buf;
+
+    SPI_Params      spiParams;
+    SPI_Params_init(&spiParams);
+    spiParams.bitRate = LED_CLK*2;
+    spiParams.transferMode = SPI_MODE_BLOCKING;
+    spiParams.frameFormat = SPI_POL0_PHA0;
+    hSpiTlc = SPI_open(BADGE_SPI1_TLC, &spiParams);
+
     transferOK = SPI_transfer(hSpiTlc, &spiTransaction);
     if (!transferOK) {
         // Error in SPI or transfer already in progress.
@@ -263,6 +266,8 @@ void spitx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     SPI_close(hSpiTlc);
     PINCC26XX_setOutputValue(25, 1);
 }
+
+#define spitx spitx_bb
 
 void tlc_frame_swi(UArg a0) {
     Event_post(tlc_event_h, Event_Id_00);
@@ -273,19 +278,21 @@ void tlc_task_fn(UArg a0, UArg a1) {
     while (1) {
         events = Event_pend(tlc_event_h, Event_Id_NONE, Event_Id_00, BIOS_WAIT_FOREVER);
 
-        for (uint8_t row=0; row<7; row++) {
-            for (uint8_t col=0; col<16; col++) {
-                if (col == 15)
-                    spitx(W_SRAM, all_off, 3);
-                else
-                    spitx(W_SRAM, all_r, 3);
+        if (events & Event_Id_00) {
+            for (uint8_t row=0; row<7; row++) {
+                for (uint8_t col=0; col<16; col++) {
+                    if (col == 15)
+                        spitx_spi(W_SRAM, all_off, 3);
+                    else
+                        spitx_spi(W_SRAM, all_g, 3);
+                }
             }
+            spitx(W_VSYNC, 0x00, 0);
         }
-        spitx(W_VSYNC, 0x00, 0);
     }
 }
 
-#define TLC_FRAME_TICKS 1500
+#define TLC_FRAME_TICKS 15000
 
 void tlc_init() {
     tlc_event_h = Event_create(NULL, NULL);
@@ -337,6 +344,21 @@ void tlc_init() {
 
 //    spirx(R_FC0, in_buf, 4);
 //    spirx(R_CHIP_INDEX, in_buf, 64);
+
+
+
+    for (uint8_t row=0; row<7; row++) {
+        for (uint8_t col=0; col<16; col++) {
+            if (col == 15)
+                spitx(W_SRAM, all_off, 3);
+            else
+                spitx(W_SRAM, all_b, 3);
+        }
+    }
+    spitx(W_VSYNC, 0x00, 0);
+
+
+
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

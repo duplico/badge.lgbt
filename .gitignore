@@ -91,3 +91,5 @@ ccs_workspace/.jxbrowser.userdata/
 ccs_workspace/qbadge/
 
 venv3/
+
+scripts/.vscode/

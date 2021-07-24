@@ -77,7 +77,7 @@ enum READ_COMMAND_ID{
 #define FC_0_0_LODREM_EN (0b1 << 15) // Enable LED open load removal
 
 #define FC_0_1_RESERVED 0x00
-#define FC_0_1_SCAN_NUM__7 (6 << 0) // TODO
+#define FC_0_1_SCAN_NUM__7 (6 << 0)
 #define FC_0_1_SUBP_NUM__16  (0b000 << 5)
 #define FC_0_1_SUBP_NUM__32  (0b001 << 5)
 #define FC_0_1_SUBP_NUM__48  (0b010 << 5)
@@ -130,14 +130,14 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 //    uint16_t fc0[3] =       {0x5000, 0x7006, 0x0000};
 uint16_t fc0[3] = {
                    FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1,
-                   FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
+                   FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__128 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
                    FC_0_0_RESERVED | FC_0_0_PDC_EN__EN // | FC_0_0_LODREM_EN
 };
 
 uint16_t fc1[3] = {
                    FC_1_0_DEFAULT | FC_1_0_SEG_LENGTH_128,
                    FC_1_1_DEFAULT,
-                   FC_1_2_RESERVED | FC_1_2_LINE_SWT__60
+                   FC_1_2_RESERVED | FC_1_2_LINE_SWT__45
 };
 
 SPI_Handle hSpiTlc;
@@ -145,20 +145,20 @@ SPI_Handle hSpiTlc;
 
 //#define   LED_CLK  2500000
 //#define     LED_CLK     10000000
-#define     LED_CLK   6000000
+#define     LED_CLK   1000000
 
 // 1 frame is devided into SUBPERIODS, which each has a SEGMENT per scan line
 
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM)
-#define SUBPERIOD_TICKS ((128 + 60) * 7)
+#define SUBPERIOD_TICKS ((128 + 45) * 7)
 
 // This is the number of subperiods per frame:
-#define SUBPERIODS 64
+#define SUBPERIODS 128
 
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK) + 100)
+#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK))
 
 // so, if we need to wait 41216 ticks, we look at how long a tick is (1000/LED_CLK ms)
 // then, a frame is (41216000/LED_CLK) ms
@@ -365,14 +365,14 @@ void tlc_task_fn(UArg a0, UArg a1) {
         if (events & Event_Id_00) {
             PWM_stop(hTlcPwm);
             for (uint8_t row=0; row<7; row++) {
-                tx_col[0] = 0xF0 << (row);
-                tx_col[1] = 0xF0 << (row);
-                tx_col[2] = 0xF0 << (row);
                 for (uint8_t col=0; col<16; col++) {
+                    tx_col[0] = 0xF0 * col;
+                    tx_col[1] = 0xF0 * col;
+                    tx_col[2] = 0xF0 * col;
                     if (col == 15)
                         spitx(W_SRAM, all_off, 3);
                     else
-                        spitx(W_SRAM, all_rish, 3);
+                        spitx(W_SRAM, tx_col, 3);
                 }
             }
             spitx(W_VSYNC, 0x00, 0);
@@ -381,12 +381,7 @@ void tlc_task_fn(UArg a0, UArg a1) {
     }
 }
 
-//#define TLC_FRAME_TICKS 6595
-
-#define FRAME_FACTOR 1650
-
 #define TLC_FRAME_TICKS FRAME_LEN_SYSTICKS
-//#define TLC_FRAME_TICKS 1000000
 
 void tlc_init() {
     tlc_event_h = Event_create(NULL, NULL);

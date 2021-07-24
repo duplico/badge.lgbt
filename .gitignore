@@ -93,3 +93,5 @@ ccs_workspace/qbadge/
 venv3/
 
 scripts/.vscode/
+
+scripts/preview.gif

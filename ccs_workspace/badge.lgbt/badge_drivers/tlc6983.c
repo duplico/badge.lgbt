@@ -130,14 +130,14 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 //    uint16_t fc0[3] =       {0x5000, 0x7006, 0x0000};
 uint16_t fc0[3] = {
                    FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1,
-                   FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__128 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
+                   FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
                    FC_0_0_RESERVED | FC_0_0_PDC_EN__EN // | FC_0_0_LODREM_EN
 };
 
 uint16_t fc1[3] = {
                    FC_1_0_DEFAULT | FC_1_0_SEG_LENGTH_128,
                    FC_1_1_DEFAULT,
-                   FC_1_2_RESERVED | FC_1_2_LINE_SWT__45
+                   FC_1_2_RESERVED | FC_1_2_LINE_SWT__60
 };
 
 SPI_Handle hSpiTlc;
@@ -145,20 +145,20 @@ SPI_Handle hSpiTlc;
 
 //#define   LED_CLK  2500000
 //#define     LED_CLK     10000000
-#define     LED_CLK   1000000
+#define     LED_CLK   6000000
 
 // 1 frame is devided into SUBPERIODS, which each has a SEGMENT per scan line
 
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM)
-#define SUBPERIOD_TICKS ((128 + 45) * 7)
+#define SUBPERIOD_TICKS ((128 + 60) * 7)
 
 // This is the number of subperiods per frame:
-#define SUBPERIODS 128
+#define SUBPERIODS 64
 
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK))
+#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK) + 100)
 
 // so, if we need to wait 41216 ticks, we look at how long a tick is (1000/LED_CLK ms)
 // then, a frame is (41216000/LED_CLK) ms

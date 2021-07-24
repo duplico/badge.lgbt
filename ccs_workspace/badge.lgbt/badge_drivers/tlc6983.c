@@ -29,6 +29,8 @@ PWM_Handle hTlcPwm;
 
 Event_Handle tlc_event_h;
 
+screen_frame_t tlc_display_curr;
+
 enum WRITE_COMMAND_ID{
     W_FC0 = 0xAA00,
     W_FC1,

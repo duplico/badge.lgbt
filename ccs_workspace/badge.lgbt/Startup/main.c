@@ -42,74 +42,72 @@ uint8_t ui_task_stack[UI_STACKSIZE];
 
 PIN_Handle pins;
 
+#define UI_EVENT_BUT Event_Id_30
+
+Event_Handle ui_event_h;
+Clock_Handle button_debounce_clock_h;
+PIN_Handle button_pin_h;
+PIN_State button_state;
+PIN_Config button_pin_config[] = {
+    BADGE_PIN_B1 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B2 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B3 | PIN_INPUT_EN | PIN_PULLUP,
+    PIN_TERMINATE
+};
+
 void ui_task_fn(UArg a0, UArg a1) {
 //    storage_init();
-
-//    if (post_status_spiffs == 1) {
-//        // Don't do our config unless SPIFFS is working.
-//        config_init();
-//        if (post_status_config == -1) {
-//            // TODO: block us here
-//        }
-//    }
-
-    // Create and start the LED task; start the tail animation clock.
-//    led_init();
-
-    // Create and start the serial task.
-//    serial_init();
-
-    // Create and start the BLE task:
-//    UBLEBcastScan_createTask();
-
-    //////////////////////////////// IR /////////////////////////////////////////
-
-//    PINCC26XX_setOutputValue(BADGE_PIN_IR_ENDEC_RSTn, 0); // RST low to reset
-//    PINCC26XX_setOutputValue(BADGE_PIN_IR_TRANS_SD, 1); // SD high to reset
-//    Task_sleep(500);
-//    PINCC26XX_setOutputValue(BADGE_PIN_IR_ENDEC_RSTn, 1);
-//    PINCC26XX_setOutputValue(BADGE_PIN_IR_TRANS_SD, 0);
-//
-//    // Set up the IR timer:
-//    PWM_Handle pwmHandle;
-//    PWM_Params params;
-//    PWM_Params_init(&params);
-//    params.idleLevel      = PWM_IDLE_LOW;
-//    params.periodUnits    = PWM_PERIOD_HZ;
-//    params.periodValue    = 16 * IR_BAUDRATE;
-//    params.dutyUnits      = PWM_DUTY_FRACTION;
-//    params.dutyValue      = PWM_DUTY_FRACTION_MAX / 2;
-//    pwmHandle = PWM_open(BADGE_PWM0, &params);
-//    if(pwmHandle == NULL) {
-//      Task_exit();
-//    }
-//    PWM_start(pwmHandle);
-//
-//    UART_Handle uartHandle;
-//    UART_Params uart_params;
-//    UART_Params_init(&uart_params);
-//    uart_params.baudRate = IR_BAUDRATE;
-//    uart_params.readMode = UART_MODE_BLOCKING;
-//    uart_params.readDataMode = UART_DATA_BINARY;
-//    uart_params.readEcho = UART_ECHO_OFF;
-//    uart_params.writeMode = UART_MODE_BLOCKING;
-//    uart_params.writeDataMode = UART_DATA_BINARY;
-//    uart_params.dataLength = UART_LEN_8;
-//    uart_params.readTimeout = 1000; // like a second, probably?
-//    uart_params.writeTimeout = UART_WAIT_FOREVER;
-//
-//    uartHandle = UART_open(BADGE_UART_IRDA, &uart_params);
-////    char buffer[10] = {5, 10, 15, 20, 25, 30, 35, 40, 45, 50};
-//    char buffer[10] = {101,102,103,104,105,106,107,108,109,110};
-//    char read_buffer[10] = {0,};
-
-    ///////////////////////////// END IR //////////////////////////////////////////
-
+//    adc_init();
     tlc_init();
+
+    // TODO: Check for post_status_spiffs != 0
+    // TODO: Check for post_status_spiffs == -100 (low disk)
+
+    // TODO: Call config_init() or similar
+    // TODO: Check for success of config_init()
 
     while (1) {
         Task_yield();
+        Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
     }
+}
+
+void button_clock_swi(UArg a0) {
+    // current state
+    // last state
+    // next state
+
+    // if last == next and next != current,
+    //  set current and fire the change event.
+
+    static uint8_t button_state_curr = 0b000;
+    static uint8_t button_state_last = 0b000;
+    static uint8_t button_state_next = 0b000;
+
+    button_state_next = 0;
+
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B1) << 0;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B2) << 1;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B3) << 2;
+
+    if (button_state_next == button_state_last && button_state_last != button_state_curr) {
+        // TODO: replace with press/release events for each button:
+        button_state_curr = button_state_next;
+        Event_post(ui_event_h, UI_EVENT_BUT);
+    }
+
+    button_state_last = button_state_next;
+}
+
+
+void button_init() {
+    button_pin_h = PIN_open(&button_state, button_pin_config);
+
+    Clock_Params clockParams;
+    Clock_Params_init(&clockParams);
+    clockParams.period = UI_CLOCK_TICKS;
+    clockParams.startFlag = TRUE;
+    button_debounce_clock_h = Clock_create(button_clock_swi, 2, &clockParams, NULL);
 }
 
 int main()

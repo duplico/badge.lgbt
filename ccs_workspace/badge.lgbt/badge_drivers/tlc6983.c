@@ -67,32 +67,117 @@ enum READ_COMMAND_ID{
     R_CHIP_INDEX = 0xAA70,
 };
 
+#define FC_0_0_RESERVED 0x00
+#define FC_0_0_CHIP_NUM__1 0b00000
+#define FC_0_0_PDC_EN__EN (0b1 << 8) // Pre-discharge
+#define FC_0_0_PS_EN__EN (0b1 << 12) // Power saving
+#define FC_0_0_PSP_MOD__HIGH (0b01 << 13) // Power saving mode plus
+#define FC_0_0_PSP_MOD__MID (0b10 << 13)
+#define FC_0_0_PSP_MOD__LOW (0b11 << 13)
+#define FC_0_0_LODREM_EN (0b1 << 15) // Enable LED open load removal
+
+#define FC_0_1_RESERVED 0x00
+#define FC_0_1_SCAN_NUM__7 (6 << 0) // TODO
+#define FC_0_1_SUBP_NUM__16  (0b000 << 5)
+#define FC_0_1_SUBP_NUM__32  (0b001 << 5)
+#define FC_0_1_SUBP_NUM__48  (0b010 << 5)
+#define FC_0_1_SUBP_NUM__64  (0b011 << 5)
+#define FC_0_1_SUBP_NUM__80  (0b100 << 5)
+#define FC_0_1_SUBP_NUM__96  (0b101 << 5)
+#define FC_0_1_SUBP_NUM__112 (0b110 << 5)
+#define FC_0_1_SUBP_NUM__128 (0b111 << 5)
+#define FC_0_1_FREQ_MOD__DISABLE_DIVIDER (0b1 << 11)
+#define FC_0_1_FREQ_MUL__1  (0b0000 << 12)
+#define FC_0_1_FREQ_MUL__2  (0b0001 << 12)
+#define FC_0_1_FREQ_MUL__8  (0b0111 << 12) // Default
+#define FC_0_1_FREQ_MUL__16 (0b1111 << 12)
+
+#define FC_0_2_RESERVED 0b0001000000000000
+#define FC_0_2_GRP_DLY_R__1 (0b001 << 3) // 0 is default
+#define FC_0_2_GRP_DLY_G__1 (0b001 << 6) // 0 is default
+#define FC_0_2_GRP_DLY_B__1 (0b001 << 9) // 0 is default
+#define FC_0_2_MOD_SIZE__1 (0b01 << 14) // 1 device
+
+#define FC_1_0_DEFAULT 0b1010010000000000 // only defines brightness steps
+#define FC_1_0_SEG_LENGTH_128 127
+#define FC_1_0_SEG_LENGTH_BITS 0x01FF
+
+#define FC_1_1_DEFAULT 0b0000000010010100 // only defines brightness steps
+
+#define FC_1_2_RESERVED 0x0000
+// Blank time between each line:
+#define FC_1_2_LINE_SWT__45  0x0000
+#define FC_1_2_LINE_SWT__60  0b0001 << 5
+#define FC_1_2_LINE_SWT__90  0b0010 << 5
+#define FC_1_2_LINE_SWT__120 0b0011 << 5
+#define FC_1_2_LINE_SWT__150 0b0100 << 5
+#define FC_1_2_LINE_SWT__180 0b0101 << 5
+#define FC_1_2_LINE_SWT__210 0b0110 << 5
+#define FC_1_2_LINE_SWT__240 0b0111 << 5
+#define FC_1_2_LINE_SWT__480 0b1111 << 5
+// Blank time at the end of each subperiod:
+// TODO: BLK_ADJ
+
+
 uint16_t all_white[3] = {0xFFFF, 0xFFFF, 0xFFFF};
 uint16_t all_b[3] = {0xFFFF, 0x0000, 0x0000};
 uint16_t all_r[3] = {0x0000, 0xFFFF, 0x0000};
+uint16_t all_rish[3] = {0x0000, 0xFF00, 0x0000};
 uint16_t all_g[3] = {0x0000, 0x0000, 0xFFFF};
 uint16_t all_dim[3] =   {0x00F0, 0x00F0, 0x00F0};
 uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 //    uint16_t fc0[3] =       {0x5000, 0x7046, 0x0100};
 //    uint16_t fc0[3] =       {0x5000, 0x7006, 0x0000};
-uint16_t fc0[3] =       {0b0101000000000000, 0b0000000000000110, 0b0000000100000000};
+uint16_t fc0[3] = {
+                   FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1,
+                   FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
+                   FC_0_0_RESERVED | FC_0_0_PDC_EN__EN // | FC_0_0_LODREM_EN
+};
+
+uint16_t fc1[3] = {
+                   FC_1_0_DEFAULT | FC_1_0_SEG_LENGTH_128,
+                   FC_1_1_DEFAULT,
+                   FC_1_2_RESERVED | FC_1_2_LINE_SWT__60
+};
 
 SPI_Handle hSpiTlc;
 
 
 //#define   LED_CLK  2500000
-#define     LED_CLK     9600
-//#define     LED_CLK   100000
+//#define     LED_CLK     10000000
+#define     LED_CLK   6000000
+
+// 1 frame is devided into SUBPERIODS, which each has a SEGMENT per scan line
+
+//              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM)
+#define SUBPERIOD_TICKS ((128 + 60) * 7)
+
+// This is the number of subperiods per frame:
+#define SUBPERIODS 64
+
+// Calculated values:
+#define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
+#define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
+#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK) + 100)
+
+// so, if we need to wait 41216 ticks, we look at how long a tick is (1000/LED_CLK ms)
+// then, a frame is (41216000/LED_CLK) ms
+// for a 5kHz LED_CLK, a frame is 8243.2 ms
+
+// 41216 * 1000000
+
+// 41216000
+
+//#define FRAME_LEN_US (((128+8*30)*7*128) / (LED_CLK/1000000))
 
 // SCLK: DIO_24
 // SIMO: DIO_25
 // SOMI: DIO_26
 
 inline void SCLK_toggle() {
-    uint16_t i;
-    for (i=1; i; i--);
+    __nop();
     PINCC26XX_setOutputValue(24, sclk_val); sclk_val = !sclk_val;
-    for (i=1; i; i--);
+    __nop();
 }
 
 void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
@@ -145,7 +230,6 @@ void spirx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 
 void spitx_bb(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // The bit-banging way: ////////////////////////////////////
-    PWM_stop(hTlcPwm);
 
     // SCLK: DIO_24
     // SIMO: DIO_25
@@ -192,8 +276,6 @@ void spitx_bb(uint16_t cmd, uint16_t *payload, uint8_t len) {
     for (uint8_t i=0; i<18; i++) {
         SCLK_toggle();
     }
-
-    PWM_start(hTlcPwm);
     return;
     // End bit-banging ///////////////////////////////////////
 }
@@ -275,24 +357,36 @@ void tlc_frame_swi(UArg a0) {
 
 void tlc_task_fn(UArg a0, UArg a1) {
     UInt events;
+    uint16_t tx_col[3] =   {0x00F0, 0x00F0, 0x00F0};
+
     while (1) {
         events = Event_pend(tlc_event_h, Event_Id_NONE, Event_Id_00, BIOS_WAIT_FOREVER);
 
         if (events & Event_Id_00) {
+            PWM_stop(hTlcPwm);
             for (uint8_t row=0; row<7; row++) {
+                tx_col[0] = 0xF0 << (row);
+                tx_col[1] = 0xF0 << (row);
+                tx_col[2] = 0xF0 << (row);
                 for (uint8_t col=0; col<16; col++) {
                     if (col == 15)
-                        spitx_spi(W_SRAM, all_off, 3);
+                        spitx(W_SRAM, all_off, 3);
                     else
-                        spitx_spi(W_SRAM, all_g, 3);
+                        spitx(W_SRAM, all_rish, 3);
                 }
             }
             spitx(W_VSYNC, 0x00, 0);
+            PWM_start(hTlcPwm);
         }
     }
 }
 
-#define TLC_FRAME_TICKS 15000
+//#define TLC_FRAME_TICKS 6595
+
+#define FRAME_FACTOR 1650
+
+#define TLC_FRAME_TICKS FRAME_LEN_SYSTICKS
+//#define TLC_FRAME_TICKS 1000000
 
 void tlc_init() {
     tlc_event_h = Event_create(NULL, NULL);
@@ -301,7 +395,7 @@ void tlc_init() {
     Clock_Params_init(&clockParams);
     clockParams.period = TLC_FRAME_TICKS;
     clockParams.startFlag = TRUE;
-    tlc_frame_clock_h = Clock_create(tlc_frame_swi, TLC_FRAME_TICKS, &clockParams, NULL);
+    tlc_frame_clock_h = Clock_create(tlc_frame_swi, 1000, &clockParams, NULL);
 
     // Set up the timer output
     PWM_Params tlcPwmParams;
@@ -329,7 +423,7 @@ void tlc_init() {
 
     // with pwm on, we should just wait a bit.
     Task_sleep(1000); // TODO: calculate
-
+    PWM_stop(hTlcPwm);
 
     // SPI setup:
 
@@ -340,25 +434,22 @@ void tlc_init() {
     spitx(W_SOFT_RESET, 0, 0); // soft reset
     spitx(W_CHIP_INDEX, 0x00, 0); // Set index
     spitx(W_FC0, fc0, 3); // Set main config register
-    spitx(W_VSYNC, 0x00, 0);
+    spitx(W_FC1, fc1, 3);
+//    spitx(W_VSYNC, 0x00, 0);
 
 //    spirx(R_FC0, in_buf, 4);
 //    spirx(R_CHIP_INDEX, in_buf, 64);
-
-
 
     for (uint8_t row=0; row<7; row++) {
         for (uint8_t col=0; col<16; col++) {
             if (col == 15)
                 spitx(W_SRAM, all_off, 3);
             else
-                spitx(W_SRAM, all_b, 3);
+                spitx(W_SRAM, all_off, 3);
         }
     }
     spitx(W_VSYNC, 0x00, 0);
-
-
-
+    PWM_start(hTlcPwm);
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

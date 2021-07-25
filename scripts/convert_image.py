@@ -6,7 +6,7 @@ from itertools import zip_longest
 
 import click
 from intelhex import IntelHex
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
@@ -92,7 +92,8 @@ def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False, 
      images = []
      im = Image.open(gif_src_path)
      for i, frame in enumerate(iter_frames(im)):
-          frame = frame.convert('RGB')
+          frame = frame.convert('RGBA')
+          frame = ImageEnhance.Color(frame).enhance(2.5)
           images.append(frame)
 
      scaled_images = [scale_img(i, crop) for i in images]

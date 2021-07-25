@@ -49,17 +49,24 @@ def print_img_code(imglist, name='image'):
                ',\n'.join(map(img_string, imglist))
           ))
 
-def scale_img(i):
+def scale_img(i, crop=False):
      # TODO: Docs and cleanup
      width, height = i.size
 
-     sq_dim = min(width, height)
-    
-#     left = (width - sq_dim)/2
-#     top = (height - sq_dim)/2
-#     right = (width + sq_dim)/2
-#     bottom = (height + sq_dim) / 2
-#     i = i.crop((left,top,right,bottom))
+     if crop:
+          ideal_aspect = 2
+          aspect = width / float(height)
+
+          if aspect > ideal_aspect:
+               new_width = int(ideal_aspect * height)
+               offset = (width - new_width) / 2
+               resize = (offset, 0, width - offset, height)
+          else:
+               new_height = int(width / ideal_aspect)
+               offset = (height - new_height) / 2
+               resize = (0, offset, width, height - offset)
+
+          i = i.crop(resize)
 
      size = (15, 7)
 
@@ -81,14 +88,14 @@ def scale_img(i):
 def scale_preview(i):
      return i.resize((150,70), resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
 
-def import_gif(gif_src_path, frame_dur, name='anim', preview=False):
+def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False):
      images = []
      im = Image.open(gif_src_path)
      for i, frame in enumerate(iter_frames(im)):
           frame = frame.convert('RGB')
           images.append(frame)
 
-     scaled_images = [scale_img(i) for i in images]
+     scaled_images = [scale_img(i, crop) for i in images]
 
      if preview:
           scaled_images = list(map(scale_preview, scaled_images))
@@ -103,9 +110,9 @@ def import_gif(gif_src_path, frame_dur, name='anim', preview=False):
      print("    %d," % frame_dur)
      print("};")
 
-def import_bmp(bmp_src_path, preview=False):
+def import_bmp(bmp_src_path, preview=False, crop=False):
      im = Image.open(bmp_src_path).convert('RGB')
-     im = scale_img(im)
+     im = scale_img(im, crop)
      if preview:
           scale_preview(im).show()
           return
@@ -113,13 +120,14 @@ def import_bmp(bmp_src_path, preview=False):
 
 @click.command()
 @click.option('--preview', is_flag=True)
+@click.option('--crop', is_flag=True)
 @click.option('--frame-dur', type=int, default=25)
 @click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True)
-def import_img(img_src_path, frame_dur, preview):
+def import_img(img_src_path, frame_dur, preview, crop):
      if img_src_path.lower().endswith('.bmp'):
-          import_bmp(img_src_path, preview)
+          import_bmp(img_src_path, preview, crop)
      elif img_src_path.lower().endswith('.gif'):
-          import_gif(img_src_path, frame_dur, preview=preview)
+          import_gif(img_src_path, frame_dur, crop=crop, preview=preview)
      else:
           print("Expected: bmp or gif")
           exit()

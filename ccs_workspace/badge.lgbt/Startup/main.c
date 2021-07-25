@@ -118,7 +118,6 @@ int main()
     // Do the basic initialization of peripherals.
     Power_init();
     if (PIN_init(badge_pin_init_table) != PIN_SUCCESS) {
-        // TODO: Not this, probably?
         while (1);
     }
     NVS_init();
@@ -139,20 +138,12 @@ int main()
     VIMSModeSet(VIMS_BASE, VIMS_MODE_ENABLED);
 #endif //CACHE_AS_RAM
 
-//    // Open the SPI connection, and initialize the EPD data structures.
-//
-//    // All threads and other SYS/BIOS kernel initialization happens below here.
-//
 //    // Create the events:
 //    led_event_h = Event_create(NULL, NULL);
     uble_event_h = Event_create(NULL, NULL);
     ui_event_h = Event_create(NULL, NULL);
-//    serial_event_h = Event_create(NULL, NULL);
-//
-//    // Create and start the UI task; this thread bootstraps the badge by
-//    //  initializing all the other tasks.
-//    ui_init();
 
+    // TODO: move to ui.c?
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stack = ui_task_stack;
@@ -239,9 +230,3 @@ void smallErrorHook(Error_Block *eb)
 
 /*******************************************************************************
  */
-
-
-
-
-
-

@@ -64,6 +64,27 @@ void tlc_frame_swi(UArg a0) {
     Event_post(tlc_event_h, Event_Id_00);
 }
 
+/// Transition from PWM mode to bit-banged command mode.
+void ccsi_bb_start() {
+    PWM_stop(tlc_pwm_h);
+
+    // Set MOSI high, and click the clock 2 times, so we guarantee our
+    //  clock transitions occur when we think they should.
+    //  (otherwise, if the PWM ended when our sclk_val variable is 1,
+    //   but the PWM was LOW, we could think we're doing a transition
+    //   when actually keeping SCLK the same.)
+    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
+    // TODO: Do we actually need to click the clock 19 times, so that
+    //  we guarantee a correct START?
+    SCLK_toggle();
+    SCLK_toggle();
+}
+
+/// Transition from bit-banged command mode to PWM mode.
+void ccsi_bb_end() {
+    PWM_start(tlc_pwm_h);
+}
+
 /// Transmit a bit-banged CCSI frame. NOTE: PWM must be stopped.
 void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // SIMO LOW (START)
@@ -105,7 +126,7 @@ void tlc_task_fn(UArg a0, UArg a1) {
         events = Event_pend(tlc_event_h, Event_Id_NONE, Event_Id_00, BIOS_WAIT_FOREVER);
 
         if (events & Event_Id_00) {
-            PWM_stop(tlc_pwm_h);
+            ccsi_bb_start();
             for (uint8_t row=0; row<7; row++) {
                 for (uint8_t col=0; col<16; col++) {
                     tx_col[0] = tlc_display_curr[row][col].blue << 3;
@@ -118,7 +139,7 @@ void tlc_task_fn(UArg a0, UArg a1) {
                 }
             }
             ccsi_tx(W_VSYNC, 0x00, 0);
-            PWM_start(tlc_pwm_h);
+            ccsi_bb_end();
         }
     }
 }
@@ -165,7 +186,7 @@ void tlc_init() {
                        FC_1_2_RESERVED | FC_1_2_LINE_SWT__60
     };
 
-    PWM_stop(tlc_pwm_h);
+    ccsi_bb_start();
     // Send prep commands:
     ccsi_tx(W_SOFT_RESET, 0, 0); // soft reset
     ccsi_tx(W_CHIP_INDEX, 0x00, 0); // Set index
@@ -181,7 +202,7 @@ void tlc_init() {
         }
     }
     ccsi_tx(W_VSYNC, 0x00, 0);
-    PWM_start(tlc_pwm_h);
+    ccsi_bb_end();
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

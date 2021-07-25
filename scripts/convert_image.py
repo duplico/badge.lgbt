@@ -88,7 +88,7 @@ def scale_img(i, crop=False):
 def scale_preview(i):
      return i.resize((150,70), resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
 
-def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False):
+def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False, image_name='anim'):
      images = []
      im = Image.open(gif_src_path)
      for i, frame in enumerate(iter_frames(im)):
@@ -99,8 +99,8 @@ def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False):
 
      if preview:
           scaled_images = list(map(scale_preview, scaled_images))
-          scaled_images[0].save('preview.gif', save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
-          print("Preview image saved as preview.gif.")
+          scaled_images[0].save('%s_preview.gif' % image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
+          print("Preview image saved as %s_preview.gif." % image_name)
           return
 
      print_img_code(scaled_images, '%s_frames' % name)
@@ -110,7 +110,7 @@ def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False):
      print("    %d," % frame_dur)
      print("};")
 
-def import_bmp(bmp_src_path, preview=False, crop=False):
+def import_bmp(bmp_src_path, preview=False, crop=False, image_name='frame'):
      im = Image.open(bmp_src_path).convert('RGB')
      im = scale_img(im, crop)
      if preview:
@@ -124,10 +124,11 @@ def import_bmp(bmp_src_path, preview=False, crop=False):
 @click.option('--frame-dur', type=int, default=25)
 @click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True)
 def import_img(img_src_path, frame_dur, preview, crop):
+     image_name = os.path.basename(img_src_path).split('.')[0]
      if img_src_path.lower().endswith('.bmp'):
-          import_bmp(img_src_path, preview, crop)
+          import_bmp(img_src_path, preview, crop, image_name=image_name)
      elif img_src_path.lower().endswith('.gif'):
-          import_gif(img_src_path, frame_dur, crop=crop, preview=preview)
+          import_gif(img_src_path, frame_dur, crop=crop, preview=preview, image_name=image_name)
      else:
           print("Expected: bmp or gif")
           exit()

@@ -118,9 +118,13 @@ void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     return;
 }
 
+#define OFF_THRESHOLD 30
+
 void tlc_task_fn(UArg a0, UArg a1) {
     UInt events;
     uint16_t tx_col[3] =   {0x00F0, 0x00F0, 0x00F0};
+
+    Clock_start(tlc_frame_clock_h);
 
     while (1) {
         events = Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_REFRESH, BIOS_WAIT_FOREVER);
@@ -129,9 +133,13 @@ void tlc_task_fn(UArg a0, UArg a1) {
             ccsi_bb_start();
             for (uint8_t row=0; row<7; row++) {
                 for (uint8_t col=0; col<16; col++) {
-                    tx_col[0] = tlc_display_curr[row][col].blue << 3;
-                    tx_col[1] = tlc_display_curr[row][col].red << 3;
-                    tx_col[2] = tlc_display_curr[row][col].green << 3;
+//                    tx_col[0] = tlc_display_curr[row][col].blue * tlc_display_curr[row][col].blue;
+//                    tx_col[1] = tlc_display_curr[row][col].red * tlc_display_curr[row][col].red;
+//                    tx_col[2] = tlc_display_curr[row][col].green * tlc_display_curr[row][col].green;
+
+                    tx_col[0] = (tlc_display_curr[row][col].blue < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].blue << 4);
+                    tx_col[1] = (tlc_display_curr[row][col].red < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].red << 4);
+                    tx_col[2] = (tlc_display_curr[row][col].green < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].green << 4);
                     if (col == 15)
                         ccsi_tx(W_SRAM, all_off, 3);
                     else
@@ -139,6 +147,8 @@ void tlc_task_fn(UArg a0, UArg a1) {
                 }
             }
             ccsi_tx(W_VSYNC, 0x00, 0);
+            Clock_setTimeout(tlc_frame_clock_h, FRAME_LEN_SYSTICKS);
+            Clock_start(tlc_frame_clock_h);
             ccsi_bb_end();
         }
     }
@@ -149,9 +159,9 @@ void tlc_init() {
 
     Clock_Params clockParams;
     Clock_Params_init(&clockParams);
-    clockParams.period = FRAME_LEN_SYSTICKS;
+    clockParams.period = 0; // one-shot
     clockParams.startFlag = TRUE;
-    tlc_frame_clock_h = Clock_create(tlc_frame_swi, 1000, &clockParams, NULL);
+    tlc_frame_clock_h = Clock_create(tlc_frame_swi, FRAME_LEN_SYSTICKS, &clockParams, NULL);
 
     // Set up the timer output
     PWM_Params tlcPwmParams;

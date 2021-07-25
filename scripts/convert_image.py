@@ -122,16 +122,16 @@ def import_bmp(bmp_src_path, preview=False, crop=False, image_name='frame'):
 @click.option('--preview', is_flag=True)
 @click.option('--crop', is_flag=True)
 @click.option('--frame-dur', type=int, default=25)
-@click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True)
+@click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True, nargs=-1)
 def import_img(img_src_path, frame_dur, preview, crop):
-     image_name = os.path.basename(img_src_path).split('.')[0]
-     if img_src_path.lower().endswith('.bmp'):
-          import_bmp(img_src_path, preview, crop, image_name=image_name)
-     elif img_src_path.lower().endswith('.gif'):
-          import_gif(img_src_path, frame_dur, crop=crop, preview=preview, image_name=image_name)
-     else:
-          print("Expected: bmp or gif")
-          exit()
+     for img_src in img_src_path:
+          image_name = os.path.basename(img_src).split('.')[0]
+          if img_src.lower().endswith('.bmp'):
+               import_bmp(img_src, preview, crop, image_name=image_name)
+          elif img_src.lower().endswith('.gif'):
+               import_gif(img_src, frame_dur, crop=crop, preview=preview, image_name=image_name)
+          else:
+               print("Expected: bmp or gif, got: %s" % img_src)
 
 if __name__ == "__main__":
      import_img()

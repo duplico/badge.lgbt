@@ -79,7 +79,7 @@ const rgbcolor_t anim_frames[56][7][15] = {{{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0
 const led_anim_direct_t led_starting_anim = {
     (rgbcolor_t (*)[7][15]) &anim_frames,
     56,
-    25,
+    20,
 };
 
 void led_next_frame_swi(UArg a0) {

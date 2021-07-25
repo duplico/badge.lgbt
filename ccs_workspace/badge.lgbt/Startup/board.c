@@ -68,9 +68,9 @@ const uint_least8_t ADCBuf_count = BADGE_ADCBUFCOUNT;
 const PIN_Config badge_pin_init_table[] = {
     BADGE_PIN_IR_TRANS_SD | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
     BADGE_PIN_IR_ENDEC_RSTn | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MIN,
-    BADGE_SPI_TLC_MOSI | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN, // TODO
-    BADGE_SPI_TLC_SCLK | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN, // TODO
-    BADGE_SPI_TLC_MISO | PIN_INPUT_EN, // TODO
+    BADGE_TLC_CCSI_MOSI | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_TLC_CCSI_SCLK | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH  | PIN_PUSHPULL | PIN_DRVSTR_MIN,
+    BADGE_TLC_CCSI_MISO | PIN_INPUT_EN,
     PIN_TERMINATE
 };
 
@@ -338,10 +338,10 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
         .defaultTxBufValue  = 0xFF,
         .rxChannelBitMask   = 1<<UDMA_CHAN_SSI1_RX,
         .txChannelBitMask   = 1<<UDMA_CHAN_SSI1_TX,
-        .mosiPin            = BADGE_SPI_TLC_MOSI,
-        .misoPin            = BADGE_SPI_TLC_MISO,
-        .clkPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_SCLK, // TODO
-        .csnPin             = PIN_UNASSIGNED, // BADGE_SPI_TLC_CSN,
+        .mosiPin            = PIN_UNASSIGNED,
+        .misoPin            = PIN_UNASSIGNED,
+        .clkPin             = PIN_UNASSIGNED,
+        .csnPin             = PIN_UNASSIGNED,
         .minDmaTransferSize = 10
     }
 };

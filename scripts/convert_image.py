@@ -20,10 +20,10 @@ def iter_frames(im):
         while 1:
             im.seek(i)
             imframe = im.copy()
-            if i == 0: 
-                palette = imframe.getpalette()
-            else:
-                imframe.putpalette(palette)
+          #   if i == 0: 
+          #       palette = imframe.getpalette()
+          #   else:
+          #       imframe.putpalette(palette)
             yield imframe
             i += 1
     except EOFError:

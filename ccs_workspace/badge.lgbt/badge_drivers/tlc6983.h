@@ -20,9 +20,7 @@ typedef struct {
     uint16_t blue;
 } rgbcolor16_t;
 
-typedef struct {
-    rgbcolor_t pixels[7][15];
-} screen_frame_t;
+extern rgbcolor_t tlc_display_curr[7][15]; // display buffer
 
 void tlc_init();
 

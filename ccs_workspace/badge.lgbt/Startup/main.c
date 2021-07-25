@@ -29,6 +29,7 @@
 #include "post.h"
 
 #include <badge_drivers/tlc6983.h>
+#include <badge_drivers/led.h>
 
 extern assertCback_t halAssertCback;
 
@@ -41,8 +42,6 @@ uint8_t ui_task_stack[UI_STACKSIZE];
 #define IR_BAUDRATE 9600
 
 PIN_Handle pins;
-
-#define UI_EVENT_BUT Event_Id_30
 
 Event_Handle ui_event_h;
 Clock_Handle button_debounce_clock_h;
@@ -59,6 +58,7 @@ void ui_task_fn(UArg a0, UArg a1) {
 //    storage_init();
 //    adc_init();
     tlc_init();
+    led_init();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -69,6 +69,9 @@ void ui_task_fn(UArg a0, UArg a1) {
     while (1) {
         Task_yield();
         Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
+        if (Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_LED_FRAME, BIOS_NO_WAIT)) {
+            led_next_frame();
+        }
     }
 }
 

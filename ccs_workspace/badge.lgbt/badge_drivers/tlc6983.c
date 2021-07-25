@@ -36,27 +36,27 @@ rgbcolor_t tlc_display_curr[7][15] = { { {0, 0, 0}, {0, 0, 0}, {79, 32, 137}, {7
 uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 
 /// The LED SCLK frequency, in Hz.
-#define     LED_CLK   6000000
+#define     LED_CLK   12000000
 
 // 1 frame is divided into SUBPERIODS, which each has a SEGMENT per scan line
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM)
-#define SUBPERIOD_TICKS ((128 + 60) * 7)
+#define SUBPERIOD_TICKS ((128 + 180) * 7)
 
 // This is the number of subperiods per frame:
-#define SUBPERIODS 64
+#define SUBPERIODS 80
 
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK) + 100)
+#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK))
 
 /// Current value of the bit-banged CCSI clock.
 uint8_t sclk_val = 0;
 /// Toggle the SCLK for when we're bit-banging the CCSI.
 inline void SCLK_toggle() {
-    __nop();
+    __nop();__nop();
     PINCC26XX_setOutputValue(BADGE_TLC_CCSI_SCLK, sclk_val); sclk_val = !sclk_val;
-    __nop();
+    __nop();__nop();
 }
 
 /// Software interrupt for when the screen should refresh.
@@ -67,6 +67,7 @@ void tlc_frame_swi(UArg a0) {
 /// Transition from PWM mode to bit-banged command mode.
 void ccsi_bb_start() {
     PWM_stop(tlc_pwm_h);
+    Task_sleep(1);
 
     // Set MOSI high, and click the clock 2 times, so we guarantee our
     //  clock transitions occur when we think they should.
@@ -185,15 +186,15 @@ void tlc_init() {
     Task_sleep(100);
 
     uint16_t fc0[3] = {
-                       FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1,
-                       FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
-                       FC_0_0_RESERVED | FC_0_0_PDC_EN__EN // | FC_0_0_LODREM_EN
+                       FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1 | FC_0_0_PDC_EN__EN,
+                       FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__80 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
+                       FC_0_0_RESERVED | FC_0_0_PDC_EN__EN
     };
 
     uint16_t fc1[3] = {
                        FC_1_0_DEFAULT | FC_1_0_SEG_LENGTH_128,
                        FC_1_1_DEFAULT,
-                       FC_1_2_RESERVED | FC_1_2_LINE_SWT__60
+                       FC_1_2_RESERVED | FC_1_2_LINE_SWT__180
     };
 
     ccsi_bb_start();

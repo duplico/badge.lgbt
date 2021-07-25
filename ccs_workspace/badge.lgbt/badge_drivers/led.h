@@ -23,7 +23,7 @@ typedef struct {
 
 typedef struct {
 //    screen_frame_t *anim_frames;
-    rgbcolor_t *anim_frames[7][15];
+    rgbcolor_t (*anim_frames)[7][15];
     uint16_t anim_len;
     uint16_t anim_frame_delay_ms;
 } led_anim_direct_t;

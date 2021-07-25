@@ -29,14 +29,25 @@ def iter_frames(im):
     except EOFError:
         pass
 
-def print_img_code(img):
-     print("rgbcolor_t[7][15] image = {", end=" ")
+def img_string(img):
+     s = "{"
      for rgb_row in grouper(img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), 15*3):
-          print("{", end=" ")
+          s += "{"
           for rgb in grouper(rgb_row, 3):
-               print("{%d, %d, %d}, " % rgb, end="")
-          print("},", end=" ")
-     print("};")
+               s += "{%d, %d, %d}, " % rgb
+          s += "}, "
+     s += "}"
+     return s
+
+def print_img_code(imglist, name='image'):
+     if len(imglist) == 1:
+          print("rgbcolor_t %s[7][15] = %s;" % (name, img_string(imglist[0])))
+     else:
+          print('rgbcolor_t %s[%d][7][15] = {%s};' % (
+               name,
+               len(imglist),
+               ',\n'.join(map(img_string, imglist))
+          ))
 
 def scale_img(i):
      # TODO: Docs and cleanup
@@ -70,7 +81,7 @@ def scale_img(i):
 def scale_preview(i):
      return i.resize((150,70), resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
 
-def import_gif(gif_src_path, frame_dur, preview=False):
+def import_gif(gif_src_path, frame_dur, name='anim', preview=False):
      images = []
      im = Image.open(gif_src_path)
      for i, frame in enumerate(iter_frames(im)):
@@ -85,8 +96,12 @@ def import_gif(gif_src_path, frame_dur, preview=False):
           print("Preview image saved as preview.gif.")
           return
 
-     for i in scaled_images:
-          print_img_code(im)
+     print_img_code(scaled_images, '%s_frames' % name)
+     print("led_anim_direct_t %s = {" % name)
+     print("    %s_frames," % name)
+     print("    %d," % len(scaled_images))
+     print("    %d," % frame_dur)
+     print("};")
 
 def import_bmp(bmp_src_path, preview=False):
      im = Image.open(bmp_src_path).convert('RGB')
@@ -94,7 +109,7 @@ def import_bmp(bmp_src_path, preview=False):
      if preview:
           scale_preview(im).show()
           return
-     print_img_code(im)
+     print_img_code([im])
 
 @click.command()
 @click.option('--preview', is_flag=True)
@@ -104,7 +119,7 @@ def import_img(img_src_path, frame_dur, preview):
      if img_src_path.lower().endswith('.bmp'):
           import_bmp(img_src_path, preview)
      elif img_src_path.lower().endswith('.gif'):
-          import_gif(img_src_path, frame_dur, preview)
+          import_gif(img_src_path, frame_dur, preview=preview)
      else:
           print("Expected: bmp or gif")
           exit()

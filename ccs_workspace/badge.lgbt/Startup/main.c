@@ -68,7 +68,7 @@ void ui_task_fn(UArg a0, UArg a1) {
 
     while (1) {
         Task_yield();
-        Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
+//        Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
         if (Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_LED_FRAME, BIOS_NO_WAIT)) {
             led_next_frame();
         }
@@ -145,8 +145,8 @@ int main()
 //
 //    // Create the events:
 //    led_event_h = Event_create(NULL, NULL);
-//    uble_event_h = Event_create(NULL, NULL);
-//    ui_event_h = Event_create(NULL, NULL);
+    uble_event_h = Event_create(NULL, NULL);
+    ui_event_h = Event_create(NULL, NULL);
 //    serial_event_h = Event_create(NULL, NULL);
 //
 //    // Create and start the UI task; this thread bootstraps the badge by

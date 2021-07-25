@@ -49,3 +49,6 @@ badge screen.
 For a BMP still image, the preview of the resized image should pop up when
 running the script. For animated GIFs, the image will be saved as
 `preview.gif` in the current working directory.
+
+For gifs, an optional `--frame-dur <ms>` is allowed, which sets the
+animation frame duration to <ms> milliseconds.

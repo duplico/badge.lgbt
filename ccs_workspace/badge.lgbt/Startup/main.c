@@ -31,6 +31,8 @@
 #include <badge_drivers/tlc6983.h>
 #include <badge_drivers/led.h>
 
+#include <adc.h>
+
 extern assertCback_t halAssertCback;
 
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
@@ -56,9 +58,11 @@ PIN_Config button_pin_config[] = {
 
 void ui_task_fn(UArg a0, UArg a1) {
 //    storage_init();
-//    adc_init();
     tlc_init();
     led_init();
+    adc_init();
+
+    UBLEBcastScan_createTask();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -139,7 +143,6 @@ int main()
 #endif //CACHE_AS_RAM
 
 //    // Create the events:
-//    led_event_h = Event_create(NULL, NULL);
     uble_event_h = Event_create(NULL, NULL);
     ui_event_h = Event_create(NULL, NULL);
 

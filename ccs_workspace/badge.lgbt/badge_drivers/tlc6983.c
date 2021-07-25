@@ -61,7 +61,7 @@ inline void SCLK_toggle() {
 
 /// Software interrupt for when the screen should refresh.
 void tlc_frame_swi(UArg a0) {
-    Event_post(tlc_event_h, Event_Id_00);
+    Event_post(tlc_event_h, TLC_EVENT_REFRESH);
 }
 
 /// Transition from PWM mode to bit-banged command mode.
@@ -123,9 +123,9 @@ void tlc_task_fn(UArg a0, UArg a1) {
     uint16_t tx_col[3] =   {0x00F0, 0x00F0, 0x00F0};
 
     while (1) {
-        events = Event_pend(tlc_event_h, Event_Id_NONE, Event_Id_00, BIOS_WAIT_FOREVER);
+        events = Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_REFRESH, BIOS_WAIT_FOREVER);
 
-        if (events & Event_Id_00) {
+        if (events & TLC_EVENT_REFRESH) {
             ccsi_bb_start();
             for (uint8_t row=0; row<7; row++) {
                 for (uint8_t col=0; col<16; col++) {

@@ -20,7 +20,10 @@ typedef struct {
     uint16_t blue;
 } rgbcolor16_t;
 
+#define TLC_EVENT_REFRESH Event_Id_00
+
 extern rgbcolor_t tlc_display_curr[7][15]; // display buffer
+extern Event_Handle tlc_event_h;
 
 void tlc_init();
 

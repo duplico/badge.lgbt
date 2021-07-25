@@ -30,12 +30,12 @@ def iter_frames(im):
         pass
 
 def print_img_code(img):
-     print("rgbcolor_t[7][15] image = {")
-     for rgb_row in grouper(img.tobytes(), 15*3):
-          print("{")
+     print("rgbcolor_t[7][15] image = {", end=" ")
+     for rgb_row in grouper(img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), 15*3):
+          print("{", end=" ")
           for rgb in grouper(rgb_row, 3):
                print("{%d, %d, %d}, " % rgb, end="")
-          print("},")
+          print("},", end=" ")
      print("};")
 
 def scale_img(i):
@@ -93,6 +93,8 @@ def import_bmp(bmp_src_path, preview=False):
      im = scale_img(im)
      if preview:
           scale_preview(im).show()
+          return
+     print_img_code(im)
 
 @click.command()
 @click.option('--preview', is_flag=True)

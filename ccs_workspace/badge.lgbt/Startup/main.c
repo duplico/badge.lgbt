@@ -3,7 +3,6 @@
 #include <ti/drivers/pin/PINCC26XX.h>
 #include <ti/drivers/Power.h>
 #include <ti/drivers/power/PowerCC26XX.h>
-#include <ti/sysbios/knl/Event.h>
 #include <ti/drivers/NVS.h>
 #include <ti/drivers/UART.h>
 #include <ti/drivers/uart/UARTCC26XX.h>
@@ -28,20 +27,22 @@
 #include "uble_bcast_scan.h"
 #include "storage.h"
 #include "post.h"
-#include "adc.h"
+
+#include <badge_drivers/tlc6983.h>
+#include <badge_drivers/led.h>
 
 extern assertCback_t halAssertCback;
 
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
 
-//extern Display_Handle dispHandle;
-
 #define UI_STACKSIZE 1024
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
+#define IR_BAUDRATE 9600
 
-#define UI_EVENT_BUT Event_Id_30
+PIN_Handle pins;
+
 Event_Handle ui_event_h;
 Clock_Handle button_debounce_clock_h;
 PIN_Handle button_pin_h;
@@ -54,11 +55,10 @@ PIN_Config button_pin_config[] = {
 };
 
 void ui_task_fn(UArg a0, UArg a1) {
-    storage_init();
-    adc_init();
-
-    // Create and start the BLE task:
-    UBLEBcastScan_createTask();
+//    storage_init();
+//    adc_init();
+    tlc_init();
+    led_init();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -66,59 +66,12 @@ void ui_task_fn(UArg a0, UArg a1) {
     // TODO: Call config_init() or similar
     // TODO: Check for success of config_init()
 
-    ////////////////// IrDA ///////////////////////////////////////////////
-
-    // 16XCLK must be 16x the data rate of the UART to the ENDEC.
-    // e.g. 9600 baud -> 153600 16CLK
-    //    115200 baud -> 1843200 16CLK (See appnote page 2)
-    PWM_Handle pwm;
-    PWM_Params pwmParams;
-    // Initialize the PWM parameters
-    PWM_Params_init(&pwmParams);
-    pwmParams.idleLevel = PWM_IDLE_LOW;      // Output low when PWM is not running // TODO
-    pwmParams.periodUnits = PWM_PERIOD_HZ;   // Period is in Hz
-    pwmParams.periodValue = 153600;          // 16 x 9600 // TODO
-    pwmParams.dutyUnits = PWM_DUTY_FRACTION; // Duty is in fractional percentage
-    pwmParams.dutyValue = PWM_DUTY_FRACTION_MAX/2; // 50%
-
-    pwm = PWM_open(BADGE_PWM0_IRDA, &pwmParams);
-    if (pwm == NULL) {
-        // PWM_open() failed
-        while (1);
-    }
-
-    UART_Params uart_params;
-    UART_Params_init(&uart_params);
-    uart_params.readReturnMode = UART_RETURN_FULL; // unused in binary mode
-    uart_params.readDataMode = UART_DATA_BINARY;
-    uart_params.writeDataMode = UART_DATA_BINARY;
-    uart_params.stopBits = UART_STOP_ONE;
-    uart_params.baudRate = 9600; // TODO
-    uart_params.readMode = UART_MODE_BLOCKING;
-    uart_params.readTimeout = UART_WAIT_FOREVER;
-    uart_params.writeMode = UART_MODE_BLOCKING;
-    uart_params.writeTimeout = UART_WAIT_FOREVER;
-
-    UART_Handle uart;
-    uart = UART_open(BADGE_UART_IRDA, &uart_params);
-
-    uint8_t uart_buf[32] = {1,3,5,7,11,13,17,23,31,0xff, 0xaa, 0xbb, 0xcc, 0xdd, 0x00};
-    uint8_t uart_rbuf[32] = {0,};
-    volatile int_fast32_t ret;
-
-    PINCC26XX_setOutputValue(BADGE_PIN_IR_ENDEC_RSTn, 1); // Un-reset.
-    Task_sleep(2); // TODO
-    PWM_start(pwm);
-//    ret = UART_write(uart, uart_buf, 16);
-
     while (1) {
-//        PWM_start(pwm);
-//        ret = UART_write(uart, uart_buf, 16);
-//        PWM_stop(pwm);
         Task_yield();
         Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
-        ret = UART_read(uart, uart_rbuf, 16);
-
+        if (Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_LED_FRAME, BIOS_NO_WAIT)) {
+            led_next_frame();
+        }
     }
 }
 
@@ -165,19 +118,15 @@ int main()
     // Do the basic initialization of peripherals.
     Power_init();
     if (PIN_init(badge_pin_init_table) != PIN_SUCCESS) {
-        // TODO: Not this:
-        // If this fails, our EPD connection will be broken.
-        //  We have to have it functioning for the badge to work,
-        //  really, and there won't be a way to indicate an error,
-        //  so I'm OK with just spinning forever.
+        // TODO: Not this, probably?
         while (1);
     }
-    SPI_init();
-    GPIO_init();
     NVS_init();
+    SPI_init();
     ADCBuf_init();
     UART_init();
     PWM_init();
+    GPIO_init();
 
 #ifdef CACHE_AS_RAM
     // retain cache during standby
@@ -189,15 +138,20 @@ int main()
     // Enable cache
     VIMSModeSet(VIMS_BASE, VIMS_MODE_ENABLED);
 #endif //CACHE_AS_RAM
+
+//    // Open the SPI connection, and initialize the EPD data structures.
+//
 //    // All threads and other SYS/BIOS kernel initialization happens below here.
 //
 //    // Create the events:
 //    led_event_h = Event_create(NULL, NULL);
-    uble_event_h = Event_create(NULL, NULL);
-    ui_event_h = Event_create(NULL, NULL);
+//    uble_event_h = Event_create(NULL, NULL);
+//    ui_event_h = Event_create(NULL, NULL);
 //    serial_event_h = Event_create(NULL, NULL);
-
-    button_init();
+//
+//    // Create and start the UI task; this thread bootstraps the badge by
+//    //  initializing all the other tasks.
+//    ui_init();
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

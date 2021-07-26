@@ -242,8 +242,6 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.ti.ccstudio.buildDefinitions.TMS470_20.2.compilerID.DEFINE.936711802" name="Pre-define NAME (--define, -D)" superClass="com.ti.ccstudio.buildDefinitions.TMS470_20.2.compilerID.DEFINE" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="${COM_TI_SIMPLELINK_CC2640R2_SDK_SYMBOLS}"/>
-									<listOptionValue builtIn="false" value="NO_ROM"/>
-									<listOptionValue builtIn="false" value="NO_CALIBRATION_NO_RCOSC"/>
 									<listOptionValue builtIn="false" value="Board_EXCLUDE_NVS_INTERNAL_FLASH"/>
 									<listOptionValue builtIn="false" value="CACHE_AS_RAM"/>
 									<listOptionValue builtIn="false" value="DeviceFamily_CC26X0R2"/>

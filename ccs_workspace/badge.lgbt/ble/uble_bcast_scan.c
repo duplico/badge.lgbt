@@ -75,7 +75,7 @@ Task_Struct ubsTask;
 uint8 ubsTaskStack[UBS_TASK_STACK_SIZE];
 
 // TODO:
-#define QC16_BADGE_NAME_LEN 12
+#define BADGE_NAME_LEN 12
 
 static bool UBLEBcastScan_initObserver(void);
 
@@ -96,36 +96,36 @@ uint8 advertData[29] =
  0xDC,
 
  // complete name
- QC16_BADGE_NAME_LEN+1, // index 7   // length of this data
+ BADGE_NAME_LEN+1, // index 7   // length of this data
  GAP_ADTYPE_LOCAL_NAME_COMPLETE,
- 'D',
- 'U',
- 'P',
- 'L',
- 'i',
- 'C',
- 'O',
- 0x00,
- 0x00,
- 0x00,
+ 'b',
+ 'a',
+ 'd',
+ 'g',
+ 'e',
+ '.',
+ 'l',
+ 'g',
+ 'b',
+ 't',
  0x00,
  0x00, // index 20
  // Queercon data: ID, current icon, etc
    7, // length of this data including the data type byte
    GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type // 0xff
-   0xD3, // Company ID - Fixed (queercon)
+   0xD3, // Company ID - Fixed (queercon) // TODO: Change?
    0x04, // Company ID - Fixed (queercon)
-   0x00, // Badge ID MSB //.25
-   0x00, // Badge ID LSB //.26
-   0x00, // TYPE FLAG (BIT7=UBER; BIT6=HANDLER; BIT5-3=unused BIT2-0=ELEMENT)
-   0x00, // SPARE
+   0x00, // Badge ID MSB //.25 // TODO
+   0x00, // Badge ID LSB //.26 // TODO
+   0x00, // TYPE FLAG (BIT7=UBER; BIT6=HANDLER; BIT5-3=unused BIT2-0=ELEMENT) // TODO
+   0x00, // SPARE // TODO
 };
 
 typedef struct {
     uint16_t badge_id;
     __packed uint8_t badge_type;
     __packed uint8_t badge_levels;
-} qc16_ble_t;
+} qc16_ble_t; // TODO
 
 /*********************************************************************
  * LOCAL FUNCTIONS
@@ -575,84 +575,87 @@ static void UBLEBcastScan_scan_indicationCB(bStatus_t status, uint8_t len,
     if (status == SUCCESS)
     {
         // TODO:
-//        if (len < 14) {
-//            // broken
-//            return;
-//        }
-//        // We want: pPayload[0] == 0x02; (non-connectable non-scannable)
-//        // pPayload[1] == length
-//        // Now, look for:
-//        //  1. GAP_ADTYPE_LOCAL_NAME_COMPLETE
-//        //    followed by a handle
-//        //  2. GAP_ADTYPE_MANUFACTURER_SPECIFIC
-//        //     0xD3
-//        //     0x04
-//        //    followed by our beacon struct, whatever that is.
-//        // Guarantee null term:
+        if (len < 14) {
+            // broken
+            return;
+        }
+        // We want: pPayload[0] == 0x02; (non-connectable non-scannable)
+        // pPayload[1] == length
+        // Now, look for:
+        //  1. GAP_ADTYPE_LOCAL_NAME_COMPLETE
+        //    followed by a handle
+        //  2. GAP_ADTYPE_MANUFACTURER_SPECIFIC
+        //     0xD3
+        //     0x04
+        //    followed by our beacon struct, whatever that is.
+//        // Guarantee null term: // TODO
 //        char badge_name[QC16_BADGE_NAME_LEN+1] = {0,};
-//        uint8_t rssi = pPayload[len-6]; // was: *(uint8_t *)(pPayload + len - 6);
-//        qc16_ble_t *badge_frame;
+        uint8_t rssi = pPayload[len-6]; // was: *(uint8_t *)(pPayload + len - 6);
+        qc16_ble_t *badge_frame;
 //
-//        // the MAC address is 6 bytes at pPayload[2]
-//
-//        // the data begins at pPayload[8]
-//        uint8_t *advData = &pPayload[8];
-//        // The advData is up to 31 bytes long, which should be len-8-6
-//        uint8_t i = 0;
-//        uint8_t seems_queercon = 0;
-//
-//        if (advData[len-8]) {
-//            // CRC error
-//            return;
-//        }
-//
-//        // NB: len-8-6 is the length of the advertisement. This is because it's
-//        //     followed by 6 bytes of Postfix (RSSI STATUS TIMESTAMPx4)
-//        //     and by 8 bytes of Status (bCrcErr bIgnore channelx6)
-//        while (i < len-8-6) {
-//            uint8_t section_len = advData[i];
-//
-//            if (section_len > len-8-6) {
-//                // malformed
-//                return;
-//            }
-//
-//            switch(advData[i+1]) {
-//            case GAP_ADTYPE_LOCAL_NAME_COMPLETE:
-//                if (section_len != QC16_BADGE_NAME_LEN+1) {
-//                    // Assert that the length is correct.
-//                    break;
-//                }
+        // the MAC address is 6 bytes at pPayload[2]
+        uint64_t mac;
+        memcpy(&mac, &pPayload[2], 6);
+
+        // the data begins at pPayload[8]
+        uint8_t *advData = &pPayload[8];
+        // The advData is up to 31 bytes long, which should be len-8-6
+        uint8_t i = 0;
+        uint8_t seems_ok = 0;
+
+        if (advData[len-8]) {
+            // CRC error
+            return;
+        }
+
+        // NB: len-8-6 is the length of the advertisement. This is because it's
+        //     followed by 6 bytes of Postfix (RSSI STATUS TIMESTAMPx4)
+        //     and by 8 bytes of Status (bCrcErr bIgnore channelx6)
+        while (i < len-8-6) {
+            uint8_t section_len = advData[i];
+
+            if (section_len > len-8-6) {
+                // malformed
+                return;
+            }
+
+            switch(advData[i+1]) {
+            case GAP_ADTYPE_LOCAL_NAME_COMPLETE:
+                if (section_len != BADGE_NAME_LEN+1) {
+                    // Assert that the length is correct.
+                    break;
+                }
 //                strncpy(badge_name, (char *) &advData[i+2], QC16_BADGE_NAME_LEN);
-//                seems_queercon |= 0xf0;
-//                break;
-//            case GAP_ADTYPE_MANUFACTURER_SPECIFIC:
-//                if (advData[i+2] == 0xD3 && advData[i+3] == 0x04) {
-//                    // this is the queercon ID.
-//                    badge_frame = (qc16_ble_t *) &advData[i+4];
-//                    seems_queercon |= 0x0f;
+                seems_ok |= 0xf0;
+                break;
+            case GAP_ADTYPE_MANUFACTURER_SPECIFIC:
+                if (advData[i+2] == 0xD3 && advData[i+3] == 0x04) {
+                    // this is the queercon ID.
+                    badge_frame = (qc16_ble_t *) &advData[i+4];
+                    seems_ok |= 0x0f;
 //                } else if (advData[i+2] == 0xFF && advData[i+3] == 0x71) {
 //                    // DCFurs badge
 //                    dcfurs_nearby = 1;
 //                    dcfurs_nearby_curr = 1;
-//                } else {
-//                    // Ignore others.
-//                    return;
-//                }
-//                break;
-//            }
-//            i += section_len+1;
-//        }
-//        if (i > len-8-6) {
-//            // We had some kind of weird overrun.
-//            // So let's not process this message at all, then.
-//            return;
-//        }
-//
-//        if (seems_queercon == 0xFF) {
-//            // this looks like a badge.
+                } else {
+                    // Ignore others.
+                    return;
+                }
+                break;
+            }
+            i += section_len+1;
+        }
+        if (i > len-8-6) {
+            // We had some kind of weird overrun.
+            // So let's not process this message at all, then.
+            return;
+        }
+
+        if (seems_ok == 0xFF) {
+            // this looks like a badge.
 //            set_badge_seen(badge_frame->badge_id, badge_frame->badge_type, badge_frame->badge_levels, badge_name, rssi);
-//        }
+            // TODO: Do something.
+        }
     }
 }
 

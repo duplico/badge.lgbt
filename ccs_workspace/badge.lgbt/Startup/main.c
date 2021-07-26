@@ -11,6 +11,8 @@
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Task.h>
 
+#include <ti/drivers/utils/List.h>
+
 #include <board.h>
 
 #include <hal_assert.h>
@@ -56,6 +58,12 @@ PIN_Config button_pin_config[] = {
     PIN_TERMINATE
 };
 
+
+typedef struct {
+    List_Elem elem;
+    uint16_t val;
+} MyStruct;
+
 void ui_task_fn(UArg a0, UArg a1) {
 //    storage_init();
     tlc_init();
@@ -69,6 +77,14 @@ void ui_task_fn(UArg a0, UArg a1) {
 
     // TODO: Call config_init() or similar
     // TODO: Check for success of config_init()
+
+    List_List list;
+    MyStruct foo;
+    foo.val = 25;
+    volatile MyStruct *bar;
+    List_clearList(&list);
+    List_put(&list, (List_Elem *)&foo);
+    bar = (MyStruct *)List_get(&list);
 
     while (1) {
         Task_yield();

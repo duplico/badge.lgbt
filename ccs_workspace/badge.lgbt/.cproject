@@ -244,6 +244,7 @@
 									<listOptionValue builtIn="false" value="${COM_TI_SIMPLELINK_CC2640R2_SDK_SYMBOLS}"/>
 									<listOptionValue builtIn="false" value="DeviceFamily_CC26X0R2"/>
 									<listOptionValue builtIn="false" value="USE_RCOSC"/>
+									<listOptionValue builtIn="false" value="CACHE_AS_RAM"/>
 									<listOptionValue builtIn="false" value="Board_EXCLUDE_NVS_INTERNAL_FLASH"/>
 									<listOptionValue builtIn="false" value="CC2640R2_LAUNCHXL"/>
 									<listOptionValue builtIn="false" value="CC26XX"/>

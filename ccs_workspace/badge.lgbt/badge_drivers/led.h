@@ -29,6 +29,7 @@ typedef struct {
 } led_anim_direct_t;
 
 void led_next_frame();
+void led_load_frame();
 void led_init();
 
 #endif /* BADGE_DRIVERS_LED_H_ */

@@ -21,6 +21,7 @@ typedef struct {
 } rgbcolor16_t;
 
 #define TLC_EVENT_REFRESH Event_Id_00
+#define TLC_EVENT_NEXTFRAME Event_Id_01
 
 extern rgbcolor_t tlc_display_curr[7][15]; // display buffer
 extern Event_Handle tlc_event_h;

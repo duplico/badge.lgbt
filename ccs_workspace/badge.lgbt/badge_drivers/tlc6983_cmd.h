@@ -96,5 +96,9 @@ enum READ_COMMAND_ID{
 #define FC_1_2_LINE_SWT__480 0b1111 << 5
 // Blank time at the end of each subperiod:
 // TODO: BLK_ADJ
+#define FC_1_2_BLK_ADJ__0 (0 << 9)
+#define FC_1_2_BLK_ADJ__4 (4 << 9)
+#define FC_1_2_BLK_ADJ__31 (31 << 9)
+#define FC_1_2_BLK_ADJ__63 (63 << 9)
 
 #endif /* BADGE_DRIVERS_TLC6983_CMD_H_ */

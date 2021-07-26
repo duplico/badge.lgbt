@@ -19,6 +19,7 @@
 #include <badge.h>
 #include <tlc6983.h>
 #include <badge_drivers/tlc6983_cmd.h>
+#include <badge_drivers/led.h>
 
 #define TLC_STACKSIZE 512
 
@@ -36,19 +37,19 @@ rgbcolor_t tlc_display_curr[7][15] = { { {0, 0, 0}, {0, 0, 0}, {79, 32, 137}, {7
 uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 
 /// The LED SCLK frequency, in Hz.
-#define     LED_CLK   12000000
+#define     LED_CLK   3000000
 
 // 1 frame is divided into SUBPERIODS, which each has a SEGMENT per scan line
-//              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM)
-#define SUBPERIOD_TICKS ((128 + 180) * 7)
+//              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM + BLK_ADJ)
+#define SUBPERIOD_TICKS ((128 + 45) * 7 + 0)
 
 // This is the number of subperiods per frame:
-#define SUBPERIODS 80
+#define SUBPERIODS 112
 
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (100 * ((CLKS_PER_FRAME * 1000) / LED_CLK))
+#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)))
 
 /// Current value of the bit-banged CCSI clock.
 uint8_t sclk_val = 0;
@@ -128,7 +129,11 @@ void tlc_task_fn(UArg a0, UArg a1) {
     Clock_start(tlc_frame_clock_h);
 
     while (1) {
-        events = Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_REFRESH, BIOS_WAIT_FOREVER);
+        events = Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_REFRESH | TLC_EVENT_NEXTFRAME, BIOS_WAIT_FOREVER);
+
+        if (events & TLC_EVENT_NEXTFRAME) {
+            led_load_frame();
+        }
 
         if (events & TLC_EVENT_REFRESH) {
             ccsi_bb_start();
@@ -187,14 +192,14 @@ void tlc_init() {
 
     uint16_t fc0[3] = {
                        FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1 | FC_0_0_PDC_EN__EN,
-                       FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__80 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
+                       FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__112 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
                        FC_0_0_RESERVED | FC_0_0_PDC_EN__EN
     };
 
     uint16_t fc1[3] = {
                        FC_1_0_DEFAULT | FC_1_0_SEG_LENGTH_128,
                        FC_1_1_DEFAULT,
-                       FC_1_2_RESERVED | FC_1_2_LINE_SWT__180
+                       FC_1_2_RESERVED | FC_1_2_LINE_SWT__45 //| FC_1_2_BLK_ADJ__31
     };
 
     ccsi_bb_start();

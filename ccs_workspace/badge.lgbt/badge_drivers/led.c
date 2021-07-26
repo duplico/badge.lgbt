@@ -48,7 +48,7 @@ const rgbcolor_t anim_frames[24][7][15] = {{{{0, 0, 0}, {255, 3, 107}, {255, 3, 
 const led_anim_direct_t led_starting_anim = {
     (rgbcolor_t (*)[7][15]) &anim_frames,
     24,
-    40,
+    30,
 };
 
 void led_next_frame_swi(UArg a0) {
@@ -69,7 +69,7 @@ void led_set_anim(led_anim_direct_t anim, uint8_t ambient) {
     led_anim_curr = anim;
     led_anim_frame = 0;
 
-    led_load_frame();
+    Event_post(tlc_event_h, TLC_EVENT_NEXTFRAME);
 }
 
 void led_next_frame() {
@@ -82,7 +82,7 @@ void led_next_frame() {
         }
     }
 
-    led_load_frame();
+    Event_post(tlc_event_h, TLC_EVENT_NEXTFRAME);
 }
 
 void led_init() {

@@ -85,7 +85,7 @@
 									<listOptionValue builtIn="false" value="xFEATURE_MONITOR"/>
 									<listOptionValue builtIn="false" value="FEATURE_OBSERVER"/>
 									<listOptionValue builtIn="false" value="HEAPMGR_SIZE=0"/>
-									<listOptionValue builtIn="false" value="ICALL_EVENTS"/>
+									<listOptionValue builtIn="false" value="xICALL_EVENTS"/>
 									<listOptionValue builtIn="false" value="POWER_SAVING"/>
 									<listOptionValue builtIn="false" value="RF_SINGLEMODE"/>
 									<listOptionValue builtIn="false" value="TBM_ACTIVE_ITEMS_ONLY"/>

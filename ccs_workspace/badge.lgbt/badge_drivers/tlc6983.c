@@ -5,6 +5,8 @@
  *      Author: george
  */
 
+#include <stdint.h>
+
 #include <ti/drivers/pin/PINCC26XX.h>
 #include <ti/drivers/PWM.h>
 
@@ -13,6 +15,7 @@
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Event.h>
+#include <ti/sysbios/hal/Hwi.h>
 
 #include <board.h>
 
@@ -32,32 +35,33 @@ SPI_Handle tlc_spi_h;
 Event_Handle tlc_event_h;
 
 /// The current frame buffer.
-rgbcolor_t tlc_display_curr[7][15] = { { {0, 0, 0}, {0, 0, 0}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 33, 138}, {79, 34, 141}, {51, 16, 77}, {53, 27, 24}, {79, 107, 122}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {28, 87, 173}, {28, 87, 173}, {28, 87, 173}, {28, 87, 173}, {28, 87, 173}, {28, 88, 173}, {28, 89, 173}, {25, 41, 88}, {55, 28, 24}, {79, 116, 136}, {139, 167, 211}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {26, 91, 95}, {26, 91, 95}, {26, 91, 95}, {26, 91, 95}, {26, 91, 96}, {26, 90, 95}, {21, 50, 62}, {55, 36, 33}, {84, 121, 142}, {153, 171, 213}, {245, 208, 226}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {140, 155, 28}, {140, 155, 28}, {140, 155, 28}, {140, 155, 28}, {143, 159, 28}, {102, 110, 18}, {40, 17, 8}, {83, 98, 110}, {116, 170, 219}, {243, 192, 216}, {255, 255, 255}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {250, 180, 11}, {250, 180, 11}, {250, 180, 11}, {250, 180, 11}, {252, 181, 11}, {244, 174, 11}, {126, 74, 9}, {56, 34, 33}, {82, 121, 146}, {156, 171, 213}, {246, 210, 227}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {225, 78, 27}, {225, 78, 27}, {225, 78, 27}, {225, 78, 27}, {225, 77, 27}, {227, 79, 27}, {228, 82, 26}, {123, 37, 15}, {54, 29, 26}, {79, 116, 137}, {140, 166, 209}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {186, 33, 49}, {188, 34, 49}, {104, 15, 25}, {55, 30, 26}, {79, 112, 130}, {0, 0, 0}, {0, 0, 0}, }, };
+rgbcolor16_t tlc_display_curr[7][15] = { { {0, 0, 0}, {0, 0, 0}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 32, 137}, {79, 33, 138}, {79, 34, 141}, {51, 16, 77}, {53, 27, 24}, {79, 107, 122}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {28, 87, 173}, {28, 87, 173}, {28, 87, 173}, {28, 87, 173}, {28, 87, 173}, {28, 88, 173}, {28, 89, 173}, {25, 41, 88}, {55, 28, 24}, {79, 116, 136}, {139, 167, 211}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {26, 91, 95}, {26, 91, 95}, {26, 91, 95}, {26, 91, 95}, {26, 91, 96}, {26, 90, 95}, {21, 50, 62}, {55, 36, 33}, {84, 121, 142}, {153, 171, 213}, {245, 208, 226}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {140, 155, 28}, {140, 155, 28}, {140, 155, 28}, {140, 155, 28}, {143, 159, 28}, {102, 110, 18}, {40, 17, 8}, {83, 98, 110}, {116, 170, 219}, {243, 192, 216}, {255, 255, 255}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {250, 180, 11}, {250, 180, 11}, {250, 180, 11}, {250, 180, 11}, {252, 181, 11}, {244, 174, 11}, {126, 74, 9}, {56, 34, 33}, {82, 121, 146}, {156, 171, 213}, {246, 210, 227}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {225, 78, 27}, {225, 78, 27}, {225, 78, 27}, {225, 78, 27}, {225, 77, 27}, {227, 79, 27}, {228, 82, 26}, {123, 37, 15}, {54, 29, 26}, {79, 116, 137}, {140, 166, 209}, {0, 0, 0}, {0, 0, 0}, }, { {0, 0, 0}, {0, 0, 0}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {184, 32, 49}, {186, 33, 49}, {188, 34, 49}, {104, 15, 25}, {55, 30, 26}, {79, 112, 130}, {0, 0, 0}, {0, 0, 0}, }, };
 
 uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 
 /// The LED SCLK frequency, in Hz.
-#define     LED_CLK   3000000
+#define     LED_CLK   6000000
 
 // 1 frame is divided into SUBPERIODS, which each has a SEGMENT per scan line
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM + BLK_ADJ)
-#define SUBPERIOD_TICKS ((128 + 45) * 7 + 0)
+#define SUBPERIOD_TICKS ((128 + 120) * 7 + 10)
 
 // This is the number of subperiods per frame:
-#define SUBPERIODS 112
+#define SUBPERIODS 64
 
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)))
+#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 1)
+//#define FRAME_LEN_SYSTICKS 2500 // 2860 too fast, 2870 too slow
 
 /// Current value of the bit-banged CCSI clock.
 uint8_t sclk_val = 0;
 /// Toggle the SCLK for when we're bit-banging the CCSI.
 inline void SCLK_toggle() {
-    __nop();__nop();
+    __nop(); //__nop();
     PINCC26XX_setOutputValue(BADGE_TLC_CCSI_SCLK, sclk_val); sclk_val = !sclk_val;
-    __nop();__nop();
+    __nop(); //__nop();
 }
 
 /// Software interrupt for when the screen should refresh.
@@ -137,24 +141,30 @@ void tlc_task_fn(UArg a0, UArg a1) {
 
         if (events & TLC_EVENT_REFRESH) {
             ccsi_bb_start();
+            volatile uint32_t hwiKey;
+            hwiKey = Hwi_disable();
             for (uint8_t row=0; row<7; row++) {
                 for (uint8_t col=0; col<16; col++) {
 //                    tx_col[0] = tlc_display_curr[row][col].blue * tlc_display_curr[row][col].blue;
 //                    tx_col[1] = tlc_display_curr[row][col].red * tlc_display_curr[row][col].red;
 //                    tx_col[2] = tlc_display_curr[row][col].green * tlc_display_curr[row][col].green;
 
-                    tx_col[0] = (tlc_display_curr[row][col].blue < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].blue << 4);
-                    tx_col[1] = (tlc_display_curr[row][col].red < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].red << 4);
-                    tx_col[2] = (tlc_display_curr[row][col].green < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].green << 4);
+//                    tx_col[0] = (tlc_display_curr[row][col].blue < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].blue << 4);
+//                    tx_col[1] = (tlc_display_curr[row][col].red < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].red << 4);
+//                    tx_col[2] = (tlc_display_curr[row][col].green < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].green << 4);
+                    tx_col[0] = tlc_display_curr[row][col].blue;
+                    tx_col[1] = tlc_display_curr[row][col].red;
+                    tx_col[2] = tlc_display_curr[row][col].green;
                     if (col == 15)
                         ccsi_tx(W_SRAM, all_off, 3);
                     else
-                        ccsi_tx(W_SRAM, tx_col, 3);
+                        ccsi_tx(W_SRAM, (uint16_t *)(&tlc_display_curr[row][col]), 3);
                 }
             }
             ccsi_tx(W_VSYNC, 0x00, 0);
             Clock_setTimeout(tlc_frame_clock_h, FRAME_LEN_SYSTICKS);
             Clock_start(tlc_frame_clock_h);
+            Hwi_restore(hwiKey);
             ccsi_bb_end();
         }
     }
@@ -192,14 +202,30 @@ void tlc_init() {
 
     uint16_t fc0[3] = {
                        FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1 | FC_0_0_PDC_EN__EN,
-                       FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__112 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
+                       FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
                        FC_0_0_RESERVED | FC_0_0_PDC_EN__EN
     };
 
     uint16_t fc1[3] = {
-                       FC_1_0_DEFAULT | FC_1_0_SEG_LENGTH_128,
+                       FC_1_2_RESERVED | FC_1_2_LINE_SWT__120 | (10 << 9), //| FC_1_2_BLK_ADJ__31
                        FC_1_1_DEFAULT,
-                       FC_1_2_RESERVED | FC_1_2_LINE_SWT__45 //| FC_1_2_BLK_ADJ__31
+                       FC_1_0_DEFAULT | 127, //FC_1_0_SEG_LENGTH_128,
+    };
+
+    uint16_t fc2[3] = {
+                       0b0000001111110000, // brightness compensation for "r", and channel immunity // MSword
+                       0b0000000000000000, // decoupling of "g" and "b", brightness compensation for "r" "g" "b"
+                       0b0000101100111011, //pre-discharge voltage; lowest "red" decoupling level // LSword
+    };
+
+//    uint16_t fc3[3] = {
+//
+//    };
+//
+    uint16_t fc4[3] = {
+                       0b0000000000000000, // SCAN_REV off
+                       0b0000010101000000, // default slew rates
+                       0b0000100000000000, //
     };
 
     ccsi_bb_start();
@@ -218,13 +244,21 @@ void tlc_init() {
         }
     }
     ccsi_tx(W_VSYNC, 0x00, 0);
+    for (uint8_t row=0; row<7; row++) {
+        for (uint8_t col=0; col<16; col++) {
+            if (col == 15)
+                ccsi_tx(W_SRAM, all_off, 3);
+            else
+                ccsi_tx(W_SRAM, all_off, 3);
+        }
+    }
     ccsi_bb_end();
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stack = tlc_task_stack;
     taskParams.stackSize = TLC_STACKSIZE;
-    taskParams.priority = 1;
+    taskParams.priority = 4;
     Task_construct(&tlc_task, tlc_task_fn, &taskParams, NULL);
 
 }

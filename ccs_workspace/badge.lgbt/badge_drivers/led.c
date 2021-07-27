@@ -48,7 +48,7 @@ const rgbcolor_t anim_frames[24][7][15] = {{{{0, 0, 0}, {255, 3, 107}, {255, 3, 
 const led_anim_direct_t led_starting_anim = {
     (rgbcolor_t (*)[7][15]) &anim_frames,
     24,
-    30,
+    50,
 };
 
 void led_next_frame_swi(UArg a0) {
@@ -56,7 +56,14 @@ void led_next_frame_swi(UArg a0) {
 }
 
 void led_load_frame() {
-    memcpy(tlc_display_curr, led_anim_curr.anim_frames[led_anim_frame], sizeof(tlc_display_curr));
+//    memcpy(tlc_display_curr, led_anim_curr.anim_frames[led_anim_frame], sizeof(tlc_display_curr));
+    for (uint16_t r=0; r<7; r++) {
+        for (uint16_t c=0; c<15; c++) {
+            tlc_display_curr[r][c].red = anim_frames[led_anim_frame][r][c].red << 4;
+            tlc_display_curr[r][c].green = anim_frames[led_anim_frame][r][c].green << 4;
+            tlc_display_curr[r][c].blue = anim_frames[led_anim_frame][r][c].blue << 4;
+        }
+    }
     Clock_setTimeout(led_frame_clock_h, led_anim_curr.anim_frame_delay_ms*100);
     Clock_start(led_frame_clock_h);
 }

@@ -42,11 +42,6 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>Stack</name>
-			<type>2</type>
-			<locationURI>virtual:/virtual</locationURI>
-		</link>
-		<link>
 			<name>Drivers/RF</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
@@ -70,56 +65,6 @@
 			<name>NPI/U_NPI</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
-		</link>
-		<link>
-			<name>Stack/port.c</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/microstack/port.c</locationURI>
-		</link>
-		<link>
-			<name>Stack/port.h</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/inc/port.h</locationURI>
-		</link>
-		<link>
-			<name>Stack/uble.c</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/microstack/uble.c</locationURI>
-		</link>
-		<link>
-			<name>Stack/uble.h</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/inc/uble.h</locationURI>
-		</link>
-		<link>
-			<name>Stack/ugap.c</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/microstack/ugap.c</locationURI>
-		</link>
-		<link>
-			<name>Stack/ugap.h</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/inc/ugap.h</locationURI>
-		</link>
-		<link>
-			<name>Stack/ull.c</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/microstack/ull.c</locationURI>
-		</link>
-		<link>
-			<name>Stack/ull.h</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/inc/ull.h</locationURI>
-		</link>
-		<link>
-			<name>Stack/urfi.c</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/microstack/urfi.c</locationURI>
-		</link>
-		<link>
-			<name>Stack/urfi.h</name>
-			<type>1</type>
-			<locationURI>SRC_BLE_DIR/inc/urfi.h</locationURI>
 		</link>
 		<link>
 			<name>TOOLS/cc26xx_app.cmd</name>

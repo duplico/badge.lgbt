@@ -24,6 +24,7 @@
 #include <badge_drivers/tlc6983_cmd.h>
 #include <badge_drivers/led.h>
 
+#define OFF_THRESHOLD 30
 #define TLC_STACKSIZE 512
 
 Task_Struct tlc_task;
@@ -52,7 +53,7 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 1)
+#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 100)
 //#define FRAME_LEN_SYSTICKS 2500 // 2860 too fast, 2870 too slow
 
 /// Current value of the bit-banged CCSI clock.
@@ -123,8 +124,6 @@ void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     }
     return;
 }
-
-#define OFF_THRESHOLD 30
 
 void tlc_task_fn(UArg a0, UArg a1) {
     UInt events;

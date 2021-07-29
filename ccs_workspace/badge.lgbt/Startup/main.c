@@ -11,8 +11,6 @@
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Task.h>
 
-#include <ti/drivers/utils/List.h>
-
 #include <board.h>
 
 #include <hal_assert.h>
@@ -52,76 +50,42 @@ Clock_Handle button_debounce_clock_h;
 PIN_Handle button_pin_h;
 PIN_State button_state;
 PIN_Config button_pin_config[] = {
-    BADGE_PIN_B1 | PIN_INPUT_EN | PIN_PULLUP,
-    BADGE_PIN_B2 | PIN_INPUT_EN | PIN_PULLUP,
-    BADGE_PIN_B3 | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B1_SEL | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B2_IMP | PIN_INPUT_EN | PIN_PULLUP,
+    BADGE_PIN_B3_EXP | PIN_INPUT_EN | PIN_PULLUP,
     PIN_TERMINATE
 };
 
-
-typedef struct {
-    List_Elem elem;
-    uint16_t val;
-} MyStruct;
-
-void ui_task_fn(UArg a0, UArg a1) {
-//    storage_init();
-    tlc_init();
-    led_init();
-    adc_init();
-
-    UBLEBcastScan_createTask();
-
-    // TODO: Check for post_status_spiffs != 0
-    // TODO: Check for post_status_spiffs == -100 (low disk)
-
-    // TODO: Call config_init() or similar
-    // TODO: Check for success of config_init()
-
-    List_List list;
-    MyStruct foo;
-    foo.val = 25;
-    volatile MyStruct *bar;
-    List_clearList(&list);
-    List_put(&list, (List_Elem *)&foo);
-    bar = (MyStruct *)List_get(&list);
-
-    while (1) {
-        Task_yield();
-//        Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_BUT, BIOS_NO_WAIT);
-        if (Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_LED_FRAME, BIOS_NO_WAIT)) {
-            led_next_frame();
-        }
-    }
-}
+extern const led_anim_direct_t explosion_anim; // TODO
 
 void button_clock_swi(UArg a0) {
-    // current state
-    // last state
-    // next state
-
-    // if last == next and next != current,
-    //  set current and fire the change event.
-
     static uint8_t button_state_curr = 0b000;
     static uint8_t button_state_last = 0b000;
     static uint8_t button_state_next = 0b000;
 
     button_state_next = 0;
 
-    button_state_next |= !PIN_getInputValue(BADGE_PIN_B1) << 0;
-    button_state_next |= !PIN_getInputValue(BADGE_PIN_B2) << 1;
-    button_state_next |= !PIN_getInputValue(BADGE_PIN_B3) << 2;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B1_SEL) << 0;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B2_IMP) << 1;
+    button_state_next |= !PIN_getInputValue(BADGE_PIN_B3_EXP) << 2;
 
     if (button_state_next == button_state_last && button_state_last != button_state_curr) {
-        // TODO: replace with press/release events for each button:
+        // If the last state was 0, and now it's 1, we should fire the event for the specific button.
+        if ((button_state_curr & 0b001) && !(button_state_next & 0b001)) {
+            Event_post(ui_event_h, UI_EVENT_BUT_SELECT);
+        }
+        if ((button_state_curr & 0b010) && !(button_state_next & 0b010)) {
+            Event_post(ui_event_h, UI_EVENT_BUT_IMPORT);
+        }
+        if ((button_state_curr & 0b100) && !(button_state_next & 0b100)) {
+            Event_post(ui_event_h, UI_EVENT_BUT_EXPORT);
+        }
+
         button_state_curr = button_state_next;
-        Event_post(ui_event_h, UI_EVENT_BUT);
     }
 
     button_state_last = button_state_next;
 }
-
 
 void button_init() {
     button_pin_h = PIN_open(&button_state, button_pin_config);
@@ -131,6 +95,41 @@ void button_init() {
     clockParams.period = UI_CLOCK_TICKS;
     clockParams.startFlag = TRUE;
     button_debounce_clock_h = Clock_create(button_clock_swi, 2, &clockParams, NULL);
+}
+
+void ui_task_fn(UArg a0, UArg a1) {
+//    storage_init();
+    tlc_init();
+    led_init();
+    adc_init();
+    button_init();
+
+    UBLEBcastScan_createTask();
+
+    // TODO: Check for post_status_spiffs != 0
+    // TODO: Check for post_status_spiffs == -100 (low disk)
+
+    // TODO: Call config_init() or similar
+    // TODO: Check for success of config_init()
+
+    UInt ui_events;
+
+    while (1) {
+        ui_events = Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_ALL, BIOS_WAIT_FOREVER);
+
+        if (ui_events & UI_EVENT_LED_FRAME) {
+            led_next_frame();
+        }
+        if (ui_events & UI_EVENT_BUT_SELECT) {
+            led_next_anim();
+        }
+        if (ui_events & UI_EVENT_BUT_EXPORT) {
+            __nop();
+        }
+        if (ui_events & UI_EVENT_BUT_IMPORT) {
+            __nop();
+        }
+    }
 }
 
 int main()

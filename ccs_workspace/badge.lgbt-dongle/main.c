@@ -100,76 +100,58 @@ void init_io() {
 }
 
 void init_serial() {
-    UCA0CTLW0 |= UCSWRST;                      // Put eUSCI in reset
-    UCA0CTLW0 |= UCSSEL__SMCLK;               // CLK = SMCLK
-    // Baud Rate Setting
-    // Use Table 21-5
-    UCA0BRW = 52;
-    UCA0MCTLW |= UCOS16 | UCBRF_1 | 0x4900;   //0xD600 is UCBRSx = 0xD6
-
-    UCA0CTLW0 &= ~UCSWRST;                    // Initialize eUSCI
-    UCA0IE |= UCRXIE;                         // Enable USCI_A0 RX interrupt
-
-
-
-
-
-
     // First, we need to set up our 16XCLK. At 9600 baud, this needs to be 153600 Hz
     // At 27800, that's 444800.
-//
-//    TA0CCR0 = 52-1;                           // PWM Period
-//    TA0CCTL2 = OUTMOD_7;                      // CCR1 reset/set
-//    TA0CCR2 = 26;                             // CCR1 PWM duty cycle 50%
-//    TA0CTL = TASSEL__SMCLK | MC__UP | TACLR;  // SMCLK, up mode, clear TAR
-//
-//    UCA0BRW = 104;
-//    UCA0MCTLW |= UCOS16 | UCBRF_2 | 0xD600;   //0xD600 is UCBRSx = 0xD6
-
+    TA0CCR0 = 52-1;                           // PWM Period
+    TA0CCTL2 = OUTMOD_7;                      // CCR1 reset/set
+    TA0CCR2 = 26;                             // CCR1 PWM duty cycle 50%
+    TA0CTL = TASSEL__SMCLK | MC__UP | TACLR;  // SMCLK, up mode, clear TAR
 
     // UCA0: USB /////////////////////////////////////////////////////////////
 
-    // Pause the UART peripheral:
-//    UCA0CTLW0 |= UCSWRST;
+    UCA0CTLW0 |= UCSSEL__SMCLK;               // CLK = SMCLK
+    // Pause the UART peripheral:    UCA0CTLW0 |= UCSWRST;
     // Source the baud rate generation from SMCLK (8 MHz)
-    // 8N1 (8 data bits, no parity bits, 1 stop bit)
-//    UCA0CTLW0 |= UCSSEL__SMCLK + UCPEN;
+    // 8N1 (8 data bits, no parity bits, 1 stop bit)//    UCA0CTLW0 |= UCSSEL__SMCLK;
     // Configure the baud rate to 115200.
     //  (See page 589 in the family user's guide, SLAU445I)
     // The below is for 8.00 MHz SMCLK:
 //    UCA0BRW = 4;
 //    UCA0MCTLW = 0x5500 | UCOS16_1 | UCBRF_5;
+    // TODO: This is 9600 @ 8 MHz SMCLK:
+    UCA0BRW = 52;
+    UCA0MCTLW |= UCOS16 | UCBRF_1 | 0x4900;   //0xD600 is UCBRSx = 0xD6
 
     // UCA1: IR  //////////////////////////////////////////////////////////////
 
+    UCA1CTLW0 |= UCSSEL__SMCLK;
     // Pause the UART peripheral:
-//    UCA1CTLW0 |= UCSWRST;
+    UCA1CTLW0 |= UCSWRST;
     // Source the baud rate generation from SMCLK (8 MHz)
     // 8N1 (8 data bits, no parity bits, 1 stop bit)
-//    UCA1CTLW0 |= UCSSEL__SMCLK + UCPEN;
     // Configure the baud rate to 115200.
     //  (See page 589 in the family user's guide, SLAU445I)
     // The below is for 8.00 MHz SMCLK:
 //    UCA1BRW = 4;
 //    UCA1MCTLW = 0x5500 | UCOS16 | UCBRF_5;
-    // TODO: This is 9600:
-//    UCA1BRW = 52;
-//    UCA1MCTLW = 0x4900 | UCOS16 | UCBRF_1;
+    // TODO: This is 9600 @ 8 MHz SMCLK:
+    UCA1BRW = 52;
+    UCA1MCTLW = 0x4900 | UCOS16 | UCBRF_1;
 
 
     // Activate the UARTs:
-//    UCA0CTLW0 &= ~UCSWRST;
-//    UCA1CTLW0 &= ~UCSWRST;
+    UCA0CTLW0 &= ~UCSWRST;
+    UCA1CTLW0 &= ~UCSWRST;
 
     // The TX interrupt flag (UCTXIFG) gets set upon enabling the UART.
     //  But, we'd prefer that interrupt not to fire, so we'll clear it
     //  now:
-//    UCA0IFG &= ~UCTXIFG;
-//    UCA1IFG &= ~UCTXIFG;
+    UCA0IFG &= ~UCTXIFG;
+    UCA1IFG &= ~UCTXIFG;
 
     // Enable interrupts for TX and RX:
-//    UCA0IE |= UCRXIE;
-//    UCA1IE |= UCRXIE;
+    UCA0IE |= UCRXIE + UCTXIE;
+    UCA1IE |= UCRXIE + UCTXIE;
 }
 
 /// Perform basic initialization of the cbadge.
@@ -187,15 +169,9 @@ void init() {
 int main(void)
 {
     init();
-	
-    char i;
 
     while (1) {
-//        for (i='a'; i<'z'; i++) {
-//            UCA1TXBUF = i;
-//            P1OUT |= BIT1;
-//            __bis_SR_register(LPM3_bits);
-//        }
+            __bis_SR_register(LPM3_bits);
     }
 }
 
@@ -204,28 +180,27 @@ __interrupt void serial_usb_isr() {
     switch(__even_in_range(UCA0IV, USCI_UART_UCTXIFG)) {
     case USCI_UART_UCRXIFG:
         // Receive buffer full; a byte is ready to read in UCA0RXBUF
-        while(!(UCA0IFG&UCTXIFG));
-        UCA0TXBUF = UCA0RXBUF;
-//        P1OUT |= BIT1;
+        UCA1TXBUF = UCA0RXBUF;
+        P1OUT |= BIT1;
         break;
     case USCI_UART_UCTXIFG:
         // Transmit buffer empty, ready to load another byte to send to UCA0TXBUF.
-//        P1OUT &= ~BIT0;
+        P1OUT &= ~BIT0;
         break;
     }
 }
-//
-//#pragma vector=USCI_A1_VECTOR
-//__interrupt void serial_ir_isr() {
-//    switch(__even_in_range(UCA1IV, USCI_UART_UCTXIFG)) {
-//    case USCI_UART_UCRXIFG:
-//        // Receive buffer full; a byte is ready to read in UCA0RXBUF
-//        UCA1TXBUF = UCA1RXBUF;
-////        P1OUT |= BIT0;
-//        break;
-//    case USCI_UART_UCTXIFG:
-//        // Transmit buffer empty, ready to load another byte to send to UCA0TXBUF.
-////        P1OUT &= ~BIT1;
-//        break;
-//    }
-//}
+
+#pragma vector=USCI_A1_VECTOR
+__interrupt void serial_ir_isr() {
+    switch(__even_in_range(UCA1IV, USCI_UART_UCTXIFG)) {
+    case USCI_UART_UCRXIFG:
+        // Receive buffer full; a byte is ready to read in UCA0RXBUF
+        UCA0TXBUF = UCA1RXBUF;
+        P1OUT |= BIT0;
+        break;
+    case USCI_UART_UCTXIFG:
+        // Transmit buffer empty, ready to load another byte to send to UCA0TXBUF.
+        P1OUT &= ~BIT1;
+        break;
+    }
+}

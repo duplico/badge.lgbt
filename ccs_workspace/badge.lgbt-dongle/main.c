@@ -1,0 +1,198 @@
+#include <msp430fr2433.h>
+
+/// Initialize clock signals and the three system clocks.
+/**
+ ** We'll take the DCO to 8 MHz, and divide it by 1 for MCLK.
+ ** Then we'll divide MCLK by 1 to get 8 MHz SMCLK.
+ **
+ ** Our available clock sources are:
+ **  VLO:     10kHz very low power low-freq
+ **  REFO:    32.768kHz (typ) reference oscillator
+ **  DCO:     Digitally controlled oscillator (1MHz default)
+ **           Specifically, 1048576 Hz typical.
+ **
+ ** At startup, our clocks are as follows:
+ **  MCLK:  Sourced by the DCO
+ **         (Available: DCO, REFO, VLO)
+ **  SMCLK: Sourced from MCLK, with no divider
+ **         (Available dividers: {1,2,4,8})
+ **  ACLK: Sourced from REFO
+ **         (the only available internal source)
+ */
+void init_clocks() {
+    // DCO  (Digitally-controlled oscillator)
+    //  Let's bring this up to 8 MHz or so.
+
+    __bis_SR_register(SCG0);                // disable FLL
+    CSCTL3 |= SELREF__XT1CLK;               // Set XT1CLK as FLL reference source
+    CSCTL0 = 0;                             // clear DCO and MOD registers
+    CSCTL1 &= ~(DCORSEL_7);                 // Clear DCO frequency select bits first
+    CSCTL1 |= DCORSEL_3;                    // Set DCO = 8MHz
+    // CSCTL feedback loop:
+    CSCTL2 = FLLD_0 + 243;                  // DCODIV = /1
+    __delay_cycles(3);
+    __bic_SR_register(SCG0);                // enable FLL
+    while(CSCTL7 & (FLLUNLOCK0 | FLLUNLOCK1)); // Poll until FLL is locked
+
+    // SYSTEM CLOCKS
+    // =============
+
+    // MCLK (1 MHz)
+    //  All sources but MODOSC are available at up to /128
+    //  Set to DCO/1 = 8 MHz
+    CSCTL5 |= DIVM__1;
+
+    // SMCLK (1 MHz)
+    //  Derived from MCLK with divider up to /8
+    //  Set to MCLK/1 = 8 MHz
+    CSCTL5 |= DIVS__1;
+}
+
+/// Apply the initial configuration of the GPIO and peripheral pins.
+/**
+ **
+ */
+void init_io() {
+    // Unlock the pins from high-impedance mode:
+    // (AKA the MSP430FR magic make-it-work command)
+    PM5CTL0 &= ~LOCKLPM5;
+
+    // TODO: Timer/PWM on P1.1
+
+    // GPIO:
+    // P1.0 (SEL 00; DIR 1) unused
+    // P1.1 (SEL 10; DIR 1) TA0.1 out
+    // P1.2 (SEL 00; DIR 1) unused
+    // P1.3 (SEL 00; DIR 1) unused
+    // P1.4 (SEL 01; DIR 1) UCA0 TXD
+    // P1.5 (SEL 01; DIR 0) UCA0 RXD
+    // P1.6 (SEL 00; DIR 1) unused
+    // P1.7 (SEL 00; DIR 1) unused
+    P1DIR =  0b11011111;
+    P1SEL0 = 0b00110000;
+    P1SEL1 = 0b00000010;
+
+    // P2.0 (SEL 01; DIR 1) XOUT
+    // P2.1 (SEL 01; DIR 0) XIN
+    // P2.2 (SEL 00; DIR 1 OUT 1) nRST; GPIO OUT; HIGH
+    // P2.3 (SEL 00; DIR 1) unused
+    // P2.4 (SEL 00; DIR 1) unused
+    // P2.5 (SEL 01; DIR 0) UCA1 RXD
+    // P2.6 (SEL 01; DIR 1) UCA1 TXD
+    // P2.7 (SEL 00; DIR 1) unused
+    P2DIR =  0b11011101;
+    P2SEL0 = 0b01100011;
+    P2SEL1 = 0b00000000;
+    P2OUT =  0b00000100;
+
+    // P3.0 (SEL 00; DIR 1) unused
+    // P3.1 (SEL 00; DIR 1) unused
+    // P3.2 (SEL 00; DIR 1; OUT 0) SD; GPIO OUT; LOW
+    P3DIR = 0b00000111;
+    P3SEL0 = 0x00;
+    P3SEL1 = 0x00;
+    P3OUT = 0x00;
+}
+
+void init_serial() {
+    // First, we need to set up our 16XCLK. At 9600 baud, this needs to be 153600 Hz
+    // At 27800, that's 444800.
+
+    TA0CCR0 = 52-1;                           // PWM Period
+    TA0CCTL1 = OUTMOD_7;                      // CCR1 reset/set
+    TA0CCR1 = 26;                             // CCR1 PWM duty cycle 50%
+    TA0CTL = TASSEL__SMCLK | MC__UP | TACLR;  // SMCLK, up mode, clear TAR
+
+    // UCA0: USB /////////////////////////////////////////////////////////////
+
+    // Pause the UART peripheral:
+    UCA0CTLW0 |= UCSWRST;
+    // Source the baud rate generation from SMCLK (8 MHz)
+    // 8N1 (8 data bits, no parity bits, 1 stop bit)
+    UCA0CTLW0 |= UCSSEL__SMCLK + UCPEN;
+    // Configure the baud rate to 115200.
+    //  (See page 589 in the family user's guide, SLAU445I)
+    // The below is for 8.00 MHz SMCLK:
+//    UCA0BRW = 4;
+//    UCA0MCTLW = 0x5500 | UCOS16_1 | UCBRF_5;
+    // TODO: This is 9600:
+    UCA0BRW = 52;
+    UCA0MCTLW = 0x4900 | UCOS16 | UCBRF_1;
+
+    // UCA1: IR  //////////////////////////////////////////////////////////////
+
+    // Pause the UART peripheral:
+    UCA1CTLW0 |= UCSWRST;
+    // Source the baud rate generation from SMCLK (8 MHz)
+    // 8N1 (8 data bits, no parity bits, 1 stop bit)
+    UCA1CTLW0 |= UCSSEL__SMCLK + UCPEN;
+    // Configure the baud rate to 115200.
+    //  (See page 589 in the family user's guide, SLAU445I)
+    // The below is for 8.00 MHz SMCLK:
+//    UCA1BRW = 4;
+//    UCA1MCTLW = 0x5500 | UCOS16 | UCBRF_5;
+    // TODO: This is 9600:
+    UCA1BRW = 52;
+    UCA1MCTLW = 0x4900 | UCOS16 | UCBRF_1;
+
+
+    // Activate the UARTs:
+    UCA0CTLW0 &= ~UCSWRST;
+    UCA1CTLW0 &= ~UCSWRST;
+
+    // The TX interrupt flag (UCTXIFG) gets set upon enabling the UART.
+    //  But, we'd prefer that interrupt not to fire, so we'll clear it
+    //  now:
+    UCA0IFG &= ~UCTXIFG;
+    UCA1IFG &= ~UCTXIFG;
+
+    // Enable interrupts for TX and RX:
+    UCA0IE |= UCTXIE | UCRXIE;
+    UCA1IE |= UCTXIE | UCRXIE;
+}
+
+/// Perform basic initialization of the cbadge.
+void init() {
+    // Stop the watchdog timer.
+    WDTCTL = WDTPW | WDTCNTCL;
+
+    init_clocks();
+    init_io();
+    init_serial();
+
+    __bis_SR_register(GIE);
+}
+
+int main(void)
+{
+    init();
+	
+    while (1) {
+
+        __bis_SR_register(LPM3_bits);
+    }
+}
+
+#pragma vector=USCI_A0_VECTOR
+__interrupt void serial_usb_isr() {
+    switch(__even_in_range(UCA0IV, USCI_UART_UCTXIFG)) {
+    case USCI_UART_UCRXIFG:
+        // Receive buffer full; a byte is ready to read in UCA0RXBUF
+        break;
+    case USCI_UART_UCTXIFG:
+        // Transmit buffer full, ready to load another byte to send to UCA0TXBUF.
+        break;
+    }
+}
+
+#pragma vector=USCI_A1_VECTOR
+__interrupt void serial_ir_isr() {
+    switch(__even_in_range(UCA1IV, USCI_UART_UCTXIFG)) {
+    case USCI_UART_UCRXIFG:
+        // Receive buffer full; a byte is ready to read in UCA0RXBUF
+        break;
+    case USCI_UART_UCTXIFG:
+        // Transmit buffer full, ready to load another byte to send to UCA0TXBUF.
+        break;
+    }
+}

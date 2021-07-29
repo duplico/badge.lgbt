@@ -57,9 +57,9 @@ extern const PIN_Config badge_pin_init_table[];
 #define BADGE_PIN_IR_TRANS_SD       PINCC26XX_DIO0
 #define BADGE_PIN_IR_ENDEC_RSTn     PINCC26XX_DIO1
 
-#define BADGE_PIN_B1                PINCC26XX_DIO29
-#define BADGE_PIN_B2                PINCC26XX_DIO28
-#define BADGE_PIN_B3                PINCC26XX_DIO27
+#define BADGE_PIN_B1_SEL            PINCC26XX_DIO29
+#define BADGE_PIN_B2_IMP            PINCC26XX_DIO28
+#define BADGE_PIN_B3_EXP            PINCC26XX_DIO27
 
 // GPIO - digital I/O
 //  Note: the PIN API is preferred, but the SPI flash driver we're using

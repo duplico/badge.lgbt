@@ -17,8 +17,12 @@
 extern Event_Handle uble_event_h;
 
 // UI stuff:
-#define UI_EVENT_BUT Event_Id_30
+#define UI_EVENT_BUT_SELECT Event_Id_30
+#define UI_EVENT_BUT_IMPORT Event_Id_29
+#define UI_EVENT_BUT_EXPORT Event_Id_28
 #define UI_EVENT_LED_FRAME Event_Id_00
+
+#define UI_EVENT_ALL (UI_EVENT_BUT_SELECT | UI_EVENT_BUT_IMPORT | UI_EVENT_BUT_EXPORT | UI_EVENT_LED_FRAME)
 
 // Configuration:
 #define ADC_INTERVAL_MS 250

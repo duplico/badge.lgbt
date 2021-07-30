@@ -25,7 +25,7 @@
 #include <badge_drivers/led.h>
 
 #define OFF_THRESHOLD 30
-#define TLC_STACKSIZE 1600
+#define TLC_STACKSIZE 1400
 
 Task_Struct tlc_task;
 uint8_t tlc_task_stack[TLC_STACKSIZE];

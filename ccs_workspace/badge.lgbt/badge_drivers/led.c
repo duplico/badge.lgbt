@@ -87,7 +87,7 @@ const led_anim_t explosion_anim = {
                                       (led_anim_direct_t){
                                           .anim_frames=explosion_frames,
                                           .anim_len=10,
-                                          .anim_frame_delay_ms=200
+                                          .anim_frame_delay_ms=50
                                       },
                                       0,
                                       1

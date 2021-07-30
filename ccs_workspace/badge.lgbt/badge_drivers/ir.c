@@ -35,7 +35,7 @@
 UART_Handle ir_uart_h;
 PWM_Handle ir_pwm_16xclk_h;
 
-#define SERIAL_STACKSIZE 1900
+#define SERIAL_STACKSIZE 1024
 Task_Struct serial_task;
 char serial_task_stack[SERIAL_STACKSIZE];
 
@@ -49,7 +49,7 @@ spiffs_file serial_fd;
 uint8_t serial_new_cbadge = 0;
 uint8_t *serial_file_payload;
 
-Event_Handle serial_event_h;
+Event_Handle ir_event_h;
 char serial_file_to_send[SPIFFS_OBJ_NAME_LEN+1] = {0,};
 
 /// Calculate a 16-bit cyclic redundancy check on buffer sbuf of length len.
@@ -110,12 +110,6 @@ uint8_t validate_header(ir_header_t *header) {
     case SERIAL_OPCODE_HELO:
     case SERIAL_OPCODE_ACK:
     case SERIAL_OPCODE_ENDFILE:
-    case SERIAL_OPCODE_DISCON:
-        if (header->payload_len) {
-            return 0;
-        }
-        break;
-    case SERIAL_OPCODE_SETNAME:
         if (!header->payload_len || header->payload_len > BADGE_NAME_LEN+1) {
             return 0;
         }
@@ -248,27 +242,38 @@ void serial_send(uint8_t opcode, uint8_t *payload, uint8_t payload_len) {
 //
 void serial_file_start() {
     volatile uint32_t keyHwi;
+    led_anim_t anim_send;
 
-    // TODO: if !SERIAL_LL_STATE_C_IDLE?
-    if (serial_ll_state == SERIAL_LL_STATE_C_FILE_RX) {
+    // TODO: Was:
+//    if (serial_ll_state == SERIAL_LL_STATE_C_FILE_RX) {
+    if (serial_ll_state != SERIAL_LL_STATE_IDLE) { //TODO: exclude pairing???
         return;
     }
 
-    serial_fd = SPIFFS_open(&fs, serial_file_to_send, SPIFFS_O_RDONLY, 0);
-    if (serial_fd >= 0) {
-        serial_ll_state = SERIAL_LL_STATE_C_FILE_TX;
-    } else {
+    if (led_anim_ambient.direct_anim.anim_frames) {
+        // TODO: allow sending direct anims???
         return;
     }
+
+    anim_send = led_anim_ambient;
+
+    anim_send.id = 0;
+    anim_send.unlocked = 0;
+
+    if (!storage_anim_saved_and_valid(anim_send.name)) {
+        return;
+    }
+
+    serial_ll_state = SERIAL_LL_STATE_C_FILE_TX;
 
     keyHwi = Hwi_disable();
-    serial_file_payload = malloc(128);
+    serial_file_payload = malloc(STORAGE_ANIM_FRAME_SIZE); // TODO: any reason not to always have this buffer?
     Hwi_restore(keyHwi);
 
-    strncpy(serial_file_payload, serial_file_to_send, SPIFFS_OBJ_NAME_LEN);
-    serial_file_payload[SPIFFS_OBJ_NAME_LEN] = 0x00;
-    serial_send(SERIAL_OPCODE_PUTFILE, serial_file_payload, SPIFFS_OBJ_NAME_LEN+1);
-    // Send the full file name. Now we await an ACK.
+    // TODO: set a frame index to 0
+
+    serial_send(SERIAL_OPCODE_PUTFILE, (uint8_t *) &anim_send, STORAGE_ANIM_HEADER_SIZE);
+    // Send the animation header. Now we await an ACK.
 }
 //
 //void serial_file_send_next() {
@@ -403,8 +408,18 @@ void serial_rx_done(ir_header_t *header, uint8_t *payload) {
 }
 
 void serial_timeout() {
+    volatile uint32_t keyHwi;
 //    volatile uint8_t i;
     switch(serial_ll_state) {
+    case SERIAL_LL_STATE_C_FILE_TX:
+        // Timeout; return to idle.
+        // TODO: function?
+        serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
+        keyHwi = Hwi_disable();
+        free(serial_file_payload);
+        Hwi_restore(keyHwi);
+        serial_ll_state = SERIAL_LL_STATE_IDLE;
+        break;
 //    // TODO: if we're receiving a file, error
 //    case SERIAL_LL_STATE_NC_PRX:
 //        // Pin us in PRX mode if we're plugged into a PTX device.
@@ -457,9 +472,6 @@ void serial_timeout() {
 }
 
 void serial_task_fn(UArg a0, UArg a1) {
-    // There are two serial modes:
-    //  Primary RX - in which we listen for a HELO message, and
-    //  Primary TX - in which we send a HELO and wait, very briefly, for ACK.
     ir_header_t header_in;
     uint8_t syncbyte_input[1];
     uint8_t *payload_input;
@@ -467,14 +479,14 @@ void serial_task_fn(UArg a0, UArg a1) {
     volatile int_fast32_t result;
     volatile uint32_t keyHwi;
 
-    serial_ll_next_timeout = Clock_getTicks() + PRX_TIME_MS * 100;
+    serial_ll_next_timeout = Clock_getTicks() + IR_TIMEOUT_MS * 100;
 
     while (1) {
         if (serial_ll_next_timeout && Clock_getTicks() >= serial_ll_next_timeout) {
             serial_timeout();
         }
 
-        events = Event_pend(serial_event_h, Event_Id_NONE, ~Event_Id_NONE, BIOS_NO_WAIT);
+        events = Event_pend(ir_event_h, Event_Id_NONE, ~Event_Id_NONE, BIOS_NO_WAIT);
 
         if (events & IR_EVENT_SENDFILE) {
             serial_file_start();
@@ -568,9 +580,11 @@ void ir_init() {
     taskParams.priority = 1;
     Task_construct(&serial_task, serial_task_fn, &taskParams, NULL);
 
+    ir_event_h = Event_create(NULL, NULL);
+
     // This will start up the UART, and configure our GPIO (again).
 //    serial_enter_prx();
 
-    serial_ll_state = SERIAL_LL_STATE_C_IDLE;
+    serial_ll_state = SERIAL_LL_STATE_IDLE;
 
 }

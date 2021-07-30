@@ -31,6 +31,9 @@ typedef struct {
     uint8_t unlocked;
 } led_anim_t;
 
+extern led_anim_t led_anim_ambient;
+extern led_anim_t led_anim_curr;
+
 void led_next_frame();
 void led_load_frame();
 void led_init();

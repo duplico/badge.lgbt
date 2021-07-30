@@ -23,6 +23,7 @@
 #define BIT7 0b10000000
 
 #define IR_EVENT_SENDFILE Event_Id_01
+#define IR_EVENT_GETFILE Event_Id_02
 
 extern Event_Handle ir_event_h;
 extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
@@ -43,16 +44,13 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
 #define SERIAL_OPCODE_ENDFILE   0x0B
-#define SERIAL_OPCODE_SETNAME   0x0D
-#define SERIAL_OPCODE_DISCON    0x10
 #define SERIAL_OPCODE_GETFILE   0x13
 
 #define SERIAL_ID_ANY 0xffff
 
 // Serial LL (link-layer) state machine states:
-#define SERIAL_LL_STATE_NC_PRX 0
-#define SERIAL_LL_STATE_NC_PTX 1
-#define SERIAL_LL_STATE_C_IDLE 2
+#define SERIAL_LL_STATE_IDLE 0
+
 #define SERIAL_LL_STATE_C_FILE_RX 3
 #define SERIAL_LL_STATE_C_FILE_TX 4
 #define SERIAL_LL_STATE_C_PAIRING 5

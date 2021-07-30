@@ -39,7 +39,7 @@
 #define UBS_TASK_PRIORITY                     3
 
 #ifndef UBS_TASK_STACK_SIZE
-#define UBS_TASK_STACK_SIZE                   1600
+#define UBS_TASK_STACK_SIZE                   768
 #endif
 
 // RTOS Event to queue application events

@@ -37,7 +37,7 @@ extern assertCback_t halAssertCback;
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
 extern void uble_getPublicAddr(uint8 *pPublicAddr);
 
-#define UI_STACKSIZE 1600
+#define UI_STACKSIZE 1200
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
@@ -103,6 +103,7 @@ void ui_task_fn(UArg a0, UArg a1) {
     led_init();
     adc_init();
     button_init();
+    ir_init();
 
     UBLEBcastScan_createTask();
 
@@ -126,10 +127,10 @@ void ui_task_fn(UArg a0, UArg a1) {
             led_next_anim();
         }
         if (ui_events & UI_EVENT_BUT_EXPORT) {
-            __nop();
+            Event_post(ir_event_h, IR_EVENT_SENDFILE);
         }
         if (ui_events & UI_EVENT_BUT_IMPORT) {
-            __nop();
+            Event_post(ir_event_h, IR_EVENT_GETFILE);
         }
     }
 }

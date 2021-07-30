@@ -10,15 +10,17 @@
 
 #include <third_party/spiffs/spiffs.h>
 #include <badge.h>
+#include <led.h>
 
-// TODO: Move these to badge.h
-#define SPIFFS_LOGICAL_BLOCK_SIZE    (4096)
-#define SPIFFS_LOGICAL_PAGE_SIZE     (256)
-#define SPIFFS_FILE_DESCRIPTOR_SIZE  (44)
+#define STORAGE_ANIM_FRAME_SIZE (sizeof(rgbcolor_t)*15*7)
+#define STORAGE_ANIM_HEADER_SIZE sizeof(led_anim_t)
 
 void storage_init();
-uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t size);
-//uint8_t storage_read_badge_id(uint16_t badge_id, badge_file_t *file);
+uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t size);
+uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]);
+void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked);
+uint8_t storage_anim_saved_and_valid(char *anim_name);
+uint8_t storage_load_anim(char *anim_name, led_anim_t *dest);
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size);
 void storage_bad_file(char *fname);
 uint8_t storage_file_exists(char *fname);

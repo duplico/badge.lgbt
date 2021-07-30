@@ -10,16 +10,12 @@
 
 #include <badge_drivers/tlc6983.h>
 
+#define ANIM_NAME_MAX_LEN 16 // includes null term
+
 typedef struct {
     rgbcolor_t pixels[7][15];
     uint8_t pad; // align struct to 16-bit boundaries
 } screen_frame_t;
-
-typedef struct {
-    uint32_t anim_start_frame;
-    uint16_t anim_len;
-    uint16_t anim_frame_delay_ms;
-} led_anim_t;
 
 typedef struct {
 //    screen_frame_t *anim_frames;
@@ -28,10 +24,17 @@ typedef struct {
     uint16_t anim_frame_delay_ms;
 } led_anim_direct_t;
 
+typedef struct {
+    char name[ANIM_NAME_MAX_LEN];
+    led_anim_direct_t direct_anim;
+    uint16_t id;
+    uint8_t unlocked;
+} led_anim_t;
+
 void led_next_frame();
 void led_load_frame();
 void led_init();
 void led_next_anim();
-void led_set_anim(led_anim_direct_t anim, uint8_t ambient);
+void led_set_anim_direct(led_anim_t anim, uint8_t ambient);
 
 #endif /* BADGE_DRIVERS_LED_H_ */

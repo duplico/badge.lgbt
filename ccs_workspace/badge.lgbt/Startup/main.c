@@ -37,7 +37,7 @@ extern assertCback_t halAssertCback;
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
 extern void uble_getPublicAddr(uint8 *pPublicAddr);
 
-#define UI_STACKSIZE 1024
+#define UI_STACKSIZE 1600
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
@@ -98,7 +98,7 @@ void button_init() {
 }
 
 void ui_task_fn(UArg a0, UArg a1) {
-//    storage_init();
+    storage_init();
     tlc_init();
     led_init();
     adc_init();

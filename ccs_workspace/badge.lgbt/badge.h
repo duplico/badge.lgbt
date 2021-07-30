@@ -12,6 +12,12 @@
 
 #include <ti/sysbios/knl/Event.h>
 
+// SPIFFS
+#define SPIFFS_LOGICAL_BLOCK_SIZE    (4096)
+#define SPIFFS_LOGICAL_PAGE_SIZE     (256)
+#define SPIFFS_FILE_DESCRIPTOR_SIZE  (44)
+#define STORAGE_FILE_NAME_LIMIT 21 // includes null term
+
 // UBLE stuff:
 #define UBLE_EVENT_UPDATE_ADV   Event_Id_00
 extern Event_Handle uble_event_h;

@@ -20,22 +20,22 @@
 #include <inc/hw_memmap.h>
 #include <driverlib/vims.h>
 
-//#include <ble/uble_bcast_scan.h>
+#include <ble/uble_bcast_scan.h>
 
 #include <xdc/runtime/Error.h>
 
-#include "uble_bcast_scan.h"
 #include "storage.h"
 #include "post.h"
 
 #include <badge_drivers/tlc6983.h>
 #include <badge_drivers/led.h>
+#include <badge_drivers/ir.h>
 
 #include <adc.h>
 
 extern assertCback_t halAssertCback;
-
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
+extern void uble_getPublicAddr(uint8 *pPublicAddr);
 
 #define UI_STACKSIZE 1024
 Task_Struct ui_task;
@@ -56,7 +56,7 @@ PIN_Config button_pin_config[] = {
     PIN_TERMINATE
 };
 
-extern const led_anim_direct_t explosion_anim; // TODO
+uint64_t badge_id = 0x0000000000000000;
 
 void button_clock_swi(UArg a0) {
     static uint8_t button_state_curr = 0b000;
@@ -113,6 +113,8 @@ void ui_task_fn(UArg a0, UArg a1) {
     // TODO: Check for success of config_init()
 
     UInt ui_events;
+
+    uble_getPublicAddr((uint8_t *) &badge_id);
 
     while (1) {
         ui_events = Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_ALL, BIOS_WAIT_FOREVER);

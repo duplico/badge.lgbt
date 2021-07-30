@@ -80,7 +80,6 @@
 									<listOptionValue builtIn="false" value="CC26XX_R2"/>
 									<listOptionValue builtIn="false" value="FEATURE_ADVERTISER"/>
 									<listOptionValue builtIn="false" value="FEATURE_BROADCASTER"/>
-									<listOptionValue builtIn="false" value="FEATURE_STATIC_ADDR"/>
 									<listOptionValue builtIn="false" value="FEATURE_SCANNER"/>
 									<listOptionValue builtIn="false" value="xFEATURE_MONITOR"/>
 									<listOptionValue builtIn="false" value="FEATURE_OBSERVER"/>

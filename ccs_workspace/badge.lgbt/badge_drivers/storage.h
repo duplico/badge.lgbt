@@ -10,11 +10,10 @@
 
 #include <third_party/spiffs/spiffs.h>
 #include <badge.h>
+#include <led.h>
 
-// TODO: Move these to badge.h
-#define SPIFFS_LOGICAL_BLOCK_SIZE    (4096)
-#define SPIFFS_LOGICAL_PAGE_SIZE     (256)
-#define SPIFFS_FILE_DESCRIPTOR_SIZE  (44)
+#define STORAGE_ANIM_FRAME_SIZE sizeof(screen_frame_t)
+#define STORAGE_ANIM_HEADER_SIZE sizeof(led_anim_t)
 
 void storage_init();
 uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t size);

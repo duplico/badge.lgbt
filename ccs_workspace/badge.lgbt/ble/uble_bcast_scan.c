@@ -74,9 +74,6 @@ static Queue_Handle appMsgQueue;
 Task_Struct ubsTask;
 uint8 ubsTaskStack[UBS_TASK_STACK_SIZE];
 
-// TODO:
-#define BADGE_NAME_LEN 12
-
 static bool UBLEBcastScan_initObserver(void);
 
 // GAP - Advertisement data (31 byte max)

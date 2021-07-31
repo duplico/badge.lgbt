@@ -3,7 +3,7 @@
 /// Initialize clock signals and the three system clocks.
 /**
  ** We'll take the DCO to 16 MHz, and divide it by 1 for MCLK.
- ** Then we'll divide MCLK by 1 to get 16 MHz SMCLK.
+ ** Then we'll divide MCLK by 2 to get 8 MHz SMCLK.
  **
  ** Our available clock sources are:
  **  VLO:     10kHz very low power low-freq
@@ -48,7 +48,7 @@ void init_clocks() {
 
     // SMCLK
     //  Derived from MCLK with divider up to /8
-    //  Set to MCLK/1 = 16 MHz
+    //  Set to MCLK/2 = 8 MHz
     CSCTL5 |= DIVS__2;
 }
 
@@ -100,8 +100,8 @@ void init_io() {
 }
 
 void init_serial() {
-    // First, we need to set up our 16XCLK. At 9600 baud, this needs to be 153600 Hz
-    // At 27800, that's 444800.
+    // First, we need to set up our 16XCLK. 2% clock error is acceptable.
+    // The period should be SMCLK/BAUD_RATE-1
     TA0CCR0 = 52-1;                           // PWM Period
     TA0CCTL2 = OUTMOD_7;                      // CCR1 reset/set
     TA0CCR2 = 26;                             // CCR1 PWM duty cycle 50%
@@ -112,8 +112,8 @@ void init_serial() {
     UCA0CTLW0 |= UCSSEL__SMCLK;               // CLK = SMCLK
     // Pause the UART peripheral:    UCA0CTLW0 |= UCSWRST;
     // Source the baud rate generation from SMCLK (8 MHz)
-    // 8N1 (8 data bits, no parity bits, 1 stop bit)//    UCA0CTLW0 |= UCSSEL__SMCLK;
-    // Configure the baud rate to 115200.
+    // 8N1 (8 data bits, no parity bits, 1 stop bit)
+    // Configure the baud rate
     //  (See page 589 in the family user's guide, SLAU445I)
     // The below is for 8.00 MHz SMCLK:
 //    UCA0BRW = 4;
@@ -129,7 +129,7 @@ void init_serial() {
     UCA1CTLW0 |= UCSWRST;
     // Source the baud rate generation from SMCLK (8 MHz)
     // 8N1 (8 data bits, no parity bits, 1 stop bit)
-    // Configure the baud rate to 115200.
+    // Configure the baud rate
     //  (See page 589 in the family user's guide, SLAU445I)
     // The below is for 8.00 MHz SMCLK:
 //    UCA1BRW = 4;

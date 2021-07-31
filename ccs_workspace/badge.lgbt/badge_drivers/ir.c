@@ -45,11 +45,11 @@ uint8_t serial_ll_state;
 uint32_t serial_ll_next_timeout;
 Clock_Handle serial_timeout_clock_h;
 
-uint8_t serial_new_cbadge = 0;
 uint8_t serial_file_payload[STORAGE_ANIM_FRAME_SIZE] = {0,};
 led_anim_t serial_file_header;
 spiffs_file serial_fd;
 uint16_t serial_filepart = 0;
+uint64_t serial_peer_id;
 
 Event_Handle ir_event_h;
 char serial_file_to_send[SPIFFS_OBJ_NAME_LEN+1] = {0,};
@@ -109,6 +109,10 @@ uint8_t validate_header_len(ir_header_t *header) {
             return 0;
         }
         break;
+    }
+
+    if (serial_ll_state != SERIAL_LL_STATE_IDLE && header->from_id != serial_peer_id) {
+        return 0;
     }
 
     return 1;
@@ -289,6 +293,7 @@ void serial_rx_done(ir_header_t *header) {
         if (header->opcode == SERIAL_OPCODE_PUTFILE) {
             // The remote badge is sending us a file!
             // The first message will be the animation header.
+            serial_peer_id = header->from_id;
 
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
             // Check to see if we already have the animation.

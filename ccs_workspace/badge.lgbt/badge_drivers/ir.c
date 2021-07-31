@@ -91,7 +91,7 @@ void crc16_header_apply(ir_header_t *header) {
 }
 
 uint8_t validate_header(ir_header_t *header) {
-    if (header->version_header & 0xff != 0x01) {
+    if ((header->version_header & 0x00ff) != 0x0001) {
         // Unknown protocol version.
         return 0;
     }

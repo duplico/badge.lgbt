@@ -285,7 +285,7 @@ void serial_file_start() {
 }
 
 void serial_file_send_next() {
-    if (storage_load_frame(serial_file_header.name, serial_filepart, serial_file_payload)) {
+    if (storage_load_frame(serial_file_header.name, serial_filepart, (rgbcolor_t (*)[15])serial_file_payload)) {
         // Successfully read in filepart.
         serial_send(SERIAL_OPCODE_APPFILE, serial_file_payload, STORAGE_ANIM_FRAME_SIZE);
         serial_filepart++;
@@ -400,7 +400,6 @@ void serial_timeout() {
 void serial_task_fn(UArg a0, UArg a1) {
     ir_header_t header_in;
     uint8_t syncbyte_input[1];
-    UInt events = 0;
     volatile int_fast32_t result;
     volatile uint32_t keyHwi;
 

@@ -459,9 +459,9 @@ void ir_init() {
     PWM_Params pwmParams;
     // Initialize the PWM parameters
     PWM_Params_init(&pwmParams);
-    pwmParams.idleLevel = PWM_IDLE_LOW;      // Output low when PWM is not running // TODO
+    pwmParams.idleLevel = PWM_IDLE_LOW;      // Output low when PWM is not running
     pwmParams.periodUnits = PWM_PERIOD_HZ;   // Period is in Hz
-    pwmParams.periodValue = 153600;          // 16 x 9600 // TODO
+    pwmParams.periodValue = (IR_BAUDRATE*16);
     pwmParams.dutyUnits = PWM_DUTY_FRACTION; // Duty is in fractional percentage
     pwmParams.dutyValue = PWM_DUTY_FRACTION_MAX/2; // 50%
 
@@ -477,7 +477,7 @@ void ir_init() {
     uart_params.readDataMode = UART_DATA_BINARY;
     uart_params.writeDataMode = UART_DATA_BINARY;
     uart_params.stopBits = UART_STOP_ONE;
-    uart_params.baudRate = 9600; // TODO
+    uart_params.baudRate = IR_BAUDRATE;
     uart_params.readMode = UART_MODE_BLOCKING;
     uart_params.readTimeout = IR_TIMEOUT_MS*100;
     uart_params.writeMode = UART_MODE_BLOCKING;

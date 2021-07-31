@@ -101,9 +101,8 @@ void init_io() {
 
 void init_serial() {
     // First, we need to set up our 16XCLK. 2% clock error is acceptable.
-    // The period should be SMCLK/(16*BAUD_RATE) - 1
-    // Configuring for 16x 20 kbaud
-    TA0CCR0 = 25-1;                           // PWM Period
+    // The period should be SMCLK/BAUD_RATE-1
+    TA0CCR0 = 26-1;                           // PWM Period
     TA0CCTL2 = OUTMOD_7;                      // CCR1 reset/set
     TA0CCR2 = 26;                             // CCR1 PWM duty cycle 50%
     TA0CTL = TASSEL__SMCLK | MC__UP | TACLR;  // SMCLK, up mode, clear TAR
@@ -111,16 +110,14 @@ void init_serial() {
     // UCA0: USB /////////////////////////////////////////////////////////////
 
     UCA0CTLW0 |= UCSSEL__SMCLK;               // CLK = SMCLK
-    // Pause the UART peripheral:    UCA0CTLW0 |= UCSWRST;
+    // Pause the UART peripheral:    UCA0CTLW0 |= UCSWRST;
     // Source the baud rate generation from SMCLK (8 MHz)
     // 8N1 (8 data bits, no parity bits, 1 stop bit)
     // Configure the baud rate
     //  (See page 589 in the family user's guide, SLAU445I)
-    // SMCLK / baudrate = 8000000 / 20000 = 400; OS16=1
-    // UCBRx = 25, UCBRFx = 0, UCBRSx = 0x00
     // The below is for 8.00 MHz SMCLK:
-    UCA0BRW = 25;
-    UCA0MCTLW = 0x0000 | UCOS16 | UCBRF_0;
+    UCA0BRW = 26;
+    UCA0MCTLW |= UCOS16 | UCBRF_0 | 0xB600;
 
     // UCA1: IR  //////////////////////////////////////////////////////////////
 
@@ -131,11 +128,10 @@ void init_serial() {
     // 8N1 (8 data bits, no parity bits, 1 stop bit)
     // Configure the baud rate
     //  (See page 589 in the family user's guide, SLAU445I)
-    // SMCLK / baudrate = 8000000 / 20000 = 400; OS16=1
-    // UCBRx = 25, UCBRFx = 0, UCBRSx = 0x00
     // The below is for 8.00 MHz SMCLK:
-    UCA1BRW = 25;
-    UCA1MCTLW = 0x0000 | UCOS16 | UCBRF_0;
+    UCA1BRW = 26;
+    UCA1MCTLW = 0xB600 | UCOS16 | UCBRF_0;
+
 
     // Activate the UARTs:
     UCA0CTLW0 &= ~UCSWRST;

@@ -15,6 +15,8 @@
 #define STORAGE_ANIM_FRAME_SIZE (sizeof(rgbcolor_t)*15*7)
 #define STORAGE_ANIM_HEADER_SIZE sizeof(led_anim_t)
 
+extern uint16_t storage_next_anim_id;
+
 void storage_init();
 uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t size);
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]);
@@ -25,6 +27,6 @@ void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size);
 void storage_bad_file(char *fname);
 uint8_t storage_file_exists(char *fname);
 
-extern spiffs fs;
+extern spiffs storage_fs;
 
 #endif /* BADGE_DRIVERS_STORAGE_H_ */

@@ -59,22 +59,23 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 // Shared struct and functions:
 
 typedef struct {
-    __packed uint8_t opcode;
-    __packed uint8_t payload_len;
+    uint16_t version_header;
+    uint16_t payload_len;
+    uint16_t opcode;
     uint64_t from_id;
     uint16_t crc16_payload;
     uint16_t crc16_header;
 } ir_header_t;
 
-uint16_t crc16_buf(volatile uint8_t *sbuf, uint8_t len);
+uint16_t crc16_buf(volatile uint8_t *sbuf, uint16_t len);
 uint16_t crc_build(uint8_t data, uint8_t start_over);
 void crc16_header_apply(ir_header_t *header);
-uint8_t validate_header(ir_header_t *header);
+uint8_t validate_header_len(ir_header_t *header);
 uint8_t validate_header_simple(ir_header_t *header);
 uint8_t check_id_buf(uint16_t id, uint8_t *buf);
 void set_id_buf(uint16_t id, uint8_t *buf);
 uint8_t byte_rank(uint8_t v);
-uint16_t buffer_rank(uint8_t *buf, uint8_t len);
+uint16_t buffer_rank(uint8_t *buf, uint16_t len);
 
 void ir_init();
 

@@ -197,56 +197,9 @@ void serial_send(uint8_t opcode, uint8_t *payload, uint16_t payload_len) {
     }
 }
 
-//void serial_send_helo() {
-//    serial_send(SERIAL_OPCODE_HELO, NULL, 0);
-//}
-
 void serial_send_ack() {
     serial_send(SERIAL_OPCODE_ACK, NULL, 0);
 }
-//
-//void serial_enter_c_idle() {
-//    serial_ll_next_timeout = Clock_getTicks() + (SERIAL_C_DIO_POLL_MS * 100);
-//}
-//
-//void serial_send_pair_msg() {
-//    volatile uint32_t keyHwi;
-//
-//    keyHwi = Hwi_disable();
-//    pair_payload_t *pair_payload_out = malloc(sizeof(pair_payload_t));
-//    Hwi_restore(keyHwi);
-//
-//    memset(pair_payload_out, 0, sizeof(pair_payload_t));
-//
-//    pair_payload_out->badge_id = badge_conf.badge_id;
-//    pair_payload_out->badge_type = badge_conf.badge_type;
-//
-//    memcpy(pair_payload_out->element_level, badge_conf.element_level, 3);
-//    memcpy(pair_payload_out->element_level_max, badge_conf.element_level_max, 3);
-//    memcpy(pair_payload_out->element_level_progress, badge_conf.element_level_progress, 3);
-//    memcpy(pair_payload_out->element_qty, badge_conf.element_qty, sizeof(badge_conf.element_qty[0])*3);
-//
-//    pair_payload_out->last_clock = Seconds_get();
-//    pair_payload_out->clock_is_set = badge_conf.clock_is_set;
-//
-//    pair_payload_out->agent_present = badge_conf.agent_present;
-//    pair_payload_out->element_selected = badge_conf.element_selected;
-//
-//    memcpy(pair_payload_out->missions, badge_conf.missions, sizeof(mission_t)*3);
-//    for (uint8_t i=0; i<3; i++) {
-//        pair_payload_out->mission_assigned[i] = badge_conf.mission_assigned[i];
-//    }
-//
-//    memcpy(pair_payload_out->handle, badge_conf.handle, QC16_BADGE_NAME_LEN);
-//    pair_payload_out->handle[QC16_BADGE_NAME_LEN] = 0x00;
-//
-//    serial_send(SERIAL_OPCODE_PAIR, (uint8_t *) pair_payload_out, sizeof(pair_payload_t));
-//
-//    keyHwi = Hwi_disable();
-//    free(pair_payload_out);
-//    Hwi_restore(keyHwi);
-//}
-//
 
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
     if (dest_state == SERIAL_LL_STATE_IDLE) {
@@ -443,11 +396,6 @@ void serial_task_fn(UArg a0, UArg a1) {
                 }
             }
         }
-
-//        if (events & SERIAL_EVENT_SENDHANDLE) {
-//            serial_send(SERIAL_OPCODE_SETNAME, paired_badge.handle, QC16_BADGE_NAME_LEN+1);
-//        }
-
     }
 }
 

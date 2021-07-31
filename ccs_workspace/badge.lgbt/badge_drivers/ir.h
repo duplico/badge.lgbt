@@ -29,7 +29,7 @@ extern Event_Handle ir_event_h;
 extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 
 // Configuration
-#define IR_TIMEOUT_MS 100
+#define IR_TIMEOUT_MS 1000
 
 #define PTX_TIME_MS 100
 #define PRX_TIME_MS 1000
@@ -43,7 +43,6 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 #define SERIAL_OPCODE_ACK       0x02
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
-#define SERIAL_OPCODE_ENDFILE   0x0B
 #define SERIAL_OPCODE_GETFILE   0x13
 
 #define SERIAL_ID_ANY 0xffff
@@ -59,12 +58,12 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 // Shared struct and functions:
 
 typedef struct {
-    uint16_t version_header;
-    uint16_t payload_len;
-    uint16_t opcode;
-    uint64_t from_id;
-    uint16_t crc16_payload;
-    uint16_t crc16_header;
+    __packed uint16_t version_header;
+    __packed uint16_t payload_len;
+    __packed uint16_t opcode;
+    __packed uint64_t from_id;
+    __packed uint16_t crc16_payload;
+    __packed uint16_t crc16_header;
 } ir_header_t;
 
 uint16_t crc16_buf(volatile uint8_t *sbuf, uint16_t len);

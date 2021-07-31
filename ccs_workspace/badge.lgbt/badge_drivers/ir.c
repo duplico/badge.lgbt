@@ -110,17 +110,20 @@ uint8_t validate_header_len(ir_header_t *header) {
     // TODO: Validate the version number.
     switch(header->opcode) {
     case SERIAL_OPCODE_PUTFILE:
-        // TODO: check that length == STORAGE_ANIM_HEADER_SIZE
+        if (header->payload_len != STORAGE_ANIM_HEADER_SIZE) {
+            return 0;
+        }
         // TODO: check null term
         break;
     case SERIAL_OPCODE_APPFILE:
-        // TODO: check that length == STORAGE_ANIM_FRAME_SIZE
+        if (header->payload_len != STORAGE_ANIM_FRAME_SIZE) {
+            return 0;
+        }
          break;
     // All these have zero length payloads:
     case SERIAL_OPCODE_HELO:
     case SERIAL_OPCODE_ACK:
-    case SERIAL_OPCODE_ENDFILE:
-        if (!header->payload_len || header->payload_len > BADGE_NAME_LEN+1) {
+        if (header->payload_len) {
             return 0;
         }
         break;
@@ -190,6 +193,8 @@ void serial_send(uint8_t opcode, uint8_t *payload, uint16_t payload_len) {
 
     if (payload_len) {
         header_out.crc16_payload = crc16_buf(payload, payload_len);
+    } else {
+        header_out.crc16_payload = 0x0000;
     }
     crc16_header_apply(&header_out);
     uint8_t syncword = SERIAL_PHY_SYNC_WORD;
@@ -280,7 +285,7 @@ void serial_file_start() {
 }
 
 void serial_file_send_next() {
-    if (storage_load_frame(serial_file_header.name, serial_filepart, (rgbcolor_t *) serial_file_payload)) {
+    if (storage_load_frame(serial_file_header.name, serial_filepart, serial_file_payload)) {
         // Successfully read in filepart.
         serial_send(SERIAL_OPCODE_APPFILE, serial_file_payload, STORAGE_ANIM_FRAME_SIZE);
         serial_filepart++;

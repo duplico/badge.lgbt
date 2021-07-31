@@ -90,7 +90,12 @@ void crc16_header_apply(ir_header_t *header) {
     );
 }
 
-uint8_t validate_header_len(ir_header_t *header) {
+uint8_t validate_header(ir_header_t *header) {
+    if (header->version_header & 0xff != 0x01) {
+        // Unknown protocol version.
+        return 0;
+    }
+
     switch(header->opcode) {
     case SERIAL_OPCODE_PUTFILE:
         if (header->payload_len != STORAGE_ANIM_HEADER_SIZE) {
@@ -409,7 +414,7 @@ void serial_task_fn(UArg a0, UArg a1) {
             // Got the sync word, now try to read a header:
             result = UART_read(ir_uart_h, &header_in, sizeof(ir_header_t));
             if (result == sizeof(ir_header_t)
-                    && validate_header_len(&header_in)) {
+                    && validate_header(&header_in)) {
                 if (header_in.payload_len) {
                     // Payload expected.
 

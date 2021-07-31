@@ -8,6 +8,9 @@ import click
 from intelhex import IntelHex
 from PIL import Image, ImageFilter, ImageEnhance
 
+class BadgeImage:
+     pass
+
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"

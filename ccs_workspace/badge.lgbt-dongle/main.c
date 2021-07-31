@@ -101,8 +101,8 @@ void init_io() {
 
 void init_serial() {
     // First, we need to set up our 16XCLK. 2% clock error is acceptable.
-    // The period should be SMCLK/BAUD_RATE-1
-    TA0CCR0 = 26-1;                           // PWM Period
+    // The period should be SMCLK/BAUD_RATE
+    TA0CCR0 = 26;                             // PWM Period
     TA0CCTL2 = OUTMOD_7;                      // CCR1 reset/set
     TA0CCR2 = 26;                             // CCR1 PWM duty cycle 50%
     TA0CTL = TASSEL__SMCLK | MC__UP | TACLR;  // SMCLK, up mode, clear TAR

@@ -69,7 +69,7 @@ typedef struct {
 uint16_t crc16_buf(volatile uint8_t *sbuf, uint16_t len);
 uint16_t crc_build(uint8_t data, uint8_t start_over);
 void crc16_header_apply(ir_header_t *header);
-uint8_t validate_header_len(ir_header_t *header);
+uint8_t validate_header(ir_header_t *header);
 uint8_t validate_header_simple(ir_header_t *header);
 uint8_t check_id_buf(uint16_t id, uint8_t *buf);
 void set_id_buf(uint16_t id, uint8_t *buf);

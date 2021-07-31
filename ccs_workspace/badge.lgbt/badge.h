@@ -24,7 +24,7 @@ extern Event_Handle uble_event_h;
 #define BADGE_NAME_LEN 10
 
 // IR stuff:
-#define IR_BAUDRATE 100000
+#define IR_BAUDRATE 20000
 
 // UI stuff:
 #define UI_EVENT_BUT_SELECT Event_Id_30

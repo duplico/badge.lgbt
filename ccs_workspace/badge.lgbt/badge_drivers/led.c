@@ -260,6 +260,15 @@ void led_init() {
 
 //    led_set_anim_direct(intro_anim, 1);
 
+//    if (!storage_anim_saved_and_valid("nyanbow")) {
+//        storage_save_direct_anim("nyanbow", (led_anim_direct_t *) &led_starting_anim.direct_anim, 1);
+//    }
+//    if (storage_anim_saved_and_valid("nyanbow")) {
+//        led_set_anim("nyanbow", 1);
+//    } else {
+//        led_set_anim_direct(led_starting_anim, 1);
+//    }
+
     if (!storage_anim_saved_and_valid("explode")) {
         storage_save_direct_anim("explode", (led_anim_direct_t *) &explosion_anim.direct_anim, 1);
     }
@@ -268,4 +277,5 @@ void led_init() {
     } else {
         led_set_anim_direct(led_starting_anim, 1);
     }
+
 }

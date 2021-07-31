@@ -292,7 +292,7 @@ void serial_file_send_next() {
     }
 }
 
-void serial_rx_done(ir_header_t *header, uint8_t *payload) {
+void serial_rx_done(ir_header_t *header) {
     // If this is called, it's already been validated.
     // NB: payload will be freed immediately after this returns, so
     //     it should be copied to a more durable buffer if it needs to be
@@ -309,7 +309,7 @@ void serial_rx_done(ir_header_t *header, uint8_t *payload) {
             // The remote badge is sending us a file!
             // The first message will be the animation header.
 
-            memcpy(&serial_file_header, payload, sizeof(led_anim_t));
+            memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
             // Check to see if we already have the animation.
             if (storage_anim_saved_and_valid(serial_file_header.name)) {
                 // TODO: do whatever we're supposed to do with this.
@@ -330,7 +330,7 @@ void serial_rx_done(ir_header_t *header, uint8_t *payload) {
             serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY, 0);
             if (serial_fd >= 0) {
                 // The open worked properly...
-                SPIFFS_write(&storage_fs, serial_fd, payload, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
+                SPIFFS_write(&storage_fs, serial_fd, serial_file_payload, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
                 serial_ll_state = SERIAL_LL_STATE_C_FILE_RX;
                 serial_filepart = 0;
                 serial_send_ack();
@@ -343,7 +343,7 @@ void serial_rx_done(ir_header_t *header, uint8_t *payload) {
 
     case SERIAL_LL_STATE_C_FILE_RX:
         if (header->opcode == SERIAL_OPCODE_APPFILE) {
-            if (SPIFFS_write(&storage_fs, serial_fd, payload, header->payload_len) == header->payload_len) {
+            if (SPIFFS_write(&storage_fs, serial_fd, serial_file_payload, header->payload_len) == header->payload_len) {
                 serial_send_ack();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                 serial_filepart++;
@@ -400,7 +400,6 @@ void serial_timeout() {
 void serial_task_fn(UArg a0, UArg a1) {
     ir_header_t header_in;
     uint8_t syncbyte_input[1];
-    uint8_t *payload_input;
     UInt events = 0;
     volatile int_fast32_t result;
     volatile uint32_t keyHwi;
@@ -429,25 +428,18 @@ void serial_task_fn(UArg a0, UArg a1) {
                 if (header_in.payload_len) {
                     // Payload expected.
 
-                    keyHwi = Hwi_disable();
-                    payload_input = malloc(header_in.payload_len);
-                    Hwi_restore(keyHwi);
-
-                    result = UART_read(ir_uart_h, payload_input, header_in.payload_len);
-                    if (result == header_in.payload_len && crc16_buf(payload_input, header_in.payload_len) == header_in.crc16_payload) {
+                    result = UART_read(ir_uart_h, serial_file_payload, header_in.payload_len);
+                    if (result == header_in.payload_len && crc16_buf(serial_file_payload, header_in.payload_len) == header_in.crc16_payload) {
                         // RXed good.
-                        serial_rx_done(&header_in, payload_input);
+                        serial_rx_done(&header_in);
                     } else {
                         // ruh roh
                         // TODO: broken rx
                     }
 
-                    keyHwi = Hwi_disable();
-                    free(payload_input);
-                    Hwi_restore(keyHwi);
                 } else {
                     // RXed good.
-                    serial_rx_done(&header_in, payload_input); // TODO: explicitly NULL?
+                    serial_rx_done(&header_in);
                 }
             }
         }

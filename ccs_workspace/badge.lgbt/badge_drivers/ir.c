@@ -90,30 +90,12 @@ void crc16_header_apply(ir_header_t *header) {
     );
 }
 
-//uint8_t validate_header_simple(ir_header_t *header) {
-//    // TODO: update
-//    if (crc16_buf((uint8_t *) header,
-//                    sizeof(ir_header_t)
-//                  - sizeof(header->crc16_header)) != header->crc16_header) {
-//        // Bad header CRC.
-//        return 0;
-//    }
-//
-//    if (header->payload_len > SERIAL_BUFFER_LEN) {
-//        return 0;
-//    }
-//
-//    return 1;
-//}
-
 uint8_t validate_header_len(ir_header_t *header) {
-    // TODO: Validate the version number.
     switch(header->opcode) {
     case SERIAL_OPCODE_PUTFILE:
         if (header->payload_len != STORAGE_ANIM_HEADER_SIZE) {
             return 0;
         }
-        // TODO: check null term
         break;
     case SERIAL_OPCODE_APPFILE:
         if (header->payload_len != STORAGE_ANIM_FRAME_SIZE) {
@@ -262,7 +244,6 @@ void serial_file_start() {
     }
 
     if (led_anim_ambient.direct_anim.anim_frames) {
-        // TODO: allow sending direct anims???
         return;
     }
 
@@ -336,7 +317,7 @@ void serial_rx_done(ir_header_t *header) {
                 serial_send_ack();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             } else {
-                // TODO: Any cleanup needed?
+                // I don't believe there's any special cleanup needed here.
             }
         }
         break;
@@ -432,8 +413,7 @@ void serial_task_fn(UArg a0, UArg a1) {
                         // RXed good.
                         serial_rx_done(&header_in);
                     } else {
-                        // ruh roh
-                        // TODO: broken rx
+                        // We got something garbled; allow the timeout to clean it up.
                     }
 
                 } else {
@@ -486,7 +466,7 @@ void ir_init() {
     ir_uart_h = UART_open(BADGE_UART_IRDA, &uart_params);
 
     PINCC26XX_setOutputValue(BADGE_PIN_IR_ENDEC_RSTn, 1); // Un-reset. (set to reset in board file)
-    Task_sleep(2); // TODO
+    Task_sleep(2);
     PWM_start(ir_pwm_16xclk_h);
 
     Task_Params taskParams;
@@ -497,9 +477,6 @@ void ir_init() {
     Task_construct(&serial_task, serial_task_fn, &taskParams, NULL);
 
     ir_event_h = Event_create(NULL, NULL);
-
-    // This will start up the UART, and configure our GPIO (again).
-//    serial_enter_prx();
 
     serial_ll_state = SERIAL_LL_STATE_IDLE;
 

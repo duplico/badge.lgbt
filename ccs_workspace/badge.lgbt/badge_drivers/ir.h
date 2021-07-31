@@ -29,7 +29,7 @@ extern Event_Handle ir_event_h;
 extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 
 // Configuration
-#define IR_TIMEOUT_MS 100
+#define IR_TIMEOUT_MS 250
 
 #define PTX_TIME_MS 100
 #define PRX_TIME_MS 1000
@@ -43,7 +43,6 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 #define SERIAL_OPCODE_ACK       0x02
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
-#define SERIAL_OPCODE_ENDFILE   0x0B
 #define SERIAL_OPCODE_GETFILE   0x13
 
 #define SERIAL_ID_ANY 0xffff
@@ -59,14 +58,15 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 // Shared struct and functions:
 
 typedef struct {
-    __packed uint8_t opcode;
-    __packed uint8_t payload_len;
-    uint64_t from_id;
-    uint16_t crc16_payload;
-    uint16_t crc16_header;
+    __packed uint16_t version_header;
+    __packed uint16_t payload_len;
+    __packed uint16_t opcode;
+    __packed uint64_t from_id;
+    __packed uint16_t crc16_payload;
+    __packed uint16_t crc16_header;
 } ir_header_t;
 
-uint16_t crc16_buf(volatile uint8_t *sbuf, uint8_t len);
+uint16_t crc16_buf(volatile uint8_t *sbuf, uint16_t len);
 uint16_t crc_build(uint8_t data, uint8_t start_over);
 void crc16_header_apply(ir_header_t *header);
 uint8_t validate_header(ir_header_t *header);
@@ -74,7 +74,7 @@ uint8_t validate_header_simple(ir_header_t *header);
 uint8_t check_id_buf(uint16_t id, uint8_t *buf);
 void set_id_buf(uint16_t id, uint8_t *buf);
 uint8_t byte_rank(uint8_t v);
-uint16_t buffer_rank(uint8_t *buf, uint8_t len);
+uint16_t buffer_rank(uint8_t *buf, uint16_t len);
 
 void ir_init();
 

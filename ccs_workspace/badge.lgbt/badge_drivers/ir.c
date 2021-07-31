@@ -116,9 +116,9 @@ uint8_t validate_header(ir_header_t *header) {
         break;
     }
 
-    if (serial_ll_state != SERIAL_LL_STATE_IDLE && header->from_id != serial_peer_id) {
-        return 0;
-    }
+//    if (serial_ll_state != SERIAL_LL_STATE_IDLE && header->from_id != serial_peer_id) {
+//        return 0;
+//    }
 
     return 1;
 }
@@ -247,6 +247,19 @@ void serial_send_ack() {
 //    Hwi_restore(keyHwi);
 //}
 //
+
+void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
+    if (dest_state == SERIAL_LL_STATE_IDLE) {
+        serial_peer_id = 0x0000000000000000;
+    }
+
+    serial_ll_state = dest_state;
+
+    if (timeout_ms) {
+        serial_ll_next_timeout = Clock_getTicks() + (timeout_ms * 100);
+    }
+}
+
 void serial_file_start() {
     if (serial_ll_state != SERIAL_LL_STATE_IDLE) {
         return;
@@ -266,12 +279,10 @@ void serial_file_start() {
         return;
     }
 
-    serial_ll_state = SERIAL_LL_STATE_C_FILE_TX;
-    serial_filepart = 0;
-
     serial_send(SERIAL_OPCODE_PUTFILE, (uint8_t *) &serial_file_header, STORAGE_ANIM_HEADER_SIZE);
-    serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
-    // Send the animation header. Now we await an ACK.
+    serial_filepart = 0;
+    serial_state_transition(SERIAL_LL_STATE_C_FILE_TX, IR_TIMEOUT_MS);
+    // Sent the animation header. Now we await an ACK.
 }
 
 void serial_file_send_next() {
@@ -281,6 +292,7 @@ void serial_file_send_next() {
         serial_filepart++;
     }
 }
+
 
 void serial_rx_done(ir_header_t *header) {
     // If this is called, it's already been validated.
@@ -298,7 +310,6 @@ void serial_rx_done(ir_header_t *header) {
         if (header->opcode == SERIAL_OPCODE_PUTFILE) {
             // The remote badge is sending us a file!
             // The first message will be the animation header.
-            serial_peer_id = header->from_id;
 
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
             // Check to see if we already have the animation.
@@ -322,10 +333,10 @@ void serial_rx_done(ir_header_t *header) {
             if (serial_fd >= 0) {
                 // The open worked properly...
                 SPIFFS_write(&storage_fs, serial_fd, serial_file_payload, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
-                serial_ll_state = SERIAL_LL_STATE_C_FILE_RX;
                 serial_filepart = 0;
                 serial_send_ack();
-                serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
+                serial_state_transition(SERIAL_LL_STATE_C_FILE_RX, IR_TIMEOUT_MS);
+                serial_peer_id = header->from_id;
             } else {
                 // I don't believe there's any special cleanup needed here.
             }
@@ -344,8 +355,7 @@ void serial_rx_done(ir_header_t *header) {
                     storage_next_anim_id++;
                     SPIFFS_close(&storage_fs, serial_fd);
                     led_set_anim(serial_file_header.name, 1);
-                    serial_ll_state = SERIAL_LL_STATE_IDLE;
-                    serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
+                    serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
                 }
 
             } else {
@@ -357,10 +367,13 @@ void serial_rx_done(ir_header_t *header) {
 
     case SERIAL_LL_STATE_C_FILE_TX:
         if (header->opcode == SERIAL_OPCODE_ACK) {
+            if (!serial_peer_id) {
+                serial_peer_id = header->from_id;
+            }
+
             if (serial_filepart == serial_file_header.direct_anim.anim_len) {
                 // done
-                serial_ll_state = SERIAL_LL_STATE_IDLE;
-                serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
+                serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
             } else {
                 serial_file_send_next();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
@@ -375,12 +388,10 @@ void serial_timeout() {
     switch(serial_ll_state) {
     case SERIAL_LL_STATE_C_FILE_TX:
         // Timeout, no ACK; return to idle.
-        serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
-        serial_ll_state = SERIAL_LL_STATE_IDLE;
+        serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
         break;
     case SERIAL_LL_STATE_C_FILE_RX:
-        serial_ll_state = SERIAL_LL_STATE_IDLE;
-        serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
+        serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
         SPIFFS_close(&storage_fs, serial_fd);
     default:
         serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);

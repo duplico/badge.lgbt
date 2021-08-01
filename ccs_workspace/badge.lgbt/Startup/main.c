@@ -41,8 +41,6 @@ extern void uble_getPublicAddr(uint8 *pPublicAddr);
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
-#define IR_BAUDRATE 9600
-
 PIN_Handle pins;
 
 Event_Handle ui_event_h;

@@ -8,6 +8,56 @@ import click
 from intelhex import IntelHex
 from PIL import Image, ImageFilter, ImageEnhance
 
+def scale_preview(i):
+     return i.resize((150,70), resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
+
+def img_string(img):
+     s = "{"
+     for rgb_row in grouper(img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), 15*3):
+          s += "{"
+          for rgb in grouper(rgb_row, 3):
+               s += "{%d, %d, %d}, " % rgb
+          s += "}, "
+     s += "}"
+     return s
+
+class BadgeImage:
+     def __init__(self, path, frame_delay_ms, crop=False):
+          self.imgs = []
+
+          if path.endswith('.bmp') or path.endswith('.gif'):
+               pass
+          else:
+               print("Expected: bmp or gif, got: %s" % path)
+               exit(1)
+
+          self.frame_delay_ms = frame_delay_ms
+
+          im = Image.open(path)
+          for i, frame in enumerate(iter_frames(im)):
+               frame = frame.convert('RGBA')
+               frame = ImageEnhance.Color(frame).enhance(2.5)
+               self.imgs.append(frame)
+
+          self.imgs = [scale_img(i, crop) for i in self.imgs]
+
+          # if path.endswith('.bmp'):
+          #      im = Image.open(path).convert('RGB')
+          #      im = scale_img(im, crop)
+          #      self.imgs.append(im)
+          # elif path.endswith('.gif'):
+          #      pass
+
+     def preview(self):
+          return list(map(scale_preview, self.imgs))
+
+     def img_string(self):
+          if len(self.imgs) == 1:
+               return img_string(self.imgs[0])
+
+     def img_bytes(self):
+          return list(map(lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), self.imgs))
+
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
@@ -28,16 +78,6 @@ def iter_frames(im):
             i += 1
     except EOFError:
         pass
-
-def img_string(img):
-     s = "{"
-     for rgb_row in grouper(img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), 15*3):
-          s += "{"
-          for rgb in grouper(rgb_row, 3):
-               s += "{%d, %d, %d}, " % rgb
-          s += "}, "
-     s += "}"
-     return s
 
 def print_img_code(imglist, name='image'):
      if len(imglist) == 1:
@@ -85,9 +125,6 @@ def scale_img(i, crop=False):
 #     bts = [int(math.pow(a/255.0,2.5)*255 + 0.5) for a in bts]
 #     return bts + [0]
 
-def scale_preview(i):
-     return i.resize((150,70), resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
-
 def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False, image_name='anim'):
      images = []
      im = Image.open(gif_src_path)
@@ -126,13 +163,25 @@ def import_bmp(bmp_src_path, preview=False, crop=False, image_name='frame'):
 @click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True, nargs=-1)
 def import_img(img_src_path, frame_dur, preview, crop):
      for img_src in img_src_path:
-          image_name = os.path.basename(img_src).split('.')[0]
-          if img_src.lower().endswith('.bmp'):
-               import_bmp(img_src, preview, crop, image_name=image_name)
-          elif img_src.lower().endswith('.gif'):
-               import_gif(img_src, frame_dur, crop=crop, preview=preview, image_name=image_name)
+          if img_src.lower().endswith('.bmp') or img_src.lower().endswith('.gif'):
+               image_name = os.path.basename(img_src).split('.')[0]
           else:
                print("Expected: bmp or gif, got: %s" % img_src)
+
+          badge_image = BadgeImage(img_src, frame_dur, crop)
+
+          if img_src.lower().endswith('.bmp'):
+               if preview:
+                    badge_image.preview()[0].show()
+               else:
+                    print_img_code(badge_image.imgs)
+          elif img_src.lower().endswith('.gif'):
+               if preview:
+                    scaled_images = list(map(scale_preview, badge_image.imgs))
+                    scaled_images[0].save('%s_preview.gif' % image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
+                    print("Preview image saved as %s_preview.gif." % image_name)
+               else:
+                    print_img_code(badge_image.imgs)
 
 if __name__ == "__main__":
      import_img()

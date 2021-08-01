@@ -5,6 +5,8 @@ import struct
 import argparse
 from collections import namedtuple
 
+from convert_image import BadgeImage
+
 import serial
 
 PROTO_VERSION = 0x0001
@@ -16,12 +18,13 @@ HEADER_FMT   = '<HHHQHH'
 SerialHeader = namedtuple('Header', 'version_header payload_len opcode from_id crc16_payload crc16_header')
 CRC_FMT = '<H'
 
-ANIM_META_FMT = '<%dsHHHHH' % ANIM_NAME_MAX_LEN # The last H is actually a B with a pad, but this is close enough.
+ANIM_META_FMT = '<%dsLHHHH' % ANIM_NAME_MAX_LEN # The last H is actually a B with a pad, but this is close enough.
 ImageMeta = namedtuple('Image', 'name anim_frames anim_len anim_frame_delay_ms id unlocked')
 
 RGBCOLOR_FMT = '<BBB'
 
 HEADER_SIZE = 18
+ANIM_HEADER_SIZE = 28
 FRAME_SIZE  = 315
 
 SERIAL_OPCODE_HELO=0x01
@@ -82,44 +85,27 @@ def send_message(ser, opcode, payload=b'', src_id=CONTROLLER_ID):
     ser.write(b'\xAC') # SYNC byte
     ser.write(msg)
 
-def send_image(ser, name, image):
-    curr_start = 0 # Inclusive
-    curr_end = curr_start + payload_len # Exclusive
-    txbuf = b''
-    img_header = struct.pack(IMG_META_FMT, image.compression_type_number, image.width, image.height, 2, 0, 0)
-
-    # Send the name in a PUTFILE
-    name = bytes(image.name) + b'\x00' # Add the required null term
-    send_message(ser, SERIAL_OPCODE_PUTFILE, payload=name)
-
-    # Wait for an ACK
-    await_ack(ser)
-
-    # Put the image header in the txbuf
-    txbuf += img_header
-    #  Adjust curr_end
-    curr_end -= len(txbuf)
-
-    while True:
-        if curr_start == len(image.bytes):
-            break
-
-        if curr_end > len(image.bytes):
-            curr_end = len(image.bytes)
-
-        txbuf += image.bytes[curr_start:curr_end]
-        
-        # Just crash if we miss an ACK:
-        send_message(ser, SERIAL_OPCODE_APPFILE, payload=txbuf)
-        await_ack(ser)
-
-        curr_start = curr_end
-        curr_end = curr_start + payload_len
-        txbuf = b''
+def send_image(ser: serial.Serial, name: str, image: BadgeImage):
+    badge_id = 0x000000000000
     
-    # Now that we're down here, it means that we finished sending the file.
-    send_message(ser, SERIAL_OPCODE_ENDFILE)
+    # TODO: set unlocked
+    anim_header = struct.pack(ANIM_META_FMT, name, 0x00000000, len(image.imgs), 0, 1)
+
+    curr_frame = 0
+
+    # Start the message with the animation header.
+    send_message(ser, SERIAL_OPCODE_PUTFILE, payload=anim_header)
     await_ack(ser)
+
+    # Now send it frame by frame.
+
+    for frame in image.img_bytes():
+        send_message(ser, SERIAL_OPCODE_APPFILE, payload=frame)
+        await_ack(ser)
+        curr_frame += 1
+        
+    # Now that we're down here, it means that we finished sending the file.
+    return badge_id
 
 def main():
     parser = argparse.ArgumentParser(prog='controller.py')
@@ -147,18 +133,16 @@ def main():
         if len(n) > 15:
             print("File name length is too long.")
             exit(1)
-        img = QcImage(path=args.path, name=n.encode('utf-8'), photo=True)
+        img = BadgeImage(args.path, True) # TODO: read `crop` in
 
     # pyserial object, with a 1 second timeout on reads.
     ser = serial.Serial(args.port, 20000, parity=serial.PARITY_NONE, timeout=args.timeout)
-    # Make the initial LL handshake with the badge:
-    badge_id = connect(ser)
 
-    print("Connected to badge %d" % badge_id)
+    badge_id = 0x0000000000000000
 
     # Send the message requested by the user
     if args.command == 'image':
-        send_image(ser, img)
+        badge_id = send_image(ser, img)
 
     # TODO:
     # if args.command == 'getfile':

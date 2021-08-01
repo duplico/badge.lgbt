@@ -396,17 +396,24 @@ void serial_task_fn(UArg a0, UArg a1) {
                     // Payload expected.
 
                     result = UART_read(ir_uart_h, serial_file_payload, header_in.payload_len);
-                    if (result == header_in.payload_len && crc16_buf(serial_file_payload, header_in.payload_len) == header_in.crc16_payload) {
-                        // RXed good.
+                    volatile uint16_t crc = crc16_buf(serial_file_payload, header_in.payload_len);
+                    if (result == header_in.payload_len && crc == header_in.crc16_payload) {
+                        // This was a good, validated RX.
                         serial_rx_done(&header_in);
                     } else {
-                        // We got something garbled; allow the timeout to clean it up.
+                        // We got something, but it was framed wrong or garbled, so if possible
+                        //  we'd like a re-send, which also tolls our timeout:
+                        serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+                        serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                     }
 
                 } else {
                     // RXed good.
                     serial_rx_done(&header_in);
                 }
+            } else {
+                serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+                serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             }
         }
     }

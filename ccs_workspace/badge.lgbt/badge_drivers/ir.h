@@ -29,7 +29,7 @@ extern Event_Handle ir_event_h;
 extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 
 // Configuration
-#define IR_TIMEOUT_MS 250
+#define IR_TIMEOUT_MS 1000
 
 #define PTX_TIME_MS 100
 #define PRX_TIME_MS 1000
@@ -41,6 +41,7 @@ extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 
 #define SERIAL_OPCODE_HELO      0x01
 #define SERIAL_OPCODE_ACK       0x02
+#define SERIAL_OPCODE_NACK      0x03
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
 #define SERIAL_OPCODE_GETFILE   0x13

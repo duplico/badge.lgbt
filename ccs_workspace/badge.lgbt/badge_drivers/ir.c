@@ -219,6 +219,7 @@ void serial_file_start() {
     }
 
     if (led_anim_ambient.direct_anim.anim_frames) {
+        // TODO: this is a direct anim
         return;
     }
 
@@ -236,6 +237,8 @@ void serial_file_start() {
     serial_filepart = 0;
     serial_state_transition(SERIAL_LL_STATE_C_FILE_TX, IR_TIMEOUT_MS);
     // Sent the animation header. Now we await an ACK.
+    led_anim_idle = led_anim_ambient;
+    led_set_anim_direct(send_anim, 1);
 }
 
 void serial_file_send_next() {
@@ -263,6 +266,9 @@ void serial_rx_done(ir_header_t *header) {
         if (header->opcode == SERIAL_OPCODE_PUTFILE) {
             // The remote badge is sending us a file!
             // The first message will be the animation header.
+
+            led_anim_idle = led_anim_ambient;
+            led_set_anim_direct(recv_anim, 1);
 
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
             // Check to see if we already have the animation.
@@ -327,6 +333,7 @@ void serial_rx_done(ir_header_t *header) {
             if (serial_filepart == serial_file_header.direct_anim.anim_len) {
                 // done
                 serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                led_set_anim_direct(led_anim_idle, 1); // TODO: success anim?
             } else {
                 serial_file_send_next();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
@@ -342,9 +349,11 @@ void serial_timeout() {
     case SERIAL_LL_STATE_C_FILE_TX:
         // Timeout, no ACK; return to idle.
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+        led_set_anim_direct(led_anim_idle, 1); // TODO: failure anim?
         break;
     case SERIAL_LL_STATE_C_FILE_RX:
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+        led_set_anim_direct(led_anim_idle, 1); // TODO: failure anim?
         SPIFFS_close(&storage_fs, serial_fd);
     default:
         serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);

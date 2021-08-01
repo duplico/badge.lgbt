@@ -181,7 +181,7 @@ void storage_init() {
         }
     }
 
-    // TODO: Garbage collect or run this at a different time?
+    // TODO: run this at a different time?
     SPIFFS_check(&storage_fs);
 
     uint32_t total;

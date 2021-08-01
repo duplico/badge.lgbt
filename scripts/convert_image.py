@@ -177,7 +177,7 @@ def import_img(img_src_path, frame_dur, preview, crop):
                     print_img_code(badge_image.imgs)
           elif img_src.lower().endswith('.gif'):
                if preview:
-                    scaled_images = list(map(scale_preview, scaled_images))
+                    scaled_images = list(map(scale_preview, badge_image.imgs))
                     scaled_images[0].save('%s_preview.gif' % image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
                     print("Preview image saved as %s_preview.gif." % image_name)
                else:

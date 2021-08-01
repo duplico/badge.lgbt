@@ -378,6 +378,10 @@ void serial_task_fn(UArg a0, UArg a1) {
             // TODO: If we do idle pairing, this likely needs to be changed.
             serial_file_start();
         }
+        if ((serial_ll_state == SERIAL_LL_STATE_IDLE) && Event_pend(ir_event_h, Event_Id_NONE, IR_EVENT_GETFILE, BIOS_NO_WAIT)) {
+            // TODO: If we do idle pairing, this likely needs to be changed.
+            serial_send(SERIAL_OPCODE_GETFILE, NULL, 0);
+        }
 
         // This blocks on a semaphore while waiting to return, so it's safe
         //  not to have a Task_yield() in this.

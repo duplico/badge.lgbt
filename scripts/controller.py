@@ -19,7 +19,7 @@ SerialHeader = namedtuple('Header', 'version_header payload_len opcode from_id c
 CRC_FMT = '<H'
 
 ANIM_META_FMT = '<%dsLHHHH' % ANIM_NAME_MAX_LEN # The last H is actually a B with a pad, but this is close enough.
-ImageMeta = namedtuple('Image', 'name anim_frames anim_len anim_frame_delay_ms id unlocked')
+AnimMeta = namedtuple('Image', 'name anim_frames anim_len anim_frame_delay_ms id unlocked')
 
 RGBCOLOR_FMT = '<BBB'
 
@@ -32,6 +32,7 @@ SERIAL_OPCODE_ACK=0x02
 SERIAL_OPCODE_PUTFILE=0x09
 SERIAL_OPCODE_APPFILE=0x0A
 SERIAL_OPCODE_SETNAME=0x0D
+SERIAL_OPCODE_GETFILE=0x13
 
 CONTROLLER_ID=0x1234000000000000
 CRC_SEED=0x8FB6
@@ -103,7 +104,7 @@ def send_image(ser: serial.Serial, name: str, image: BadgeImage):
         send_message(ser, SERIAL_OPCODE_APPFILE, payload=frame)
         await_ack(ser)
         curr_frame += 1
-        
+
     # Now that we're down here, it means that we finished sending the file.
     return badge_id
 
@@ -144,25 +145,23 @@ def main():
     if args.command == 'image':
         badge_id = send_image(ser, img)
 
-    # TODO:
-    # if args.command == 'getfile':
-    #     file = bytes()
-    #     send_message(ser, SERIAL_OPCODE_GETFILE, payload=args.spiffs_path.encode('utf-8'))
-    #     print("Sent get")
-    #     header, payload = await_serial(ser, SERIAL_OPCODE_PUTFILE)
-    #     print("Got PUTFILE")
-    #     send_message(ser, SERIAL_OPCODE_ACK)
-    #     print("Sent ACK")
-    #     while True:
-    #         header, payload = await_serial(ser)
-    #         send_message(ser, SERIAL_OPCODE_ACK)
-    #         if header.opcode == SERIAL_OPCODE_ENDFILE:
-    #             print("Got file segment")
-    #             break
-    #         else:
-    #             print("File done.")
-    #             file += payload
-    #     print(file)
+    if args.command == 'getfile':
+        file = bytes()
+        send_message(ser, SERIAL_OPCODE_GETFILE)
+        header, payload = await_serial(ser, SERIAL_OPCODE_PUTFILE)
+        print("Got PUTFILE")
+        send_message(ser, SERIAL_OPCODE_ACK)
+        frame = 0
+        anim = AnimMeta._make(struct.unpack(ANIM_META_FMT, payload))
+        while True:
+            header, payload = await_serial(ser)
+            send_message(ser, SERIAL_OPCODE_ACK)
+            print("Got frame %d/%d." % (frame, anim.anim_frames))
+            frame += 1
+            file += payload
+            if frame == anim.anim_frames:
+                break
+        print(file)
 
     print("Disconnected from badge %d." % badge_id)
 

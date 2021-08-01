@@ -26,11 +26,6 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
-void storage_bad_file(char *fname) {
-    // TODO: delete it or something?
-    // Is it open?
-}
-
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -60,14 +55,25 @@ uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t 
     return 1;
 }
 
-// TODO: rename to validate, or something;
-//       and actually do some additional validation.
 uint8_t storage_anim_saved_and_valid(char *anim_name) {
     spiffs_stat stat;
     spiffs_file fd;
     int32_t status;
     led_anim_t read_anim;
-    // TODO: Check null term and length
+    // Validate that the name has a null term:
+    uint8_t null_termed = 0;
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!anim_name[i]) {
+            null_termed = 1;
+            break;
+        }
+    }
+
+    if (!null_termed) {
+        // no null term
+        return 0;
+    }
+
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
 
@@ -93,8 +99,6 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
 }
 
 uint8_t storage_load_anim(char *anim_name, led_anim_t *dest) {
-    // TODO: Check null term and length
-
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
 
@@ -103,7 +107,6 @@ uint8_t storage_load_anim(char *anim_name, led_anim_t *dest) {
 
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]) {
     volatile int32_t stat;
-    // TODO: Check null term and length
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
 

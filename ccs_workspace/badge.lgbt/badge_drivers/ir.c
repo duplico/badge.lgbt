@@ -271,6 +271,21 @@ void serial_rx_done(ir_header_t *header) {
             led_set_anim_direct(recv_anim, 1);
 
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
+
+            // Validate that the name has a null term:
+            uint8_t null_termed = 0;
+            for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+                if (!serial_file_header.name[i]) {
+                    null_termed = 1;
+                    break;
+                }
+            }
+
+            if (!null_termed) {
+                // no null term
+                return;
+            }
+
             // Check to see if we already have the animation.
             if (storage_anim_saved_and_valid(serial_file_header.name)) {
                 // TODO: do whatever we're supposed to do with this.

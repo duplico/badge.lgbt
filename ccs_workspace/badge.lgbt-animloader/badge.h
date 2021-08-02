@@ -18,9 +18,6 @@
 #define SPIFFS_FILE_DESCRIPTOR_SIZE  (44)
 #define STORAGE_FILE_NAME_LIMIT 21 // includes null term // TODO: assert longer than 3+imagelen
 
-// IR stuff:
-#define IR_BAUDRATE 19200
-
 // UI stuff:
 #define UI_EVENT_BUT_SELECT Event_Id_30
 #define UI_EVENT_BUT_IMPORT Event_Id_29

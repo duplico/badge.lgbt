@@ -27,7 +27,6 @@
 
 #include <badge_drivers/tlc6983.h>
 #include <badge_drivers/led.h>
-#include <badge_drivers/ir.h>
 
 #include <adc.h>
 
@@ -100,7 +99,6 @@ void ui_task_fn(UArg a0, UArg a1) {
     led_init();
     adc_init();
     button_init();
-    ir_init();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -113,20 +111,7 @@ void ui_task_fn(UArg a0, UArg a1) {
     uble_getPublicAddr((uint8_t *) &badge_id);
 
     while (1) {
-        ui_events = Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_ALL, BIOS_WAIT_FOREVER);
-
-        if (ui_events & UI_EVENT_LED_FRAME) {
-            led_next_frame();
-        }
-        if (ui_events & UI_EVENT_BUT_SELECT) {
-            led_next_anim();
-        }
-        if (ui_events & UI_EVENT_BUT_EXPORT) {
-            Event_post(ir_event_h, IR_EVENT_SENDFILE);
-        }
-        if (ui_events & UI_EVENT_BUT_IMPORT) {
-            Event_post(ir_event_h, IR_EVENT_GETFILE);
-        }
+        Task_yield();
     }
 }
 

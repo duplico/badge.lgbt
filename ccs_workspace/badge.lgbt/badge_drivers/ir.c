@@ -470,6 +470,27 @@ void serial_task_fn(UArg a0, UArg a1) {
                 serial_send(SERIAL_OPCODE_NACK, NULL, 0);
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             }
+        } else if (result == UART_ERROR) {
+            // ERROR!
+            // Let's try closing and reopening the UART.
+            UART_close(ir_uart_h);
+
+            UART_Params uart_params;
+            UART_Params_init(&uart_params);
+            uart_params.readReturnMode = UART_RETURN_FULL; // unused in binary mode
+            uart_params.readDataMode = UART_DATA_BINARY;
+            uart_params.writeDataMode = UART_DATA_BINARY;
+            uart_params.stopBits = UART_STOP_ONE;
+            uart_params.baudRate = IR_BAUDRATE;
+            uart_params.readMode = UART_MODE_BLOCKING;
+            uart_params.readTimeout = IR_TIMEOUT_MS*100;
+            uart_params.writeMode = UART_MODE_BLOCKING;
+            uart_params.writeTimeout = UART_WAIT_FOREVER;
+
+            ir_uart_h = UART_open(BADGE_UART_IRDA, &uart_params);
+
+            // Yield, so our animations can keep going.
+            Task_yield();
         }
     }
 }

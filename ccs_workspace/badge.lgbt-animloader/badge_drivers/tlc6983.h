@@ -20,12 +20,4 @@ typedef struct {
     uint16_t green;
 } rgbcolor16_t;
 
-#define TLC_EVENT_REFRESH Event_Id_00
-#define TLC_EVENT_NEXTFRAME Event_Id_01
-
-extern rgbcolor16_t tlc_display_curr[7][15]; // display buffer
-extern Event_Handle tlc_event_h;
-
-void tlc_init();
-
 #endif /* BADGE_DRIVERS_TLC6983_H_ */

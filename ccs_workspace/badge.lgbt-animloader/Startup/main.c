@@ -38,67 +38,14 @@ extern void uble_getPublicAddr(uint8 *pPublicAddr);
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
-PIN_Handle pins;
-
-Event_Handle ui_event_h;
-Clock_Handle button_debounce_clock_h;
-PIN_Handle button_pin_h;
-PIN_State button_state;
-PIN_Config button_pin_config[] = {
-    BADGE_PIN_B1_SEL | PIN_INPUT_EN | PIN_PULLUP,
-    BADGE_PIN_B2_IMP | PIN_INPUT_EN | PIN_PULLUP,
-    BADGE_PIN_B3_EXP | PIN_INPUT_EN | PIN_PULLUP,
-    PIN_TERMINATE
-};
-
 uint64_t badge_id = 0x0000000000000000;
 uint16_t badge_anim_id = 0x00;
 
-void button_clock_swi(UArg a0) {
-    static uint8_t button_state_curr = 0b000;
-    static uint8_t button_state_last = 0b000;
-    static uint8_t button_state_next = 0b000;
-
-    button_state_next = 0;
-
-    button_state_next |= !PIN_getInputValue(BADGE_PIN_B1_SEL) << 0;
-    button_state_next |= !PIN_getInputValue(BADGE_PIN_B2_IMP) << 1;
-    button_state_next |= !PIN_getInputValue(BADGE_PIN_B3_EXP) << 2;
-
-    if (button_state_next == button_state_last && button_state_last != button_state_curr) {
-        // If the last state was 0, and now it's 1, we should fire the event for the specific button.
-        if ((button_state_curr & 0b001) && !(button_state_next & 0b001)) {
-            Event_post(ui_event_h, UI_EVENT_BUT_SELECT);
-        }
-        if ((button_state_curr & 0b010) && !(button_state_next & 0b010)) {
-            Event_post(ui_event_h, UI_EVENT_BUT_IMPORT);
-        }
-        if ((button_state_curr & 0b100) && !(button_state_next & 0b100)) {
-            Event_post(ui_event_h, UI_EVENT_BUT_EXPORT);
-        }
-
-        button_state_curr = button_state_next;
-    }
-
-    button_state_last = button_state_next;
-}
-
-void button_init() {
-    button_pin_h = PIN_open(&button_state, button_pin_config);
-
-    Clock_Params clockParams;
-    Clock_Params_init(&clockParams);
-    clockParams.period = UI_CLOCK_TICKS;
-    clockParams.startFlag = TRUE;
-    button_debounce_clock_h = Clock_create(button_clock_swi, 2, &clockParams, NULL);
-}
+extern const led_anim_t led_starting_anim;
+extern const led_anim_t explosion_anim;
 
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
-    tlc_init();
-    led_init();
-    adc_init();
-    button_init();
 
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
@@ -106,9 +53,12 @@ void ui_task_fn(UArg a0, UArg a1) {
     // TODO: Call config_init() or similar
     // TODO: Check for success of config_init()
 
-    UInt ui_events;
-
-    uble_getPublicAddr((uint8_t *) &badge_id);
+    if (!storage_anim_saved_and_valid("nyanbow")) {
+        storage_save_direct_anim("nyanbow", (led_anim_direct_t *) &led_starting_anim.direct_anim, 1);
+    }
+    if (!storage_anim_saved_and_valid("explode")) {
+        storage_save_direct_anim("explode", (led_anim_direct_t *) &explosion_anim.direct_anim, 1);
+    }
 
     while (1) {
         Task_yield();
@@ -139,10 +89,6 @@ int main()
     // Enable cache
     VIMSModeSet(VIMS_BASE, VIMS_MODE_ENABLED);
 #endif //CACHE_AS_RAM
-
-//    // Create the events:
-    ui_event_h = Event_create(NULL, NULL);
-    tlc_event_h = Event_create(NULL, NULL);
 
     Task_Params taskParams;
     Task_Params_init(&taskParams);

@@ -31,19 +31,4 @@ typedef struct {
     uint8_t unlocked;
 } led_anim_t;
 
-extern led_anim_t led_anim_ambient;
-extern led_anim_t led_anim_curr;
-extern led_anim_t led_anim_idle;
-extern uint16_t led_anim_id;
-
-extern const led_anim_t send_anim;
-extern const led_anim_t recv_anim;
-
-void led_next_frame();
-void led_load_frame();
-void led_init();
-void led_next_anim();
-void led_set_anim(char *name, uint8_t ambient);
-void led_set_anim_direct(led_anim_t anim, uint8_t ambient);
-
 #endif /* BADGE_DRIVERS_LED_H_ */

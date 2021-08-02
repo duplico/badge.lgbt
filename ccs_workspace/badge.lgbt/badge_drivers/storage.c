@@ -147,6 +147,52 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     // TODO: if failed, delete or something?
 }
 
+void storage_get_next_anim_name(char *name_out) {
+    uint16_t next_id = led_anim_id;
+
+    spiffs_DIR d;
+    struct spiffs_dirent e;
+    struct spiffs_dirent *pe = &e;
+    SPIFFS_opendir(&storage_fs, "/a/", &d);
+    led_anim_t id_candidate;
+    while ((pe = SPIFFS_readdir(&d, pe))) {
+        __nop();
+        if (!storage_anim_saved_and_valid((char *) &(pe->name[3]))) {
+            continue;
+        }
+        if (!storage_load_anim((char *) &(pe->name[3]), &id_candidate)) {
+            continue;
+        }
+        if (!id_candidate.unlocked) {
+            continue;
+        }
+
+        // TODO: clean this if/else block up
+        // The next ID is the lowest available ID above led_anim_id.
+        // Or, if no such ID exists, it should be the lowest ID altogether.
+        if (next_id == led_anim_id && id_candidate.id != next_id) {
+            next_id = id_candidate.id;
+            strncpy(name_out, &(pe->name[3]), ANIM_NAME_MAX_LEN);
+        } else if (next_id < led_anim_id && id_candidate.id < next_id) {
+            // If we haven't found a candidate above the current animation's ID yet,
+            //  then we want to look at the lowest ID possible.
+            next_id = id_candidate.id;
+            strncpy(name_out, &(pe->name[3]), ANIM_NAME_MAX_LEN);
+        } else if (next_id < led_anim_id && id_candidate.id > led_anim_id) {
+            // Another option is that this is the first candidate ID found above the current animation's ID:
+            next_id = id_candidate.id;
+            strncpy(name_out, &(pe->name[3]), ANIM_NAME_MAX_LEN);
+        } else if (next_id > led_anim_id && id_candidate.id < next_id && id_candidate.id > led_anim_id) {
+            // Otherwise, we are looking for the lowest ID higher than led_anim_id.
+            next_id = id_candidate.id;
+            strncpy(name_out, &(pe->name[3]), ANIM_NAME_MAX_LEN);
+        }
+    }
+    SPIFFS_closedir(&d);
+
+    name_out[ANIM_NAME_MAX_LEN-1] = 0x00;
+}
+
 void storage_init() {
     volatile int32_t status;
     status = SPIFFSNVS_config(&spiffsnvs, BADGE_NVSSPI25X0, &storage_fs, &fsConfig,
@@ -162,6 +208,7 @@ void storage_init() {
 
     if (status == SPIFFS_ERR_NOT_A_FS) {
         // Needs to be formatted before mounting.
+        SPIFFS_unmount(&storage_fs);
         status = SPIFFS_format(&storage_fs);
 
         if (status != SPIFFSNVS_STATUS_SUCCESS) {
@@ -194,7 +241,23 @@ void storage_init() {
         return;
     }
 
-    // TODO: decide the next available animation ID
+    // Decide the next available animation ID:
+    spiffs_DIR d;
+    struct spiffs_dirent e;
+    struct spiffs_dirent *pe = &e;
+    SPIFFS_opendir(&storage_fs, "/a/", &d); // TODO: check output
+    led_anim_t id_candidate;
+    storage_next_anim_id = 0;
+    while ((pe = SPIFFS_readdir(&d, pe))) {
+        if (
+                storage_anim_saved_and_valid((char *) &(pe->name[3])) &&
+                storage_load_anim((char *) &(pe->name[3]), &id_candidate) &&
+                id_candidate.id >= storage_next_anim_id
+        ) {
+            storage_next_anim_id = id_candidate.id + 1;
+        }
+    }
+    SPIFFS_closedir(&d);
 
     post_status_spiffs = 1;
 }

@@ -22,6 +22,7 @@ uint8_t led_curr_ambient = 0;
 
 uint16_t led_anim_frame = 0;
 uint8_t led_anim_direct = 1;
+uint16_t led_anim_id;
 
 Clock_Handle led_frame_clock_h;
 
@@ -283,9 +284,12 @@ void led_next_frame() {
     Event_post(tlc_event_h, TLC_EVENT_NEXTFRAME);
 }
 
+/// Select our next available unlocked animation, and switch to it.
 void led_next_anim() {
-    // TODO: select our next available animation, and switch to it.
-    led_set_anim_direct(explosion_anim, 0);
+    char next_anim_name[ANIM_NAME_MAX_LEN] = {0x00,};
+    storage_get_next_anim_name(next_anim_name);
+    led_set_anim(next_anim_name, 1);
+    led_anim_id = led_anim_ambient.id;
 }
 
 void led_init() {
@@ -312,6 +316,7 @@ void led_init() {
     }
     if (storage_anim_saved_and_valid("explode")) {
         led_set_anim("explode", 1);
+        led_anim_id = led_anim_ambient.id;
     } else {
         led_set_anim_direct(led_starting_anim, 1);
     }

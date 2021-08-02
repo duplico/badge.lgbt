@@ -26,6 +26,7 @@ uint8_t storage_load_anim(char *anim_name, led_anim_t *dest);
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size);
 void storage_bad_file(char *fname);
 uint8_t storage_file_exists(char *fname);
+void storage_get_next_anim_name(char *name_out);
 
 extern spiffs storage_fs;
 

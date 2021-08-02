@@ -182,7 +182,8 @@ void storage_init() {
     }
 
     // TODO: run this at a different time?
-    SPIFFS_check(&storage_fs);
+    // TODO: check battery?
+//    SPIFFS_check(&storage_fs);
 
     uint32_t total;
     uint32_t used;

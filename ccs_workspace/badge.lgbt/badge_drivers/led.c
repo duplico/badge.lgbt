@@ -18,6 +18,7 @@
 led_anim_t led_anim_curr;
 led_anim_t led_anim_ambient;
 led_anim_t led_anim_idle;
+led_anim_t led_anim_last_chosen;
 uint8_t led_curr_ambient = 0;
 
 uint16_t led_anim_frame = 0;
@@ -287,11 +288,19 @@ void led_next_frame() {
 /// Select our next available unlocked animation, and switch to it.
 void led_next_anim() {
     char next_anim_name[ANIM_NAME_MAX_LEN] = {0x00,};
-    storage_get_next_anim_name(next_anim_name);
-    led_set_anim(next_anim_name, 1);
-    led_anim_id = led_anim_ambient.id;
-    // TODO: write this dramatically less often.
-    storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));
+    // TODO: if led_anim_last_chosen isn't the current animation,
+    //       just switch back to it.
+    if (led_anim_last_chosen.id != led_anim_ambient.id) {
+        led_set_anim(led_anim_last_chosen.name, 1);
+        led_anim_id = led_anim_last_chosen.id;
+    } else {
+        storage_get_next_anim_name(next_anim_name);
+        led_set_anim(next_anim_name, 1);
+        led_anim_id = led_anim_ambient.id;
+        // TODO: write this dramatically less often.
+        storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));
+        led_anim_last_chosen = led_anim_ambient;
+    }
 }
 
 void led_init() {
@@ -302,7 +311,6 @@ void led_init() {
     led_frame_clock_h = Clock_create(led_next_frame_swi, 1000, &clockParams, NULL);
 
     // TODO: intro:
-//    led_set_anim_direct(intro_anim, 1);
 
     if (!storage_anim_saved_and_valid("nyanbow")) {
         storage_save_direct_anim("nyanbow", (led_anim_direct_t *) &led_starting_anim.direct_anim, 1);
@@ -314,4 +322,6 @@ void led_init() {
     // TODO: Check whether storage loaded one correctly.
     // TODO: this likely isn't needed if the intro plays
     led_set_anim(led_anim_curr.name, 1);
+    led_anim_last_chosen = led_anim_curr;
+    led_set_anim_direct(intro_anim, 0);
 }

@@ -55,6 +55,7 @@ PIN_Config button_pin_config[] = {
 };
 
 uint64_t badge_id = 0x0000000000000000;
+uint16_t badge_anim_id = 0x00;
 
 void button_clock_swi(UArg a0) {
     static uint8_t button_state_curr = 0b000;

@@ -34,6 +34,7 @@ typedef struct {
 extern led_anim_t led_anim_ambient;
 extern led_anim_t led_anim_curr;
 extern led_anim_t led_anim_idle;
+extern uint16_t led_anim_id;
 
 extern const led_anim_t send_anim;
 extern const led_anim_t recv_anim;

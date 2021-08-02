@@ -101,12 +101,10 @@ def send_message(ser, opcode, payload=b'', src_id=CONTROLLER_ID):
     # print('sent:', list(map(hex, msg)))
     ser.write(msg)
 
-def send_image(ser: serial.Serial, name: str, image: BadgeImage):
+def send_image(ser: serial.Serial, name: str, image: BadgeImage, unlock: bool):
     badge_id = 0x000000000000
     
-    # TODO: set unlocked
-    # TODO: frame delay
-    anim_header = struct.pack(ANIM_META_FMT, bytes(name, 'ascii'), 0x00000000, len(image.imgs), image.frame_delay_ms, 0, 1)
+    anim_header = struct.pack(ANIM_META_FMT, bytes(name, 'ascii'), 0x00000000, len(image.imgs), image.frame_delay_ms, 0, 1 if unlock else 0)
 
     curr_frame = 0
 
@@ -145,7 +143,8 @@ def main():
     image_parser.add_argument('--name', '-n', required=True, type=str, help="The image name for the badge. Must be globally unique.")
     image_parser.add_argument('path', type=str, help="Local path to the image to place on the badge.")
     image_parser.add_argument('--frame-dur', type=int, default=100)
-    image_parser.add_argument('--crop')
+    image_parser.add_argument('--crop', action='store_true')
+    image_parser.add_argument('--unlock', action='store_true')
 
     #   Get file
     handle_parser = cmd_parsers.add_parser('getfile')
@@ -168,7 +167,7 @@ def main():
 
     # Send the message requested by the user
     if args.command == 'putfile':
-        badge_id = send_image(ser, args.name, img)
+        badge_id = send_image(ser, args.name, img, args.unlock)
 
     if args.command == 'getfile':
         frames = []

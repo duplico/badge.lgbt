@@ -28,7 +28,7 @@
 extern Event_Handle ir_event_h;
 
 // Configuration
-#define IR_TIMEOUT_MS 1000
+#define IR_TIMEOUT_MS 500
 
 #define PTX_TIME_MS 100
 #define PRX_TIME_MS 1000

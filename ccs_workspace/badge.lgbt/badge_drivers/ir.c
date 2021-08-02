@@ -288,25 +288,31 @@ void serial_rx_done(ir_header_t *header) {
 
             // Check to see if we already have the animation.
             if (storage_anim_saved_and_valid(serial_file_header.name)) {
-                // TODO: do whatever we're supposed to do with this.
+                led_anim_t local_copy;
+                storage_load_anim(serial_file_header.name, &local_copy);
+                serial_file_header.id = local_copy.id;
+                if (local_copy.unlocked) {
+                    serial_file_header.unlocked = 1;
+                    // TODO: actually need to write here: no truncate, though!
+                }
+                // TODO: Don't need to write here. We can return.
 //                return;
+            } else {
+                // We actually need to save the file.
+                serial_file_header.id = storage_next_anim_id;
+                // We specifically do NOT increment the next available ID here, because we
+                // want to wait until we've completed the download. IDs are effectively
+                // assigned on the completion of transmission.
+                // We will retain the unlock value from the remote badge.
             }
-
-            // We actually need to save the file.
-            // The validation run already confirmed we have a null term in the payload.
-            serial_file_header.id = storage_next_anim_id;
-            // We specifically do NOT increment the next available ID here, because we
-            // want to wait until we've completed the download. IDs are effectively
-            // assigned on the completion of transmission.
-            serial_file_header.unlocked = 1; // TODO: Is this what we want?
 
             char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
             sprintf(fname, "/a/%s", serial_file_header.name);
 
-            serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY, 0);
+            serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_TRUNC, 0);
             if (serial_fd >= 0) {
                 // The open worked properly...
-                SPIFFS_write(&storage_fs, serial_fd, serial_file_payload, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
+                SPIFFS_write(&storage_fs, serial_fd, &serial_file_header, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
                 serial_filepart = 0;
                 serial_send_ack();
                 serial_state_transition(SERIAL_LL_STATE_C_FILE_RX, IR_TIMEOUT_MS);
@@ -329,6 +335,7 @@ void serial_rx_done(ir_header_t *header) {
                     storage_next_anim_id++;
                     SPIFFS_close(&storage_fs, serial_fd);
                     led_set_anim(serial_file_header.name, 1);
+                    led_anim_id = led_anim_ambient.id;
                     serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
                 }
 

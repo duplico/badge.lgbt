@@ -18,11 +18,6 @@
 #define SPIFFS_FILE_DESCRIPTOR_SIZE  (44)
 #define STORAGE_FILE_NAME_LIMIT 21 // includes null term // TODO: assert longer than 3+imagelen
 
-// UBLE stuff:
-#define UBLE_EVENT_UPDATE_ADV   Event_Id_00
-extern Event_Handle uble_event_h;
-#define BADGE_NAME_LEN 10
-
 // IR stuff:
 #define IR_BAUDRATE 19200
 

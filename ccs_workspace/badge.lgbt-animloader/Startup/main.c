@@ -20,8 +20,6 @@
 #include <inc/hw_memmap.h>
 #include <driverlib/vims.h>
 
-#include <ble/uble_bcast_scan.h>
-
 #include <xdc/runtime/Error.h>
 
 #include "storage.h"
@@ -104,8 +102,6 @@ void ui_task_fn(UArg a0, UArg a1) {
     button_init();
     ir_init();
 
-    UBLEBcastScan_createTask();
-
     // TODO: Check for post_status_spiffs != 0
     // TODO: Check for post_status_spiffs == -100 (low disk)
 
@@ -160,11 +156,9 @@ int main()
 #endif //CACHE_AS_RAM
 
 //    // Create the events:
-    uble_event_h = Event_create(NULL, NULL);
     ui_event_h = Event_create(NULL, NULL);
     tlc_event_h = Event_create(NULL, NULL);
 
-    // TODO: move to ui.c?
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stack = ui_task_stack;

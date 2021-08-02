@@ -470,6 +470,10 @@ void serial_task_fn(UArg a0, UArg a1) {
                 serial_send(SERIAL_OPCODE_NACK, NULL, 0);
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             }
+        } else if (result == UART_ERROR) {
+            // ERROR!
+            // TODO: Let's try closing and reopening the UART.
+            Task_yield();
         }
     }
 }

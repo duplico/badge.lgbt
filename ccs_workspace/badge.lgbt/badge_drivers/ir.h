@@ -26,7 +26,6 @@
 #define IR_EVENT_GETFILE Event_Id_02
 
 extern Event_Handle ir_event_h;
-extern char ir_file_to_send[SPIFFS_OBJ_NAME_LEN+1];
 
 // Configuration
 #define IR_TIMEOUT_MS 1000

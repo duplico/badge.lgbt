@@ -219,7 +219,7 @@ void serial_file_start() {
     }
 
     if (led_anim_ambient.direct_anim.anim_frames) {
-        // TODO: this is a direct anim
+        // We don't send direct animations.
         return;
     }
 
@@ -227,7 +227,6 @@ void serial_file_start() {
     serial_filepart = 0;
 
     serial_file_header.id = 0;
-    serial_file_header.unlocked = 0;
 
     if (!storage_anim_saved_and_valid(serial_file_header.name)) {
         return;
@@ -293,10 +292,20 @@ void serial_rx_done(ir_header_t *header) {
                 serial_file_header.id = local_copy.id;
                 if (local_copy.unlocked) {
                     serial_file_header.unlocked = 1;
-                    // TODO: actually need to write here: no truncate, though!
+                    // No need to write here; ours is already unlocked.
+                    // We set this because if we decide to overwrite it anyway
+                    //  (which has been happening during development), we
+                    //   shouldn't re-lock it.)
+                } else if (serial_file_header.unlocked) {
+                    // On the other hand, if our copy is locked, and the new
+                    //  version says it should be unlocked, the nwe should
+                    //  rewrite the header. NO TRUNCATING HERE!
                 }
-                // TODO: Don't need to write here. We can return.
-//                return;
+
+                // We DO need to write if local_copy is LOCKED and serial_file_header is UNLOCKED
+
+                // TODO: We're now all done.
+                // return;
             } else {
                 // We actually need to save the file.
                 serial_file_header.id = storage_next_anim_id;

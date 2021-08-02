@@ -130,7 +130,7 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     write_anim.direct_anim.anim_frame_delay_ms = anim->anim_frame_delay_ms;
     write_anim.direct_anim.anim_len = anim->anim_len;
     strncpy(write_anim.name, anim_name, ANIM_NAME_MAX_LEN);
-    write_anim.unlocked = 1;
+    write_anim.unlocked = unlocked;
     write_anim.direct_anim.anim_frames = NULL;
     write_anim.id = storage_next_anim_id;
     storage_next_anim_id++;

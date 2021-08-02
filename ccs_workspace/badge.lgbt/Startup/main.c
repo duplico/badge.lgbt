@@ -162,6 +162,7 @@ int main()
 //    // Create the events:
     uble_event_h = Event_create(NULL, NULL);
     ui_event_h = Event_create(NULL, NULL);
+    tlc_event_h = Event_create(NULL, NULL);
 
     // TODO: move to ui.c?
     Task_Params taskParams;

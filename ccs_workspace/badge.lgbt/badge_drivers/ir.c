@@ -314,6 +314,10 @@ void serial_rx_done(ir_header_t *header) {
                     //  version says it should be unlocked, then we should
                     //  rewrite the header.
                     header_only = 1;
+                } else {
+                    // Local copy is locked. Remote copy is locked.
+                    // Nothing to save.
+                    break;
                 }
             } else {
                 // We don't actually have a local copy of this file, so we'll

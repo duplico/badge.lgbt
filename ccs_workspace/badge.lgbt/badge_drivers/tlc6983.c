@@ -127,7 +127,6 @@ void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
 
 void tlc_task_fn(UArg a0, UArg a1) {
     UInt events;
-    uint16_t tx_col[3] =   {0x00F0, 0x00F0, 0x00F0};
 
     Clock_start(tlc_frame_clock_h);
 
@@ -144,16 +143,6 @@ void tlc_task_fn(UArg a0, UArg a1) {
             hwiKey = Hwi_disable();
             for (uint8_t row=0; row<7; row++) {
                 for (uint8_t col=0; col<16; col++) {
-//                    tx_col[0] = tlc_display_curr[row][col].blue * tlc_display_curr[row][col].blue;
-//                    tx_col[1] = tlc_display_curr[row][col].red * tlc_display_curr[row][col].red;
-//                    tx_col[2] = tlc_display_curr[row][col].green * tlc_display_curr[row][col].green;
-
-//                    tx_col[0] = (tlc_display_curr[row][col].blue < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].blue << 4);
-//                    tx_col[1] = (tlc_display_curr[row][col].red < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].red << 4);
-//                    tx_col[2] = (tlc_display_curr[row][col].green < OFF_THRESHOLD)? 0 : (tlc_display_curr[row][col].green << 4);
-                    tx_col[0] = tlc_display_curr[row][col].blue;
-                    tx_col[1] = tlc_display_curr[row][col].red;
-                    tx_col[2] = tlc_display_curr[row][col].green;
                     if (col == 15)
                         ccsi_tx(W_SRAM, all_off, 3);
                     else
@@ -170,8 +159,6 @@ void tlc_task_fn(UArg a0, UArg a1) {
 }
 
 void tlc_init() {
-    tlc_event_h = Event_create(NULL, NULL);
-
     Clock_Params clockParams;
     Clock_Params_init(&clockParams);
     clockParams.period = 0; // one-shot
@@ -211,21 +198,21 @@ void tlc_init() {
                        FC_1_0_DEFAULT | 127, //FC_1_0_SEG_LENGTH_128,
     };
 
-    uint16_t fc2[3] = {
-                       0b0000001111110000, // brightness compensation for "r", and channel immunity // MSword
-                       0b0000000000000000, // decoupling of "g" and "b", brightness compensation for "r" "g" "b"
-                       0b0000101100111011, //pre-discharge voltage; lowest "red" decoupling level // LSword
-    };
+//    uint16_t fc2[3] = {
+//                       0b0000001111110000, // brightness compensation for "r", and channel immunity // MSword
+//                       0b0000000000000000, // decoupling of "g" and "b", brightness compensation for "r" "g" "b"
+//                       0b0000101100111011, //pre-discharge voltage; lowest "red" decoupling level // LSword
+//    };
 
 //    uint16_t fc3[3] = {
 //
 //    };
 //
-    uint16_t fc4[3] = {
-                       0b0000000000000000, // SCAN_REV off
-                       0b0000010101000000, // default slew rates
-                       0b0000100000000000, //
-    };
+//    uint16_t fc4[3] = {
+//                       0b0000000000000000, // SCAN_REV off
+//                       0b0000010101000000, // default slew rates
+//                       0b0000100000000000, //
+//    };
 
     ccsi_bb_start();
     // Send prep commands:

@@ -22,7 +22,7 @@ uint8_t led_curr_ambient = 0;
 
 uint16_t led_anim_frame = 0;
 uint8_t led_anim_direct = 1;
-uint16_t led_anim_id;
+uint16_t led_anim_id = 0;
 
 Clock_Handle led_frame_clock_h;
 
@@ -290,6 +290,8 @@ void led_next_anim() {
     storage_get_next_anim_name(next_anim_name);
     led_set_anim(next_anim_name, 1);
     led_anim_id = led_anim_ambient.id;
+    // TODO: write this dramatically less often.
+    storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));
 }
 
 void led_init() {
@@ -299,14 +301,8 @@ void led_init() {
     clockParams.startFlag = FALSE;
     led_frame_clock_h = Clock_create(led_next_frame_swi, 1000, &clockParams, NULL);
 
+    // TODO: intro:
 //    led_set_anim_direct(intro_anim, 1);
-
-
-//    if (storage_anim_saved_and_valid("nyanbow")) {
-//        led_set_anim("nyanbow", 1);
-//    } else {
-//        led_set_anim_direct(led_starting_anim, 1);
-//    }
 
     if (!storage_anim_saved_and_valid("nyanbow")) {
         storage_save_direct_anim("nyanbow", (led_anim_direct_t *) &led_starting_anim.direct_anim, 1);
@@ -314,11 +310,8 @@ void led_init() {
     if (!storage_anim_saved_and_valid("explode")) {
         storage_save_direct_anim("explode", (led_anim_direct_t *) &explosion_anim.direct_anim, 1);
     }
-    if (storage_anim_saved_and_valid("explode")) {
-        led_set_anim("explode", 1);
-        led_anim_id = led_anim_ambient.id;
-    } else {
-        led_set_anim_direct(led_starting_anim, 1);
-    }
 
+    // TODO: Check whether storage loaded one correctly.
+    // TODO: this likely isn't needed if the intro plays
+    led_set_anim(led_anim_curr.name, 1);
 }

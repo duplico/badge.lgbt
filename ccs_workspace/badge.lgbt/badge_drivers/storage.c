@@ -115,7 +115,7 @@ uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*
 
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
     spiffs_file fd;
-    fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY, 0);
+    fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_O_TRUNC, 0);
     SPIFFS_write(&storage_fs, fd, src, size);
     SPIFFS_close(&storage_fs, fd);
 }
@@ -231,9 +231,9 @@ void storage_init() {
         }
     }
 
-    // TODO: run this at a different time?
-    // TODO: check battery?
-//    SPIFFS_check(&storage_fs);
+    // We need to do this at some point, but not now.
+    // It's  a very lengthy process on 8Mbit.
+    //    SPIFFS_check(&storage_fs);
 
     uint32_t total;
     uint32_t used;
@@ -242,6 +242,11 @@ void storage_init() {
         post_status_spiffs = -100;
         post_errors++;
         return;
+    }
+
+    if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", &led_anim_id, 0, sizeof(led_anim_id))) {
+        storage_overwrite_file("/.animid", 0x0000, sizeof(led_anim_id));
+        led_anim_id = 0;
     }
 
     // Decide the next available animation ID:
@@ -254,10 +259,15 @@ void storage_init() {
     while ((pe = SPIFFS_readdir(&d, pe))) {
         if (
                 storage_anim_saved_and_valid((char *) &(pe->name[3])) &&
-                storage_load_anim((char *) &(pe->name[3]), &id_candidate) &&
-                id_candidate.id >= storage_next_anim_id
+                storage_load_anim((char *) &(pe->name[3]), &id_candidate)
         ) {
-            storage_next_anim_id = id_candidate.id + 1;
+            if (id_candidate.id >= storage_next_anim_id) {
+                storage_next_anim_id = id_candidate.id + 1;
+            }
+            if (id_candidate.id == led_anim_id) {
+                led_anim_curr = id_candidate;
+                led_anim_ambient = led_anim_curr;
+            }
         }
     }
     SPIFFS_closedir(&d);

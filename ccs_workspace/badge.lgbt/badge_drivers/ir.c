@@ -263,13 +263,13 @@ void serial_rx_done(ir_header_t *header) {
         }
         // TODO: HELO
         if (header->opcode == SERIAL_OPCODE_PUTFILE) {
+            char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
+            uint8_t header_only = 0;
             // The remote badge is sending us a file!
             // The first message will be the animation header.
 
-            led_anim_idle = led_anim_ambient;
-            led_set_anim_direct(recv_anim, 1);
-
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
+            sprintf(fname, "/a/%s", serial_file_header.name);
 
             // Validate that the name has a null term:
             uint8_t null_termed = 0;
@@ -287,45 +287,65 @@ void serial_rx_done(ir_header_t *header) {
 
             // Check to see if we already have the animation.
             if (storage_anim_saved_and_valid(serial_file_header.name)) {
+                // We do already have the animation.
                 led_anim_t local_copy;
                 storage_load_anim(serial_file_header.name, &local_copy);
                 serial_file_header.id = local_copy.id;
+
+                // We know from the jump that we're going to be switching to it,
+                //  so just load it now.
+                // TODO: Maybe not this; see Issue #79
+                led_set_anim(serial_file_header.name, 1);
+
+                // Now, determine if we have any storage-related work to do.
                 if (local_copy.unlocked) {
-                    serial_file_header.unlocked = 1;
                     // No need to write here; ours is already unlocked.
-                    // We set this because if we decide to overwrite it anyway
+                    // But, we set this because if we are in a configuration
+                    //  in which we decide to overwrite it anyway
                     //  (which has been happening during development), we
                     //   shouldn't re-lock it.)
+                    serial_file_header.unlocked = 1;
+
+                    // So, we're done.
+                    break;
+
                 } else if (serial_file_header.unlocked) {
                     // On the other hand, if our copy is locked, and the new
-                    //  version says it should be unlocked, the nwe should
-                    //  rewrite the header. NO TRUNCATING HERE!
+                    //  version says it should be unlocked, then we should
+                    //  rewrite the header.
+                    header_only = 1;
                 }
-
-                // We DO need to write if local_copy is LOCKED and serial_file_header is UNLOCKED
-
-                // TODO: We're now all done.
-                // return;
             } else {
-                // We actually need to save the file.
+                // We don't actually have a local copy of this file, so we'll
+                //  need to receive the whole darn thing.
                 serial_file_header.id = storage_next_anim_id;
                 // We specifically do NOT increment the next available ID here, because we
                 // want to wait until we've completed the download. IDs are effectively
                 // assigned on the completion of transmission.
-                // We will retain the unlock value from the remote badge.
+
+                // Also, we will retain the unlock value from the remote badge.
             }
 
-            char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
-            sprintf(fname, "/a/%s", serial_file_header.name);
+            // Time to show the receiving animation.
+            led_anim_idle = led_anim_ambient;
+            led_set_anim_direct(recv_anim, 1);
 
-            serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_TRUNC, 0);
+            if (header_only) {
+                serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_WRONLY, 0); // Don't truncate or create new if we just need to rewrite the header.
+            } else {
+                serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_TRUNC, 0);
+            }
             if (serial_fd >= 0) {
                 // The open worked properly...
                 SPIFFS_write(&storage_fs, serial_fd, &serial_file_header, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
-                serial_filepart = 0;
-                serial_send_ack();
-                serial_state_transition(SERIAL_LL_STATE_C_FILE_RX, IR_TIMEOUT_MS);
-                serial_peer_id = header->from_id;
+                if (header_only) {
+                    SPIFFS_close(&storage_fs, serial_fd);
+                } else {
+                    serial_filepart = 0;
+                    serial_send_ack();
+                    serial_state_transition(SERIAL_LL_STATE_C_FILE_RX, IR_TIMEOUT_MS);
+                    serial_peer_id = header->from_id;
+                }
             } else {
                 // I don't believe there's any special cleanup needed here.
             }

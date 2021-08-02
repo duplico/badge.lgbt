@@ -123,7 +123,9 @@ void ui_task_fn(UArg a0, UArg a1) {
             led_next_frame();
         }
         if (ui_events & UI_EVENT_BUT_SELECT) {
-            led_next_anim();
+            if (serial_ll_state == SERIAL_LL_STATE_IDLE) {
+                led_next_anim();
+            }
         }
         if (ui_events & UI_EVENT_BUT_EXPORT) {
             Event_post(ir_event_h, IR_EVENT_SENDFILE);

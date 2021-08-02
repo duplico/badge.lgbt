@@ -278,7 +278,6 @@ void serial_rx_done(ir_header_t *header) {
             }
 
             // We actually need to save the file.
-            // The validation run already confirmed we have a null term in the payload.
             serial_file_header.id = storage_next_anim_id;
             // We specifically do NOT increment the next available ID here, because we
             // want to wait until we've completed the download. IDs are effectively

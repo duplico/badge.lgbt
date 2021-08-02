@@ -31,6 +31,9 @@ class BadgeImage:
                print("Expected: bmp or gif, got: %s" % path)
                exit(1)
 
+          
+          self.image_name = os.path.basename(path).split('.')[0]
+
           self.frame_delay_ms = frame_delay_ms
 
           im = Image.open(path)
@@ -81,9 +84,9 @@ def iter_frames(im):
 
 def print_img_code(imglist, name='image'):
      if len(imglist) == 1:
-          print("rgbcolor_t %s[7][15] = %s;" % (name, img_string(imglist[0])))
+          print("const rgbcolor_t %s[7][15] = %s;" % (name, img_string(imglist[0])))
      else:
-          print('rgbcolor_t %s[%d][7][15] = {%s};' % (
+          print('const rgbcolor_t %s_frames[%d][7][15] = {%s};' % (
                name,
                len(imglist),
                ',\n'.join(map(img_string, imglist))
@@ -164,7 +167,7 @@ def import_bmp(bmp_src_path, preview=False, crop=False, image_name='frame'):
 def import_img(img_src_path, frame_dur, preview, crop):
      for img_src in img_src_path:
           if img_src.lower().endswith('.bmp') or img_src.lower().endswith('.gif'):
-               image_name = os.path.basename(img_src).split('.')[0]
+               pass
           else:
                print("Expected: bmp or gif, got: %s" % img_src)
 
@@ -181,7 +184,7 @@ def import_img(img_src_path, frame_dur, preview, crop):
                     scaled_images[0].save('%s_preview.gif' % image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
                     print("Preview image saved as %s_preview.gif." % image_name)
                else:
-                    print_img_code(badge_image.imgs)
+                    print_img_code(badge_image.imgs, name=badge_image.image_name)
 
 if __name__ == "__main__":
      import_img()

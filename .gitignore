@@ -97,3 +97,7 @@ scripts/.vscode/
 scripts/preview.gif
 
 ccs_workspace/badge.lgbt-dongle/Debug/
+
+ccs_workspace/badge.lgbt-animloader/.config/
+
+ccs_workspace/badge.lgbt-animloader/.xdchelp

@@ -254,19 +254,6 @@ void storage_init() {
         }
     }
 
-    // We need to do this at some point, but not now.
-    // It's  a very lengthy process on 8Mbit.
-    //    SPIFFS_check(&storage_fs);
-
-    uint32_t total;
-    uint32_t used;
-    status = SPIFFS_info(&storage_fs, &total, &used);
-    if ((used*100) / total > 95) {
-        post_status_spiffs = -100;
-        post_errors++;
-        return;
-    }
-
     if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", &led_anim_id, 0, sizeof(led_anim_id))) {
         led_anim_id = 0;
         storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));

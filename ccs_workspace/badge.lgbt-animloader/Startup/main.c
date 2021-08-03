@@ -47,11 +47,7 @@ extern const uint16_t anim_count;
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
 
-    // TODO: Check for post_status_spiffs != 0
-    // TODO: Check for post_status_spiffs == -100 (low disk)
-
-    // TODO: Call config_init() or similar
-    // TODO: Check for success of config_init()
+    uble_getPublicAddr((uint8_t *) &badge_id);
 
     for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
         if (!storage_anim_saved_and_valid(anim_list[anim_index]->name)) {

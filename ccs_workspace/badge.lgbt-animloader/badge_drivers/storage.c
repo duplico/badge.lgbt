@@ -26,7 +26,7 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
-#define STORAGE_FLAG 0x0003
+#define STORAGE_FLAG 0x0005
 
 uint16_t storage_flag = 0x0000;
 uint16_t storage_flag_expected = STORAGE_FLAG;

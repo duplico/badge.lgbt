@@ -99,10 +99,10 @@ const led_anim_t explosion_anim = {
 #define DIRECT_CNT 3
 
 const led_anim_t *led_direct_anims[DIRECT_CNT] = {
+                                       &explosion_anim,
                                        &send_anim,
                                        &recv_anim,
                                        &startup_anim,
-                                       &explosion_anim
 };
 
 void led_next_frame_swi(UArg a0) {

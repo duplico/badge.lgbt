@@ -16,6 +16,7 @@
 #define STORAGE_ANIM_HEADER_SIZE sizeof(led_anim_t)
 
 extern uint16_t storage_next_anim_id;
+extern char storage_anim_id_cache[STORAGE_ANIMS_TO_CACHE][ANIM_NAME_MAX_LEN];
 
 void storage_init();
 uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t size);

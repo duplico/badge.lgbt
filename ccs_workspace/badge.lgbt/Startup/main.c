@@ -37,7 +37,7 @@ extern assertCback_t halAssertCback;
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
 extern void uble_getPublicAddr(uint8 *pPublicAddr);
 
-#define UI_STACKSIZE 1200
+#define UI_STACKSIZE 1600
 Task_Struct ui_task;
 uint8_t ui_task_stack[UI_STACKSIZE];
 
@@ -106,12 +106,6 @@ void ui_task_fn(UArg a0, UArg a1) {
 
 //    UBLEBcastScan_createTask();
 
-    // TODO: Check for post_status_spiffs != 0
-    // TODO: Check for post_status_spiffs == -100 (low disk)
-
-    // TODO: Call config_init() or similar
-    // TODO: Check for success of config_init()
-
     UInt ui_events;
 
     uble_getPublicAddr((uint8_t *) &badge_id);
@@ -122,18 +116,22 @@ void ui_task_fn(UArg a0, UArg a1) {
         if (ui_events & UI_EVENT_LED_FRAME) {
             led_next_frame();
         }
-        if (ui_events & UI_EVENT_BUT_SELECT) {
-            if (serial_ll_state == SERIAL_LL_STATE_IDLE) {
-                led_next_anim();
+
+        // Only obey the buttons if the flash is working.
+        if (!post_errors) {
+            if (ui_events & UI_EVENT_BUT_SELECT) {
+                if (serial_ll_state == SERIAL_LL_STATE_IDLE) {
+                    led_next_anim();
+                }
             }
-        }
-        if (ui_events & UI_EVENT_BUT_EXPORT) {
-            Event_post(ir_event_h, IR_EVENT_SENDFILE);
-        }
-        if (ui_events & UI_EVENT_BUT_IMPORT) {
-            Event_post(ir_event_h, IR_EVENT_GETFILE);
-        }
-    }
+            if (ui_events & UI_EVENT_BUT_EXPORT) {
+                Event_post(ir_event_h, IR_EVENT_SENDFILE);
+            }
+            if (ui_events & UI_EVENT_BUT_IMPORT) {
+                Event_post(ir_event_h, IR_EVENT_GETFILE);
+            }
+        } // end if (!post_errors)
+    } // end while
 }
 
 int main()

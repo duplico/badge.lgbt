@@ -21,6 +21,21 @@ def img_string(img):
      s += "}"
      return s
 
+
+# from https://stackoverflow.com/questions/53364769/get-frames-per-second-of-a-gif-in-python
+def get_avg_fps(PIL_Image_object):
+    """ Returns the average framerate of a PIL Image object """
+    PIL_Image_object.seek(0)
+    frames = duration = 0
+    while True:
+        try:
+            frames += 1
+            duration += PIL_Image_object.info['duration']
+            PIL_Image_object.seek(PIL_Image_object.tell() + 1)
+        except EOFError:
+            return frames / duration * 1000
+    return None
+
 class BadgeImage:
      def __init__(self, path, frame_delay_ms, crop=False):
           self.imgs = []
@@ -43,7 +58,7 @@ class BadgeImage:
           self.imgs = [scale_img(i, crop) for i in self.imgs]
 
           if not frame_delay_ms:
-               frame_delay_ms = get_avg_fps(im)*10
+               frame_delay_ms = im.info['duration']
 
           self.frame_delay_ms = frame_delay_ms
 
@@ -134,20 +149,6 @@ def scale_img(i, crop=False):
      )
 
      return background
-
-# from https://stackoverflow.com/questions/53364769/get-frames-per-second-of-a-gif-in-python
-def get_avg_fps(PIL_Image_object):
-    """ Returns the average framerate of a PIL Image object """
-    PIL_Image_object.seek(0)
-    frames = duration = 0
-    while True:
-        try:
-            frames += 1
-            duration += PIL_Image_object.info['duration']
-            PIL_Image_object.seek(PIL_Image_object.tell() + 1)
-        except EOFError:
-            return frames / duration * 1000
-    return None
 
 @click.command()
 @click.option('--preview', is_flag=True)

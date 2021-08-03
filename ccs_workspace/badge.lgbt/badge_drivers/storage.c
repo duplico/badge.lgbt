@@ -157,6 +157,25 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
 void storage_get_next_anim_name(char *name_out) {
     uint16_t next_id = led_anim_id;
 
+    // Determine whether we can use our cache.
+    if (storage_next_anim_id <= STORAGE_ANIMS_TO_CACHE) {
+        // If storage_next_anim_id == STORAGE_ANIMS_TO_CACHE, then that means
+        //  the NEXT animation we receive will have an ID equal to the size
+        //  of our cache, meaning an overrun. But NOT YET!
+        do {
+            next_id++;
+            if (next_id == storage_next_anim_id) {
+                next_id = 0;
+            }
+            if (next_id == led_anim_id) {
+                break; // just in case
+            }
+        } while (!storage_anim_id_cache[next_id][0]);
+        strncpy(name_out, storage_anim_id_cache[next_id], ANIM_NAME_MAX_LEN);
+        name_out[ANIM_NAME_MAX_LEN-1] = 0x00;
+        return;
+    }
+
     spiffs_DIR d;
     struct spiffs_dirent e;
     struct spiffs_dirent *pe = &e;

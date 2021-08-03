@@ -125,7 +125,7 @@ def scale_img(i, crop=False):
      # TODO: Docs and cleanup
      width, height = i.size
 
-     if crop:
+     if crop and not (width <= 15 and height <= 7):
           ideal_aspect = 15/7.0
           aspect = width / float(height)
 

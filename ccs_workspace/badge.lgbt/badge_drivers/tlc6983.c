@@ -53,8 +53,7 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 // Calculated values:
 #define CLKS_PER_FRAME (SUBPERIOD_TICKS * SUBPERIODS)
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
-#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 100)
-//#define FRAME_LEN_SYSTICKS 2500 // 2860 too fast, 2870 too slow
+#define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 10)
 
 /// Current value of the bit-banged CCSI clock.
 uint8_t sclk_val = 0;
@@ -131,11 +130,7 @@ void tlc_task_fn(UArg a0, UArg a1) {
     Clock_start(tlc_frame_clock_h);
 
     while (1) {
-        events = Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_REFRESH | TLC_EVENT_NEXTFRAME, BIOS_WAIT_FOREVER);
-
-        if (events & TLC_EVENT_NEXTFRAME) {
-            led_load_frame();
-        }
+        events = Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_REFRESH, BIOS_WAIT_FOREVER);
 
         if (events & TLC_EVENT_REFRESH) {
             ccsi_bb_start();
@@ -154,6 +149,9 @@ void tlc_task_fn(UArg a0, UArg a1) {
             Clock_start(tlc_frame_clock_h);
             Hwi_restore(hwiKey);
             ccsi_bb_end();
+            if (Event_pend(tlc_event_h, Event_Id_NONE, TLC_EVENT_NEXTFRAME, BIOS_NO_WAIT)) {
+                led_load_frame();
+            }
         }
     }
 }

@@ -142,7 +142,7 @@ def main():
     image_parser = cmd_parsers.add_parser('putfile')
     image_parser.add_argument('--name', '-n', required=True, type=str, help="The image name for the badge. Must be globally unique.")
     image_parser.add_argument('path', type=str, help="Local path to the image to place on the badge.")
-    image_parser.add_argument('--frame-dur', type=int, default=100)
+    image_parser.add_argument('--frame-dur', type=int, default=0)
     image_parser.add_argument('--crop', action='store_true')
     image_parser.add_argument('--unlock', action='store_true')
 

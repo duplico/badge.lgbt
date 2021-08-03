@@ -84,6 +84,7 @@ const led_anim_direct_t explosion_anim_direct = {
     200,
 };
 
+// TODO: Use a different one:
 const led_anim_t explosion_anim = {
                                       "explode",
                                       (led_anim_direct_t){
@@ -93,6 +94,15 @@ const led_anim_t explosion_anim = {
                                       },
                                       0,
                                       1
+};
+
+#define DIRECT_CNT 4
+
+const led_anim_t *led_direct_anims[DIRECT_CNT] = {
+                                       &explosion_anim,
+                                       &send_anim,
+                                       &recv_anim,
+                                       &startup_anim,
 };
 
 void led_next_frame_swi(UArg a0) {
@@ -181,9 +191,10 @@ void led_init() {
     clockParams.startFlag = FALSE;
     led_frame_clock_h = Clock_create(led_next_frame_swi, 1000, &clockParams, NULL);
 
-    // TODO: Use a different one:
-    if (!storage_anim_saved_and_valid("explode")) {
-        storage_save_direct_anim("explode", (led_anim_direct_t *) &explosion_anim.direct_anim, 1);
+    for (uint16_t i=0; i<DIRECT_CNT; i++) {
+        if (!storage_anim_saved_and_valid(led_direct_anims[i]->name)) {
+            storage_save_direct_anim(led_direct_anims[i]->name, &led_direct_anims[i]->direct_anim, 0);
+        }
     }
 
     // TODO: Check whether storage loaded one correctly.

@@ -314,6 +314,8 @@ void serial_rx_done(ir_header_t *header) {
                     //  version says it should be unlocked, then we should
                     //  rewrite the header.
                     header_only = 1;
+                    strncpy(storage_anim_id_cache[local_copy.id], serial_file_header.name, ANIM_NAME_MAX_LEN);
+                    // TODO: this broke.
                 } else {
                     // Local copy is locked. Remote copy is locked.
                     // Nothing to save.
@@ -330,13 +332,12 @@ void serial_rx_done(ir_header_t *header) {
                 // Also, we will retain the unlock value from the remote badge.
             }
 
-            // Time to show the receiving animation.
-            led_anim_idle = led_anim_ambient;
-            led_set_anim_direct(recv_anim, 1);
-
             if (header_only) {
                 serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_WRONLY, 0); // Don't truncate or create new if we just need to rewrite the header.
             } else {
+                // Time to show the receiving animation.
+                led_anim_idle = led_anim_ambient;
+                led_set_anim_direct(recv_anim, 1);
                 serial_fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_TRUNC, 0);
             }
             if (serial_fd >= 0) {
@@ -369,6 +370,9 @@ void serial_rx_done(ir_header_t *header) {
                     SPIFFS_close(&storage_fs, serial_fd);
                     led_set_anim(serial_file_header.name, 1);
                     led_anim_id = led_anim_ambient.id;
+                    if (serial_file_header.unlocked) {
+                        strncpy(storage_anim_id_cache[led_anim_ambient.id], serial_file_header.name, ANIM_NAME_MAX_LEN);
+                    }
                     serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
                 }
 

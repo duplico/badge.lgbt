@@ -26,6 +26,8 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
+char storage_anim_id_cache[STORAGE_ANIMS_TO_CACHE][ANIM_NAME_MAX_LEN] = {0,};
+
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -147,11 +149,32 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     } else {
     }
 
-    // TODO: if failed, delete or something?
+    if (unlocked && write_anim.id < STORAGE_ANIMS_TO_CACHE) {
+        strncpy(storage_anim_id_cache[write_anim.id], write_anim.name, ANIM_NAME_MAX_LEN);
+    }
 }
 
 void storage_get_next_anim_name(char *name_out) {
     uint16_t next_id = led_anim_id;
+
+    // Determine whether we can use our cache.
+    if (storage_next_anim_id <= STORAGE_ANIMS_TO_CACHE) {
+        // If storage_next_anim_id == STORAGE_ANIMS_TO_CACHE, then that means
+        //  the NEXT animation we receive will have an ID equal to the size
+        //  of our cache, meaning an overrun. But NOT YET!
+        do {
+            next_id++;
+            if (next_id == storage_next_anim_id) {
+                next_id = 0;
+            }
+            if (next_id == led_anim_id) {
+                break; // just in case
+            }
+        } while (!storage_anim_id_cache[next_id][0]);
+        strncpy(name_out, storage_anim_id_cache[next_id], ANIM_NAME_MAX_LEN);
+        name_out[ANIM_NAME_MAX_LEN-1] = 0x00;
+        return;
+    }
 
     spiffs_DIR d;
     struct spiffs_dirent e;
@@ -267,6 +290,9 @@ void storage_init() {
             if (id_candidate.id == led_anim_id) {
                 led_anim_curr = id_candidate;
                 led_anim_ambient = led_anim_curr;
+            }
+            if (id_candidate.id < STORAGE_ANIMS_TO_CACHE && id_candidate.unlocked) {
+                strncpy(storage_anim_id_cache[id_candidate.id], &(pe->name[3]), ANIM_NAME_MAX_LEN);
             }
         }
     }

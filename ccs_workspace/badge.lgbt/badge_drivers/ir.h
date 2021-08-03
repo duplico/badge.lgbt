@@ -55,6 +55,7 @@ extern uint8_t serial_ll_state;
 #define SERIAL_LL_STATE_C_FILE_TX 4
 #define SERIAL_LL_STATE_C_PAIRING 5
 #define SERIAL_LL_STATE_C_FILE_TX_DONE 7
+#define SERIAL_LL_STATE_C_FILE_RX_DONE 8
 
 // Shared struct and functions:
 

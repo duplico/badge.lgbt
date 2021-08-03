@@ -96,7 +96,7 @@ const led_anim_t explosion_anim = {
                                       1
 };
 
-#define DIRECT_CNT 3
+#define DIRECT_CNT 4
 
 const led_anim_t *led_direct_anims[DIRECT_CNT] = {
                                        &explosion_anim,

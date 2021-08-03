@@ -26,6 +26,8 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
+char storage_anim_id_cache[STORAGE_ANIMS_TO_CACHE][ANIM_NAME_MAX_LEN] = {0,};
+
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -147,7 +149,9 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     } else {
     }
 
-    // TODO: if failed, delete or something?
+    if (unlocked && write_anim.id < STORAGE_ANIMS_TO_CACHE) {
+        strncpy(storage_anim_id_cache[write_anim.id], write_anim.name, ANIM_NAME_MAX_LEN);
+    }
 }
 
 void storage_get_next_anim_name(char *name_out) {
@@ -267,6 +271,9 @@ void storage_init() {
             if (id_candidate.id == led_anim_id) {
                 led_anim_curr = id_candidate;
                 led_anim_ambient = led_anim_curr;
+            }
+            if (id_candidate.id < STORAGE_ANIMS_TO_CACHE && id_candidate.unlocked) {
+                strncpy(storage_anim_id_cache[id_candidate.id], &(pe->name[3]), ANIM_NAME_MAX_LEN);
             }
         }
     }

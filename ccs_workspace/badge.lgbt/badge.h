@@ -17,6 +17,7 @@
 #define SPIFFS_LOGICAL_PAGE_SIZE     (256)
 #define SPIFFS_FILE_DESCRIPTOR_SIZE  (44)
 #define STORAGE_FILE_NAME_LIMIT 21 // includes null term // TODO: assert longer than 3+imagelen
+#define STORAGE_ANIMS_TO_CACHE 60
 
 // UBLE stuff:
 #define UBLE_EVENT_UPDATE_ADV   Event_Id_00

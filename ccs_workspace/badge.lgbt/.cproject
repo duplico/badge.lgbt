@@ -167,7 +167,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="NPI/U_NPI/npi_task.h|NPI/U_NPI/npi_task.c|NPI/U_NPI/npi_util.h|NPI/U_NPI/npi_util.c|NPI/Transport/UART/npi_tl_uart.h|NPI/Transport/UART/npi_tl_uart.c|TOOLS/src|NPI/Transport/npi_tl.h|NPI/Transport/npi_tl.c|TOOLS/cc26xx_app.cmd|NPI/U_NPI/npi_data.h" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="badge_drivers/led_anims.c|NPI/U_NPI/npi_task.h|NPI/U_NPI/npi_task.c|NPI/U_NPI/npi_util.h|NPI/U_NPI/npi_util.c|NPI/Transport/UART/npi_tl_uart.h|NPI/Transport/UART/npi_tl_uart.c|TOOLS/src|NPI/Transport/npi_tl.h|NPI/Transport/npi_tl.c|TOOLS/cc26xx_app.cmd|NPI/U_NPI/npi_data.h" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

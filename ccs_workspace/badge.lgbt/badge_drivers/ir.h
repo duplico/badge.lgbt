@@ -26,6 +26,7 @@
 #define IR_EVENT_GETFILE Event_Id_02
 
 extern Event_Handle ir_event_h;
+extern uint8_t serial_ll_state;
 
 // Configuration
 #define IR_TIMEOUT_MS 500

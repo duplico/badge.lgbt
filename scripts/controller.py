@@ -191,7 +191,7 @@ def main():
             frames.append(Image.frombytes('RGB', (15,7), payload).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM))
             if frame == anim.anim_len:
                 # scaled_images = list(map(scale_preview, badge_image.imgs))
-                frames[0].save('%s_loaded.gif' % clean_anim_name, save_all=True, append_images=frames[1:], loop=0, duration=anim.anim_frame_delay_ms)
+                frames[0].save('%s_loaded.gif' % clean_anim_name, save_all=True, append_images=frames[1:], loop=0, duration=anim.anim_frame_delay_ms/10)
                 print("Saved loaded image as %s_loaded.gif" % clean_anim_name)
                 break
 

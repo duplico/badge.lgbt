@@ -34,8 +34,6 @@ class BadgeImage:
           
           self.image_name = os.path.basename(path).split('.')[0]
 
-          self.frame_delay_ms = frame_delay_ms
-
           im = Image.open(path)
           for i, frame in enumerate(iter_frames(im)):
                frame = frame.convert('RGBA')
@@ -43,6 +41,11 @@ class BadgeImage:
                self.imgs.append(frame)
 
           self.imgs = [scale_img(i, crop) for i in self.imgs]
+
+          if not frame_delay_ms:
+               frame_delay_ms = get_avg_fps(im)*10
+
+          self.frame_delay_ms = frame_delay_ms
 
           # if path.endswith('.bmp'):
           #      im = Image.open(path).convert('RGB')
@@ -82,7 +85,7 @@ def iter_frames(im):
     except EOFError:
         pass
 
-def print_img_code(imglist, name='image'):
+def print_img_code(imglist, delay=100, print_anim_struct=False, name='image'):
      if len(imglist) == 1:
           print("const rgbcolor_t %s[7][15] = %s;" % (name, img_string(imglist[0])))
      else:
@@ -91,6 +94,17 @@ def print_img_code(imglist, name='image'):
                len(imglist),
                ',\n'.join(map(img_string, imglist))
           ))
+          if print_anim_struct:
+               print("const led_anim_t anim_%s = (led_anim_t){" % name)
+               print('  .name = "%s",' % name)
+               print('  .direct_anim = (led_anim_direct_t){')
+               print('     .anim_frames = %s_frames,' % name)
+               print('     .anim_len = %d,' % len(imglist))
+               print('     .anim_frame_delay_ms = %d' % delay)
+               print('  },')
+               print('  .id = 0,')
+               print('  .unlocked = 0')
+               print('};')
 
 def scale_img(i, crop=False):
      # TODO: Docs and cleanup
@@ -121,50 +135,32 @@ def scale_img(i, crop=False):
 
      return background
 
-#     background.show()
-     # print(len(background.tobytes()))
-
-#     bts = list(map(ord, i.tobytes()))
-#     bts = [int(math.pow(a/255.0,2.5)*255 + 0.5) for a in bts]
-#     return bts + [0]
-
-def import_gif(gif_src_path, frame_dur, name='anim', preview=False, crop=False, image_name='anim'):
-     images = []
-     im = Image.open(gif_src_path)
-     for i, frame in enumerate(iter_frames(im)):
-          frame = frame.convert('RGBA')
-          frame = ImageEnhance.Color(frame).enhance(2.5)
-          images.append(frame)
-
-     scaled_images = [scale_img(i, crop) for i in images]
-
-     if preview:
-          scaled_images = list(map(scale_preview, scaled_images))
-          scaled_images[0].save('%s_preview.gif' % image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
-          print("Preview image saved as %s_preview.gif." % image_name)
-          return
-
-     print_img_code(scaled_images, '%s_frames' % name)
-     print("led_anim_direct_t %s = {" % name)
-     print("    %s_frames," % name)
-     print("    %d," % len(scaled_images))
-     print("    %d," % frame_dur)
-     print("};")
-
-def import_bmp(bmp_src_path, preview=False, crop=False, image_name='frame'):
-     im = Image.open(bmp_src_path).convert('RGB')
-     im = scale_img(im, crop)
-     if preview:
-          scale_preview(im).show()
-          return
-     print_img_code([im])
+# from https://stackoverflow.com/questions/53364769/get-frames-per-second-of-a-gif-in-python
+def get_avg_fps(PIL_Image_object):
+    """ Returns the average framerate of a PIL Image object """
+    PIL_Image_object.seek(0)
+    frames = duration = 0
+    while True:
+        try:
+            frames += 1
+            duration += PIL_Image_object.info['duration']
+            PIL_Image_object.seek(PIL_Image_object.tell() + 1)
+        except EOFError:
+            return frames / duration * 1000
+    return None
 
 @click.command()
 @click.option('--preview', is_flag=True)
 @click.option('--crop', is_flag=True)
-@click.option('--frame-dur', type=int, default=25)
+@click.option('--gather', is_flag=True)
+@click.option('--frame-dur', type=int, default=0)
 @click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True, nargs=-1)
-def import_img(img_src_path, frame_dur, preview, crop):
+def import_img(img_src_path, frame_dur, preview, crop, gather):
+     image_names = []
+     if gather:
+          print('#include <led.h>')
+          print('#include <stdint.h>')
+          print('#include <tlc6983.h>')
      for img_src in img_src_path:
           if img_src.lower().endswith('.bmp') or img_src.lower().endswith('.gif'):
                pass
@@ -172,6 +168,7 @@ def import_img(img_src_path, frame_dur, preview, crop):
                print("Expected: bmp or gif, got: %s" % img_src)
 
           badge_image = BadgeImage(img_src, frame_dur, crop)
+          image_names.append(badge_image.image_name)
 
           if img_src.lower().endswith('.bmp'):
                if preview:
@@ -181,10 +178,13 @@ def import_img(img_src_path, frame_dur, preview, crop):
           elif img_src.lower().endswith('.gif'):
                if preview:
                     scaled_images = list(map(scale_preview, badge_image.imgs))
-                    scaled_images[0].save('%s_preview.gif' % badge_image.image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=frame_dur)
+                    scaled_images[0].save('%s_preview.gif' % badge_image.image_name, save_all=True, append_images=scaled_images[1:], loop=0, duration=badge_image.frame_delay_ms/10)
                     print("Preview image saved as %s_preview.gif." % badge_image.image_name)
                else:
-                    print_img_code(badge_image.imgs, name=badge_image.image_name)
+                    print_img_code(badge_image.imgs, delay=badge_image.frame_delay_ms, print_anim_struct=gather, name=badge_image.image_name)
+     if gather:
+          print("const led_anim_t *anim_list[] = {%s};" % ', '.join([('&anim_%s' % image_name) for image_name in image_names]))
+          print("const uint16_t anim_count = %d;" % len(image_names))
 
 if __name__ == "__main__":
      import_img()

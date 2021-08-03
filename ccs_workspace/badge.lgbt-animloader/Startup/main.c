@@ -41,8 +41,8 @@ uint8_t ui_task_stack[UI_STACKSIZE];
 uint64_t badge_id = 0x0000000000000000;
 uint16_t badge_anim_id = 0x00;
 
-extern const led_anim_t led_starting_anim;
-extern const led_anim_t explosion_anim;
+extern const led_anim_t *anim_list[];
+extern const uint16_t anim_count;
 
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
@@ -53,11 +53,10 @@ void ui_task_fn(UArg a0, UArg a1) {
     // TODO: Call config_init() or similar
     // TODO: Check for success of config_init()
 
-    if (!storage_anim_saved_and_valid("nyanbow")) {
-        storage_save_direct_anim("nyanbow", (led_anim_direct_t *) &led_starting_anim.direct_anim, 1);
-    }
-    if (!storage_anim_saved_and_valid("explode")) {
-        storage_save_direct_anim("explode", (led_anim_direct_t *) &explosion_anim.direct_anim, 1);
+    for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
+        if (!storage_anim_saved_and_valid(anim_list[anim_index]->name)) {
+            storage_save_direct_anim(anim_list[anim_index]->name, (led_anim_direct_t *) &anim_list[anim_index]->direct_anim, 0); // TODO: Decide unlocks.
+        }
     }
 
     while (1) {

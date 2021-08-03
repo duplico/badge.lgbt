@@ -9,6 +9,7 @@
 #define BADGE_DRIVERS_LED_H_
 
 #include <badge_drivers/tlc6983.h>
+#include <stdint.h>
 
 #define ANIM_NAME_MAX_LEN 16 // includes null term
 
@@ -18,7 +19,6 @@ typedef struct {
 } screen_frame_t;
 
 typedef struct {
-//    screen_frame_t *anim_frames;
     rgbcolor_t (*anim_frames)[7][15];
     uint16_t anim_len;
     uint16_t anim_frame_delay_ms;

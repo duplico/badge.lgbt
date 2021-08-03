@@ -8,6 +8,8 @@
 #ifndef BADGE_DRIVERS_TLC6983_H_
 #define BADGE_DRIVERS_TLC6983_H_
 
+#include <stdint.h>
+
 typedef struct {
     uint8_t red;
     uint8_t green;

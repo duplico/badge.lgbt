@@ -26,6 +26,10 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
+#define STORAGE_FLAG 0x0002
+uint16_t storage_flag = 0x0000;
+uint16_t storage_flag_expected = STORAGE_FLAG;
+
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -151,7 +155,6 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
 }
 
 void storage_init() {
-    // TODO: this should _always_ format.
     volatile int32_t status;
     status = SPIFFSNVS_config(&spiffsnvs, BADGE_NVSSPI25X0, &storage_fs, &fsConfig,
                               SPIFFS_LOGICAL_BLOCK_SIZE, SPIFFS_LOGICAL_PAGE_SIZE);
@@ -164,7 +167,14 @@ void storage_init() {
         spiffsFileDescriptorCache, sizeof(spiffsFileDescriptorCache),
         spiffsReadWriteCache, sizeof(spiffsReadWriteCache), NULL);
 
+    if (status == SPIFFSNVS_STATUS_SUCCESS) {
+        if (!storage_read_file("/.initialized", &storage_flag, 0, sizeof(storage_flag)) || storage_flag != storage_flag_expected) {
+            status = SPIFFS_ERR_NOT_A_FS; // If our magic value isn't present, we need to reformat _anyway_.
+        }
+    }
+
     if (status == SPIFFS_ERR_NOT_A_FS) {
+
         // Needs to be formatted before mounting.
         SPIFFS_unmount(&storage_fs);
         status = SPIFFS_format(&storage_fs);
@@ -184,39 +194,8 @@ void storage_init() {
             post_errors++;
             return;
         }
+        storage_overwrite_file("/.initialized", &storage_flag_expected, sizeof(storage_flag_expected)); // Write our magic value.
     }
-
-    // We need to do this at some point, but not now.
-    // It's  a very lengthy process on 8Mbit.
-    //    SPIFFS_check(&storage_fs);
-
-    uint32_t total;
-    uint32_t used;
-    status = SPIFFS_info(&storage_fs, &total, &used);
-    if ((used*100) / total > 95) {
-        post_status_spiffs = -100;
-        post_errors++;
-        return;
-    }
-
-    // Decide the next available animation ID:
-    spiffs_DIR d;
-    struct spiffs_dirent e;
-    struct spiffs_dirent *pe = &e;
-    SPIFFS_opendir(&storage_fs, "/a/", &d); // TODO: check output
-    led_anim_t id_candidate;
-    storage_next_anim_id = 0;
-    while ((pe = SPIFFS_readdir(&d, pe))) {
-        if (
-                storage_anim_saved_and_valid((char *) &(pe->name[3])) &&
-                storage_load_anim((char *) &(pe->name[3]), &id_candidate)
-        ) {
-            if (id_candidate.id >= storage_next_anim_id) {
-                storage_next_anim_id = id_candidate.id + 1;
-            }
-        }
-    }
-    SPIFFS_closedir(&d);
 
     post_status_spiffs = 1;
 }

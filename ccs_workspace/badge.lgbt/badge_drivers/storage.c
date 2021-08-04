@@ -277,6 +277,7 @@ void storage_init() {
             if (id_candidate.id == led_anim_id) {
                 led_anim_curr = id_candidate;
                 led_anim_ambient = led_anim_curr;
+                led_anim_last_chosen = led_anim_curr;
             }
             if (id_candidate.id < STORAGE_ANIMS_TO_CACHE && id_candidate.unlocked) {
                 strncpy(storage_anim_id_cache[id_candidate.id], &(pe->name[3]), ANIM_NAME_MAX_LEN);
@@ -284,6 +285,8 @@ void storage_init() {
         }
     }
     SPIFFS_closedir(&d);
+
+    led_anim_last_id_written = led_anim_id;
 
     post_status_spiffs = 1;
 }

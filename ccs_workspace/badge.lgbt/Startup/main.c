@@ -45,6 +45,7 @@ PIN_Handle pins;
 
 Event_Handle ui_event_h;
 Clock_Handle button_debounce_clock_h;
+Clock_Handle save_clock_h;
 PIN_Handle button_pin_h;
 PIN_State button_state;
 PIN_Config button_pin_config[] = {
@@ -86,6 +87,10 @@ void button_clock_swi(UArg a0) {
     button_state_last = button_state_next;
 }
 
+void save_clock_swi(UArg a0) {
+    Event_post(ui_event_h, UI_EVENT_WRITE_ID);
+}
+
 void button_init() {
     button_pin_h = PIN_open(&button_state, button_pin_config);
 
@@ -110,6 +115,12 @@ void ui_task_fn(UArg a0, UArg a1) {
 
     uble_getPublicAddr((uint8_t *) &badge_id);
 
+    Clock_Params clockParams;
+    Clock_Params_init(&clockParams);
+    clockParams.period = UI_SAVE_INTERVAL_TICKS;
+    clockParams.startFlag = TRUE;
+    save_clock_h = Clock_create(save_clock_swi, UI_SAVE_INTERVAL_TICKS, &clockParams, NULL);
+
     while (1) {
         ui_events = Event_pend(ui_event_h, Event_Id_NONE, UI_EVENT_ALL, BIOS_WAIT_FOREVER);
 
@@ -130,6 +141,14 @@ void ui_task_fn(UArg a0, UArg a1) {
             if (ui_events & UI_EVENT_BUT_IMPORT) {
                 Event_post(ir_event_h, IR_EVENT_GETFILE);
             }
+
+            if (ui_events & UI_EVENT_WRITE_ID) {
+                if (led_anim_last_chosen.id != led_anim_last_id_written) {
+                    storage_overwrite_file("/.animid", &(led_anim_last_chosen.id), sizeof(led_anim_last_chosen.id));
+                    led_anim_last_id_written = led_anim_last_chosen.id;
+                }
+            }
+
         } // end if (!post_errors)
     } // end while
 }

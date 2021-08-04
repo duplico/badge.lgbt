@@ -35,6 +35,8 @@ extern led_anim_t led_anim_ambient;
 extern led_anim_t led_anim_curr;
 extern led_anim_t led_anim_idle;
 extern uint16_t led_anim_id;
+extern led_anim_t led_anim_last_chosen;
+extern uint16_t led_anim_last_id_written;
 
 extern const led_anim_t send_anim;
 extern const led_anim_t recv_anim;

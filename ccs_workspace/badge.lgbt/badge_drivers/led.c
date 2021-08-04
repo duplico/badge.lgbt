@@ -20,6 +20,7 @@ led_anim_t led_anim_curr;
 led_anim_t led_anim_ambient;
 led_anim_t led_anim_idle;
 led_anim_t led_anim_last_chosen;
+uint16_t led_anim_last_id_written;
 uint8_t led_curr_ambient = 0;
 
 uint16_t led_anim_frame = 0;
@@ -162,8 +163,6 @@ void led_next_anim() {
         storage_get_next_anim_name(next_anim_name);
         led_set_anim(next_anim_name, 1);
         led_anim_id = led_anim_ambient.id;
-        // TODO: write this dramatically less often.
-        storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));
         led_anim_last_chosen = led_anim_ambient;
     }
 }

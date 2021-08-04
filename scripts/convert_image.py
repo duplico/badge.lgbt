@@ -39,20 +39,25 @@ def get_avg_fps(PIL_Image_object):
 class BadgeImage:
      def __init__(self, path, frame_delay_ms, crop=False):
           self.imgs = []
+          self.enhance = True
 
           if path.endswith('.bmp') or path.endswith('.gif'):
                pass
           else:
                print("Expected: bmp or gif, got: %s" % path)
                exit(1)
-
           
           self.image_name = os.path.basename(path).split('.')[0]
+
+          if self.image_name.endswith('_noenhance'):
+               self.image_name = self.image_name[:-len('_noenhance')]
+               self.enhance = False
 
           im = Image.open(path)
           for i, frame in enumerate(iter_frames(im)):
                frame = frame.convert('RGBA')
-               frame = ImageEnhance.Color(frame).enhance(2.5)
+               if self.enhance:
+                    frame = ImageEnhance.Color(frame).enhance(2.5)
                self.imgs.append(frame)
 
           self.imgs = [scale_img(i, crop) for i in self.imgs]

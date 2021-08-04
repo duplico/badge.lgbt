@@ -26,7 +26,7 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
-#define STORAGE_FLAG 0x0005
+#define STORAGE_FLAG 0x0006
 
 uint16_t storage_flag = 0x0000;
 uint16_t storage_flag_expected = STORAGE_FLAG;
@@ -120,7 +120,7 @@ uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*
 
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
     spiffs_file fd;
-    fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_O_TRUNC, 0);
+    fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY, 0);
     SPIFFS_write(&storage_fs, fd, src, size);
     SPIFFS_close(&storage_fs, fd);
 }

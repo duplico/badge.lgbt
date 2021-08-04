@@ -179,7 +179,7 @@ typedef enum BADGE_NVSName {
  */
 typedef enum BADGE_SPIName {
     BADGE_SPI0_FLASH = 0,
-    BADGE_SPI1_TLC,
+//    BADGE_SPI1_TLC,
 
     BADGE_SPICOUNT
 } BADGE_SPIName;

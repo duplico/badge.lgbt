@@ -34,30 +34,30 @@ ADCBufCC26XX_Object adcBufCC26xxObjects[BADGE_ADCBUFCOUNT];
  *  pairs are hardwired. Do not remap them in the table. You may reorder entire
  *  entries. The mapping of dio and internal signals is package dependent.
  */
-const ADCBufCC26XX_AdcChannelLutEntry ADCBufCC26XX_adcChannelLut[BADGE_ADCBUF0CHANNELCOUNT] = {
-    {LIGHT_IO_ANALOG, ADC_COMPB_IN_AUXIO0},
-    {PIN_UNASSIGNED, ADC_COMPB_IN_VDDS},
-    {PIN_UNASSIGNED, ADC_COMPB_IN_DCOUPL},
-    {PIN_UNASSIGNED, ADC_COMPB_IN_VSS},
-};
-
-const ADCBufCC26XX_HWAttrs adcBufCC26xxHWAttrs[BADGE_ADCBUFCOUNT] = {
-    {
-        .intPriority       = ~0,
-        .swiPriority       = 0,
-        .adcChannelLut     = ADCBufCC26XX_adcChannelLut,
-    }
-};
-
-const ADCBuf_Config ADCBuf_config[BADGE_ADCBUFCOUNT] = {
-    {
-        &ADCBufCC26XX_fxnTable,
-        &adcBufCC26xxObjects[BADGE_ADCBUF0],
-        &adcBufCC26xxHWAttrs[BADGE_ADCBUF0]
-    },
-};
-
-const uint_least8_t ADCBuf_count = BADGE_ADCBUFCOUNT;
+//const ADCBufCC26XX_AdcChannelLutEntry ADCBufCC26XX_adcChannelLut[BADGE_ADCBUF0CHANNELCOUNT] = {
+//    {LIGHT_IO_ANALOG, ADC_COMPB_IN_AUXIO0},
+//    {PIN_UNASSIGNED, ADC_COMPB_IN_VDDS},
+//    {PIN_UNASSIGNED, ADC_COMPB_IN_DCOUPL},
+//    {PIN_UNASSIGNED, ADC_COMPB_IN_VSS},
+//};
+//
+//const ADCBufCC26XX_HWAttrs adcBufCC26xxHWAttrs[BADGE_ADCBUFCOUNT] = {
+//    {
+//        .intPriority       = ~0,
+//        .swiPriority       = 0,
+//        .adcChannelLut     = ADCBufCC26XX_adcChannelLut,
+//    }
+//};
+//
+//const ADCBuf_Config ADCBuf_config[BADGE_ADCBUFCOUNT] = {
+//    {
+//        &ADCBufCC26XX_fxnTable,
+//        &adcBufCC26xxObjects[BADGE_ADCBUF0],
+//        &adcBufCC26xxHWAttrs[BADGE_ADCBUF0]
+//    },
+//};
+//
+//const uint_least8_t ADCBuf_count = BADGE_ADCBUFCOUNT;
 
 /*
  *  =============================== PIN ===============================
@@ -240,22 +240,22 @@ const uint_least8_t NVS_count = BADGE_NVSCOUNT;
  *  =============================== PWM ===============================
  *  Remove unused entries to reduce flash usage both in Board.c and Board.h
  */
-#include <ti/drivers/PWM.h>
-#include <ti/drivers/pwm/PWMTimerCC26XX.h>
-
-PWMTimerCC26XX_Object pwmtimerCC26xxObjects[BADGE_PWMCOUNT];
-
-const PWMTimerCC26XX_HwAttrs pwmtimerCC26xxHWAttrs[BADGE_PWMCOUNT] = {
-    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER1A },
-    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER1B },
-};
-
-const PWM_Config PWM_config[BADGE_PWMCOUNT] = {
-    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0_IRDA], &pwmtimerCC26xxHWAttrs[BADGE_PWM0_IRDA] },
-    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM1], &pwmtimerCC26xxHWAttrs[BADGE_PWM1] },
-};
-
-const uint_least8_t PWM_count = BADGE_PWMCOUNT;
+//#include <ti/drivers/PWM.h>
+//#include <ti/drivers/pwm/PWMTimerCC26XX.h>
+//
+//PWMTimerCC26XX_Object pwmtimerCC26xxObjects[BADGE_PWMCOUNT];
+//
+//const PWMTimerCC26XX_HwAttrs pwmtimerCC26xxHWAttrs[BADGE_PWMCOUNT] = {
+//    { .pwmPin = BADGE_PWM_IR_16CLK, .gpTimerUnit = BADGE_GPTIMER1A },
+//    { .pwmPin = BADGE_PWM_TLC_CLK, .gpTimerUnit = BADGE_GPTIMER1B },
+//};
+//
+//const PWM_Config PWM_config[BADGE_PWMCOUNT] = {
+//    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM0_IRDA], &pwmtimerCC26xxHWAttrs[BADGE_PWM0_IRDA] },
+//    { &PWMTimerCC26XX_fxnTable, &pwmtimerCC26xxObjects[BADGE_PWM1], &pwmtimerCC26xxHWAttrs[BADGE_PWM1] },
+//};
+//
+//const uint_least8_t PWM_count = BADGE_PWMCOUNT;
 
 /*
  *  =============================== Power ===============================
@@ -329,21 +329,21 @@ const SPICC26XXDMA_HWAttrsV1 spiCC26XXDMAHWAttrs[BADGE_SPICOUNT] = {
         .csnPin             = BADGE_SPIF_CSN,
         .minDmaTransferSize = 10
     },
-    {
-        .baseAddr           = SSI1_BASE,
-        .intNum             = INT_SSI1_COMB,
-        .intPriority        = ~0,
-        .swiPriority        = 0,
-        .powerMngrId        = PowerCC26XX_PERIPH_SSI1,
-        .defaultTxBufValue  = 0xFF,
-        .rxChannelBitMask   = 1<<UDMA_CHAN_SSI1_RX,
-        .txChannelBitMask   = 1<<UDMA_CHAN_SSI1_TX,
-        .mosiPin            = PIN_UNASSIGNED,
-        .misoPin            = PIN_UNASSIGNED,
-        .clkPin             = PIN_UNASSIGNED,
-        .csnPin             = PIN_UNASSIGNED,
-        .minDmaTransferSize = 10
-    }
+//    {
+//        .baseAddr           = SSI1_BASE,
+//        .intNum             = INT_SSI1_COMB,
+//        .intPriority        = ~0,
+//        .swiPriority        = 0,
+//        .powerMngrId        = PowerCC26XX_PERIPH_SSI1,
+//        .defaultTxBufValue  = 0xFF,
+//        .rxChannelBitMask   = 1<<UDMA_CHAN_SSI1_RX,
+//        .txChannelBitMask   = 1<<UDMA_CHAN_SSI1_TX,
+//        .mosiPin            = PIN_UNASSIGNED,
+//        .misoPin            = PIN_UNASSIGNED,
+//        .clkPin             = PIN_UNASSIGNED,
+//        .csnPin             = PIN_UNASSIGNED,
+//        .minDmaTransferSize = 10
+//    }
 };
 
 const SPI_Config SPI_config[BADGE_SPICOUNT] = {
@@ -352,11 +352,11 @@ const SPI_Config SPI_config[BADGE_SPICOUNT] = {
          .object      = &spiCC26XXDMAObjects[BADGE_SPI0_FLASH],
          .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI0_FLASH]
     },
-    {
-         .fxnTablePtr = &SPICC26XXDMA_fxnTable,
-         .object      = &spiCC26XXDMAObjects[BADGE_SPI1_TLC],
-         .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI1_TLC]
-    },
+//    {
+//         .fxnTablePtr = &SPICC26XXDMA_fxnTable,
+//         .object      = &spiCC26XXDMAObjects[BADGE_SPI1_TLC],
+//         .hwAttrs     = &spiCC26XXDMAHWAttrs[BADGE_SPI1_TLC]
+//    },
 };
 
 const uint_least8_t SPI_count = BADGE_SPICOUNT;
@@ -364,41 +364,41 @@ const uint_least8_t SPI_count = BADGE_SPICOUNT;
 /*
  *  =============================== UART ===============================
  */
-#include <ti/drivers/UART.h>
-#include <ti/drivers/uart/UARTCC26XX.h>
-
-UARTCC26XX_Object uartCC26XXObjects[BADGE_UARTCOUNT];
-
-uint8_t uartCC26XXRingBuffer[BADGE_UARTCOUNT][32];
-
-const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
-    {
-        .baseAddr       = UART0_BASE,
-        .powerMngrId    = PowerCC26XX_PERIPH_UART0,
-        .intNum         = INT_UART0_COMB,
-        .intPriority    = ~0,
-        .swiPriority    = 0,
-        .txPin          = BADGE_UART_IR_TX,
-        .rxPin          = BADGE_UART_IR_RX,
-        .ctsPin         = PIN_UNASSIGNED,
-        .rtsPin         = PIN_UNASSIGNED,
-        .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_IRDA],
-        .ringBufSize    = sizeof(uartCC26XXRingBuffer[BADGE_UART_IRDA]),
-        .txIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_7_8,
-        .rxIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_4_8,
-        .errorFxn       = NULL
-    },
-};
-
-const UART_Config UART_config[BADGE_UARTCOUNT] = {
-    {
-        .fxnTablePtr = &UARTCC26XX_fxnTable,
-        .object      = &uartCC26XXObjects[BADGE_UART_IRDA],
-        .hwAttrs     = &uartCC26XXHWAttrs[BADGE_UART_IRDA]
-    },
-};
-
-const uint_least8_t UART_count = BADGE_UARTCOUNT;
+//#include <ti/drivers/UART.h>
+//#include <ti/drivers/uart/UARTCC26XX.h>
+//
+//UARTCC26XX_Object uartCC26XXObjects[BADGE_UARTCOUNT];
+//
+//uint8_t uartCC26XXRingBuffer[BADGE_UARTCOUNT][32];
+//
+//const UARTCC26XX_HWAttrsV2 uartCC26XXHWAttrs[BADGE_UARTCOUNT] = {
+//    {
+//        .baseAddr       = UART0_BASE,
+//        .powerMngrId    = PowerCC26XX_PERIPH_UART0,
+//        .intNum         = INT_UART0_COMB,
+//        .intPriority    = ~0,
+//        .swiPriority    = 0,
+//        .txPin          = BADGE_UART_IR_TX,
+//        .rxPin          = BADGE_UART_IR_RX,
+//        .ctsPin         = PIN_UNASSIGNED,
+//        .rtsPin         = PIN_UNASSIGNED,
+//        .ringBufPtr     = uartCC26XXRingBuffer[BADGE_UART_IRDA],
+//        .ringBufSize    = sizeof(uartCC26XXRingBuffer[BADGE_UART_IRDA]),
+//        .txIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_7_8,
+//        .rxIntFifoThr   = UARTCC26XX_FIFO_THRESHOLD_4_8,
+//        .errorFxn       = NULL
+//    },
+//};
+//
+//const UART_Config UART_config[BADGE_UARTCOUNT] = {
+//    {
+//        .fxnTablePtr = &UARTCC26XX_fxnTable,
+//        .object      = &uartCC26XXObjects[BADGE_UART_IRDA],
+//        .hwAttrs     = &uartCC26XXHWAttrs[BADGE_UART_IRDA]
+//    },
+//};
+//
+//const uint_least8_t UART_count = BADGE_UARTCOUNT;
 
 /*
  *  =============================== UDMA ===============================

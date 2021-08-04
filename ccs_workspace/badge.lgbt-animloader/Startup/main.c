@@ -41,15 +41,26 @@ uint16_t badge_anim_id = 0x00;
 
 extern const led_anim_t *anim_list[];
 extern const uint16_t anim_count;
+#define ALL_UNLOCKED_COUNT 4
 
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
 
     uble_getPublicAddr((uint8_t *) &badge_id);
 
+    uint16_t remaining_count = anim_count - ALL_UNLOCKED_COUNT;
+    uint16_t unlocked_for_me = (badge_id % remaining_count) + ALL_UNLOCKED_COUNT;
+
     for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
         if (!storage_anim_saved_and_valid(anim_list[anim_index]->name)) {
-            storage_save_direct_anim(anim_list[anim_index]->name, (led_anim_direct_t *) &anim_list[anim_index]->direct_anim, 0); // TODO: Decide unlocks.
+            uint8_t unlocked = 0;
+            if (anim_index < ALL_UNLOCKED_COUNT) {
+                unlocked = 1;
+            }
+            if (anim_index == unlocked_for_me) {
+                unlocked = 1;
+            }
+            storage_save_direct_anim(anim_list[anim_index]->name, (led_anim_direct_t *) &anim_list[anim_index]->direct_anim, 1); //TODO: unlocked);
         }
     }
 
@@ -67,8 +78,8 @@ int main()
     }
     NVS_init();
     SPI_init();
-    UART_init();
-    PWM_init();
+//    UART_init();
+//    PWM_init();
     GPIO_init();
 
 #ifdef CACHE_AS_RAM

@@ -53,14 +53,14 @@ void ui_task_fn(UArg a0, UArg a1) {
 
     for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
         if (!storage_anim_saved_and_valid(anim_list[anim_index]->name)) {
-            uint8_t unlocked = 0;
+            volatile uint8_t unlocked = 0;
             if (anim_index < ALL_UNLOCKED_COUNT) {
                 unlocked = 1;
             }
             if (anim_index == unlocked_for_me) {
                 unlocked = 1;
             }
-            storage_save_direct_anim(anim_list[anim_index]->name, (led_anim_direct_t *) &anim_list[anim_index]->direct_anim, 1); //TODO: unlocked);
+            storage_save_direct_anim(anim_list[anim_index]->name, (led_anim_direct_t *) &anim_list[anim_index]->direct_anim, unlocked);
         }
     }
 

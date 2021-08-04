@@ -96,6 +96,7 @@ uint8_t validate_header(ir_header_t *header) {
         return 0;
     }
 
+    // Validate header lengths:
     switch(header->opcode) {
     case SERIAL_OPCODE_PUTFILE:
         if (header->payload_len != STORAGE_ANIM_HEADER_SIZE) {
@@ -110,10 +111,15 @@ uint8_t validate_header(ir_header_t *header) {
     // All these have zero length payloads:
     case SERIAL_OPCODE_HELO:
     case SERIAL_OPCODE_ACK:
+    case SERIAL_OPCODE_NACK:
+    case SERIAL_OPCODE_GETFILE:
         if (header->payload_len) {
             return 0;
         }
         break;
+    default:
+        // Unexpected opcode, lol.
+        return 0;
     }
 
     if (serial_ll_state != SERIAL_LL_STATE_IDLE && serial_peer_id && header->from_id != serial_peer_id) {

@@ -28,8 +28,6 @@
 #include <badge_drivers/tlc6983.h>
 #include <badge_drivers/led.h>
 
-#include <adc.h>
-
 extern assertCback_t halAssertCback;
 extern void AssertHandler(uint8 assertCause, uint8 assertSubcause);
 extern void uble_getPublicAddr(uint8 *pPublicAddr);
@@ -69,7 +67,6 @@ int main()
     }
     NVS_init();
     SPI_init();
-    ADCBuf_init();
     UART_init();
     PWM_init();
     GPIO_init();

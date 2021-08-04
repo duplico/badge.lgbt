@@ -55,7 +55,7 @@ const led_anim_t anim__3heart_trans = (led_anim_t){
   .direct_anim = (led_anim_direct_t){
      .anim_frames = _3heart_trans_frames,
      .anim_len = 29,
-     .anim_frame_delay_ms = 50
+     .anim_frame_delay_ms = 30
   },
   .id = 0,
   .unlocked = 0

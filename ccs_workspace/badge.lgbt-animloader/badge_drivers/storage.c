@@ -26,7 +26,7 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
-#define STORAGE_FLAG 0x0006
+#define STORAGE_FLAG 0x0009
 
 uint16_t storage_flag = 0x0000;
 uint16_t storage_flag_expected = STORAGE_FLAG;
@@ -127,7 +127,6 @@ void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
 
 void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked) {
     spiffs_file fd;
-    // TODO: Check null term and length
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
 
@@ -135,7 +134,7 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     write_anim.direct_anim.anim_frame_delay_ms = anim->anim_frame_delay_ms;
     write_anim.direct_anim.anim_len = anim->anim_len;
     strncpy(write_anim.name, anim_name, ANIM_NAME_MAX_LEN);
-    write_anim.unlocked = 1;
+    write_anim.unlocked = unlocked;
     write_anim.direct_anim.anim_frames = NULL;
     write_anim.id = storage_next_anim_id;
     storage_next_anim_id++;

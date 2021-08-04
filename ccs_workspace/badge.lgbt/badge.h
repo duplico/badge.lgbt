@@ -43,7 +43,7 @@ extern Event_Handle uble_event_h;
 
 // Derived values:
 #define ADC_INTERVAL (ADC_INTERVAL_MS*100)
-#define UI_CLOCK_TICKS (UI_CLOCK_MS * 100) // derived // TODO: is this right? 10us vs 1ms?
+#define UI_CLOCK_TICKS (UI_CLOCK_MS * 100) // derived
 #define UI_SAVE_INTERVAL_TICKS 30000000 // 5 minutes x 60 seconds/min x 1000 ms/sec x 100 ticks/ms
 
 extern Event_Handle ui_event_h;

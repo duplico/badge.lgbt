@@ -60,7 +60,7 @@ uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t 
 uint8_t storage_anim_saved_and_valid(char *anim_name) {
     spiffs_stat stat;
     spiffs_file fd;
-    int32_t status;
+    volatile int32_t status;
     led_anim_t read_anim;
     // Validate that the name has a null term:
     uint8_t null_termed = 0;
@@ -92,7 +92,7 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
     status = SPIFFS_read(&storage_fs, fd, (uint8_t *) &read_anim, sizeof(led_anim_t));
 
     if (status < 0) {
-
+        return 0;
     }
 
     SPIFFS_close(&storage_fs, fd);

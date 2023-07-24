@@ -173,6 +173,10 @@ void storage_init() {
         }
     }
 
+    // TODO: Set a flag for this.
+    // Format no matter what, clearing all the data and restarting from scratch.
+    status = SPIFFS_ERR_NOT_A_FS;
+
     if (status == SPIFFS_ERR_NOT_A_FS) {
 
         // Needs to be formatted before mounting.

@@ -1,0 +1,755 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module id="AUX_EVCTL" HW_revision="" XML_version="1.0" description="AUX Event Controller  " xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="setup_parser.xsd">
+   <register acronym="VECCFG0" width="32" description="Vector Configuration 0
+
+AUX_SCE wakeup vector 0 and 1 configuration" id="VECCFG0" offset="0x0">
+      <bitfield range="" begin="31" width="17" end="15" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED15" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="14" width="1" end="14" rwaccess="RW" description="Vector 1 trigger event polarity.
+
+To manually trigger vector 1 execution:
+- AUX_SCE must sleep.
+- Set VEC1_EV to a known static value.
+- Toggle VEC1_POL twice." id="VEC1_POL" resetval="0x0">
+         <bitenum id="FALL" value="1" token="Falling edge triggers vector 1 execution." description="Falling edge triggers vector 1 execution."/>
+         <bitenum id="RISE" value="0" token="Rising edge triggers vector 1 execution." description="Rising edge triggers vector 1 execution."/>
+      </bitfield>
+      <bitfield range="" begin="13" width="1" end="13" rwaccess="RW" description="Vector 1 trigger enable.
+
+When enabled, VEC1_EV event with VEC1_POL polarity triggers a jump to vector # 1 when AUX_SCE sleeps.
+
+Lower vectors (0) have priority." id="VEC1_EN" resetval="0x0">
+         <bitenum id="EN" value="1" token="Enable vector 1 trigger." description="Enable vector 1 trigger."/>
+         <bitenum id="DIS" value="0" token="Disable vector 1 trigger." description="Disable vector 1 trigger."/>
+      </bitfield>
+      <bitfield range="" begin="12" width="5" end="8" rwaccess="RW" description="Select vector 1 trigger source event." id="VEC1_EV" resetval="0x0">
+         <bitenum id="ADC_IRQ" value="31" token="EVSTAT1.ADC_IRQ" description="EVSTAT1.ADC_IRQ"/>
+         <bitenum id="MCU_EV" value="30" token="EVSTAT1.MCU_EV" description="EVSTAT1.MCU_EV"/>
+         <bitenum id="ACLK_REF" value="29" token="EVSTAT1.ACLK_REF" description="EVSTAT1.ACLK_REF"/>
+         <bitenum id="AUXIO15" value="28" token="EVSTAT1.AUXIO15" description="EVSTAT1.AUXIO15"/>
+         <bitenum id="AUXIO14" value="27" token="EVSTAT1.AUXIO14 " description="EVSTAT1.AUXIO14 "/>
+         <bitenum id="AUXIO13" value="26" token="EVSTAT1.AUXIO13 " description="EVSTAT1.AUXIO13 "/>
+         <bitenum id="AUXIO12" value="25" token="EVSTAT1.AUXIO12 " description="EVSTAT1.AUXIO12 "/>
+         <bitenum id="AUXIO11" value="24" token="EVSTAT1.AUXIO11" description="EVSTAT1.AUXIO11"/>
+         <bitenum id="AUXIO10" value="23" token="EVSTAT1.AUXIO10" description="EVSTAT1.AUXIO10"/>
+         <bitenum id="AUXIO9" value="22" token="EVSTAT1.AUXIO9  " description="EVSTAT1.AUXIO9  "/>
+         <bitenum id="AUXIO8" value="21" token="EVSTAT1.AUXIO8  " description="EVSTAT1.AUXIO8  "/>
+         <bitenum id="AUXIO7" value="20" token="EVSTAT1.AUXIO7  " description="EVSTAT1.AUXIO7  "/>
+         <bitenum id="AUXIO6" value="19" token="EVSTAT1.AUXIO6  " description="EVSTAT1.AUXIO6  "/>
+         <bitenum id="AUXIO5" value="18" token="EVSTAT1.AUXIO5  " description="EVSTAT1.AUXIO5  "/>
+         <bitenum id="AUXIO4" value="17" token="EVSTAT1.AUXIO4  " description="EVSTAT1.AUXIO4  "/>
+         <bitenum id="AUXIO3" value="16" token="EVSTAT1.AUXIO3  " description="EVSTAT1.AUXIO3  "/>
+         <bitenum id="AUXIO2" value="15" token="EVSTAT0.AUXIO2" description="EVSTAT0.AUXIO2"/>
+         <bitenum id="AUXIO1" value="14" token="EVSTAT0.AUXIO1" description="EVSTAT0.AUXIO1"/>
+         <bitenum id="AUXIO0" value="13" token="EVSTAT0.AUXIO0" description="EVSTAT0.AUXIO0"/>
+         <bitenum id="AON_PROG_WU" value="12" token="EVSTAT0.AON_PROG_WU" description="EVSTAT0.AON_PROG_WU"/>
+         <bitenum id="AON_SW" value="11" token="EVSTAT0.AON_SW" description="EVSTAT0.AON_SW"/>
+         <bitenum id="OBSMUX1" value="10" token="EVSTAT0.OBSMUX1" description="EVSTAT0.OBSMUX1"/>
+         <bitenum id="OBSMUX0" value="9" token="EVSTAT0.OBSMUX0" description="EVSTAT0.OBSMUX0"/>
+         <bitenum id="ADC_FIFO_ALMOST_FULL" value="8" token="EVSTAT0.ADC_FIFO_ALMOST_FULL" description="EVSTAT0.ADC_FIFO_ALMOST_FULL"/>
+         <bitenum id="ADC_DONE" value="7" token="EVSTAT0.ADC_DONE" description="EVSTAT0.ADC_DONE"/>
+         <bitenum id="SMPH_AUTOTAKE_DONE" value="6" token="EVSTAT0.SMPH_AUTOTAKE_DONE" description="EVSTAT0.SMPH_AUTOTAKE_DONE"/>
+         <bitenum id="TIMER1_EV" value="5" token="EVSTAT0.TIMER1_EV" description="EVSTAT0.TIMER1_EV"/>
+         <bitenum id="TIMER0_EV" value="4" token="EVSTAT0.TIMER0_EV" description="EVSTAT0.TIMER0_EV"/>
+         <bitenum id="TDC_DONE" value="3" token="EVSTAT0.TDC_DONE" description="EVSTAT0.TDC_DONE"/>
+         <bitenum id="AUX_COMPB" value="2" token="EVSTAT0.AUX_COMPB" description="EVSTAT0.AUX_COMPB"/>
+         <bitenum id="AUX_COMPA" value="1" token="EVSTAT0.AUX_COMPA" description="EVSTAT0.AUX_COMPA"/>
+         <bitenum id="AON_RTC_CH2" value="0" token="EVSTAT0.AON_RTC_CH2" description="EVSTAT0.AON_RTC_CH2"/>
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED7" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="Vector 0 trigger event polarity.
+
+To manually trigger vector 0 execution:
+- AUX_SCE must sleep.
+- Set VEC0_EV to a known static value.
+- Toggle VEC0_POL twice." id="VEC0_POL" resetval="0x0">
+         <bitenum id="FALL" value="1" token="Falling edge triggers vector 0 execution." description="Falling edge triggers vector 0 execution."/>
+         <bitenum id="RISE" value="0" token="Rising edge triggers vector 0 execution." description="Rising edge triggers vector 0 execution."/>
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="Vector 0 trigger enable.
+
+When enabled, VEC0_EV event with VEC0_POL polarity triggers a jump to vector # 0 when AUX_SCE sleeps." id="VEC0_EN" resetval="0x0">
+         <bitenum id="EN" value="1" token="Enable vector 0 trigger." description="Enable vector 0 trigger."/>
+         <bitenum id="DIS" value="0" token="Disable vector 0 trigger." description="Disable vector 0 trigger."/>
+      </bitfield>
+      <bitfield range="" begin="4" width="5" end="0" rwaccess="RW" description="Select vector 0 trigger source event." id="VEC0_EV" resetval="0x0">
+         <bitenum id="ADC_IRQ" value="31" token="EVSTAT1.ADC_IRQ" description="EVSTAT1.ADC_IRQ"/>
+         <bitenum id="MCU_EV" value="30" token="EVSTAT1.MCU_EV" description="EVSTAT1.MCU_EV"/>
+         <bitenum id="ACLK_REF" value="29" token="EVSTAT1.ACLK_REF" description="EVSTAT1.ACLK_REF"/>
+         <bitenum id="AUXIO15" value="28" token="EVSTAT1.AUXIO15" description="EVSTAT1.AUXIO15"/>
+         <bitenum id="AUXIO14" value="27" token="EVSTAT1.AUXIO14 " description="EVSTAT1.AUXIO14 "/>
+         <bitenum id="AUXIO13" value="26" token="EVSTAT1.AUXIO13 " description="EVSTAT1.AUXIO13 "/>
+         <bitenum id="AUXIO12" value="25" token="EVSTAT1.AUXIO12 " description="EVSTAT1.AUXIO12 "/>
+         <bitenum id="AUXIO11" value="24" token="EVSTAT1.AUXIO11" description="EVSTAT1.AUXIO11"/>
+         <bitenum id="AUXIO10" value="23" token="EVSTAT1.AUXIO10" description="EVSTAT1.AUXIO10"/>
+         <bitenum id="AUXIO9" value="22" token="EVSTAT1.AUXIO9  " description="EVSTAT1.AUXIO9  "/>
+         <bitenum id="AUXIO8" value="21" token="EVSTAT1.AUXIO8  " description="EVSTAT1.AUXIO8  "/>
+         <bitenum id="AUXIO7" value="20" token="EVSTAT1.AUXIO7  " description="EVSTAT1.AUXIO7  "/>
+         <bitenum id="AUXIO6" value="19" token="EVSTAT1.AUXIO6  " description="EVSTAT1.AUXIO6  "/>
+         <bitenum id="AUXIO5" value="18" token="EVSTAT1.AUXIO5  " description="EVSTAT1.AUXIO5  "/>
+         <bitenum id="AUXIO4" value="17" token="EVSTAT1.AUXIO4  " description="EVSTAT1.AUXIO4  "/>
+         <bitenum id="AUXIO3" value="16" token="EVSTAT1.AUXIO3  " description="EVSTAT1.AUXIO3  "/>
+         <bitenum id="AUXIO2" value="15" token="EVSTAT0.AUXIO2" description="EVSTAT0.AUXIO2"/>
+         <bitenum id="AUXIO1" value="14" token="EVSTAT0.AUXIO1" description="EVSTAT0.AUXIO1"/>
+         <bitenum id="AUXIO0" value="13" token="EVSTAT0.AUXIO0" description="EVSTAT0.AUXIO0"/>
+         <bitenum id="AON_PROG_WU" value="12" token="EVSTAT0.AON_PROG_WU" description="EVSTAT0.AON_PROG_WU"/>
+         <bitenum id="AON_SW" value="11" token="EVSTAT0.AON_SW" description="EVSTAT0.AON_SW"/>
+         <bitenum id="OBSMUX1" value="10" token="EVSTAT0.OBSMUX1" description="EVSTAT0.OBSMUX1"/>
+         <bitenum id="OBSMUX0" value="9" token="EVSTAT0.OBSMUX0" description="EVSTAT0.OBSMUX0"/>
+         <bitenum id="ADC_FIFO_ALMOST_FULL" value="8" token="EVSTAT0.ADC_FIFO_ALMOST_FULL" description="EVSTAT0.ADC_FIFO_ALMOST_FULL"/>
+         <bitenum id="ADC_DONE" value="7" token="EVSTAT0.ADC_DONE" description="EVSTAT0.ADC_DONE"/>
+         <bitenum id="SMPH_AUTOTAKE_DONE" value="6" token="EVSTAT0.SMPH_AUTOTAKE_DONE" description="EVSTAT0.SMPH_AUTOTAKE_DONE"/>
+         <bitenum id="TIMER1_EV" value="5" token="EVSTAT0.TIMER1_EV" description="EVSTAT0.TIMER1_EV"/>
+         <bitenum id="TIMER0_EV" value="4" token="EVSTAT0.TIMER0_EV" description="EVSTAT0.TIMER0_EV"/>
+         <bitenum id="TDC_DONE" value="3" token="EVSTAT0.TDC_DONE" description="EVSTAT0.TDC_DONE"/>
+         <bitenum id="AUX_COMPB" value="2" token="EVSTAT0.AUX_COMPB" description="EVSTAT0.AUX_COMPB"/>
+         <bitenum id="AUX_COMPA" value="1" token="EVSTAT0.AUX_COMPA" description="EVSTAT0.AUX_COMPA"/>
+         <bitenum id="AON_RTC_CH2" value="0" token="EVSTAT0.AON_RTC_CH2" description="EVSTAT0.AON_RTC_CH2"/>
+      </bitfield>
+   </register>
+   <register acronym="VECCFG1" width="32" description="Vector Configuration 1
+
+AUX_SCE event vectors 2 and 3 configuration" id="VECCFG1" offset="0x4">
+      <bitfield range="" begin="31" width="17" end="15" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED15" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="14" width="1" end="14" rwaccess="RW" description="Vector 3 trigger event polarity.
+
+To manually trigger vector 3 execution:
+- AUX_SCE must sleep.
+- Set VEC3_EV to a known static value.
+- Toggle VEC3_POL twice." id="VEC3_POL" resetval="0x0">
+         <bitenum id="FALL" value="1" token="Falling edge triggers vector 3 execution." description="Falling edge triggers vector 3 execution."/>
+         <bitenum id="RISE" value="0" token="Rising edge triggers vector 3 execution." description="Rising edge triggers vector 3 execution."/>
+      </bitfield>
+      <bitfield range="" begin="13" width="1" end="13" rwaccess="RW" description="Vector 3 trigger enable.
+
+When enabled, VEC3_EV event with VEC3_POL polarity triggers a jump to vector # 3 when AUX_SCE sleeps.
+
+Lower vectors (0, 1, and 2) have priority." id="VEC3_EN" resetval="0x0">
+         <bitenum id="EN" value="1" token="Enable vector 3 trigger." description="Enable vector 3 trigger."/>
+         <bitenum id="DIS" value="0" token="Disable vector 3 trigger." description="Disable vector 3 trigger."/>
+      </bitfield>
+      <bitfield range="" begin="12" width="5" end="8" rwaccess="RW" description="Select vector 3 trigger source event." id="VEC3_EV" resetval="0x0">
+         <bitenum id="ADC_IRQ" value="31" token="EVSTAT1.ADC_IRQ" description="EVSTAT1.ADC_IRQ"/>
+         <bitenum id="MCU_EV" value="30" token="EVSTAT1.MCU_EV" description="EVSTAT1.MCU_EV"/>
+         <bitenum id="ACLK_REF" value="29" token="EVSTAT1.ACLK_REF" description="EVSTAT1.ACLK_REF"/>
+         <bitenum id="AUXIO15" value="28" token="EVSTAT1.AUXIO15" description="EVSTAT1.AUXIO15"/>
+         <bitenum id="AUXIO14" value="27" token="EVSTAT1.AUXIO14 " description="EVSTAT1.AUXIO14 "/>
+         <bitenum id="AUXIO13" value="26" token="EVSTAT1.AUXIO13 " description="EVSTAT1.AUXIO13 "/>
+         <bitenum id="AUXIO12" value="25" token="EVSTAT1.AUXIO12 " description="EVSTAT1.AUXIO12 "/>
+         <bitenum id="AUXIO11" value="24" token="EVSTAT1.AUXIO11" description="EVSTAT1.AUXIO11"/>
+         <bitenum id="AUXIO10" value="23" token="EVSTAT1.AUXIO10" description="EVSTAT1.AUXIO10"/>
+         <bitenum id="AUXIO9" value="22" token="EVSTAT1.AUXIO9  " description="EVSTAT1.AUXIO9  "/>
+         <bitenum id="AUXIO8" value="21" token="EVSTAT1.AUXIO8  " description="EVSTAT1.AUXIO8  "/>
+         <bitenum id="AUXIO7" value="20" token="EVSTAT1.AUXIO7  " description="EVSTAT1.AUXIO7  "/>
+         <bitenum id="AUXIO6" value="19" token="EVSTAT1.AUXIO6  " description="EVSTAT1.AUXIO6  "/>
+         <bitenum id="AUXIO5" value="18" token="EVSTAT1.AUXIO5  " description="EVSTAT1.AUXIO5  "/>
+         <bitenum id="AUXIO4" value="17" token="EVSTAT1.AUXIO4  " description="EVSTAT1.AUXIO4  "/>
+         <bitenum id="AUXIO3" value="16" token="EVSTAT1.AUXIO3  " description="EVSTAT1.AUXIO3  "/>
+         <bitenum id="AUXIO2" value="15" token="EVSTAT0.AUXIO2" description="EVSTAT0.AUXIO2"/>
+         <bitenum id="AUXIO1" value="14" token="EVSTAT0.AUXIO1" description="EVSTAT0.AUXIO1"/>
+         <bitenum id="AUXIO0" value="13" token="EVSTAT0.AUXIO0" description="EVSTAT0.AUXIO0"/>
+         <bitenum id="AON_PROG_WU" value="12" token="EVSTAT0.AON_PROG_WU" description="EVSTAT0.AON_PROG_WU"/>
+         <bitenum id="AON_SW" value="11" token="EVSTAT0.AON_SW" description="EVSTAT0.AON_SW"/>
+         <bitenum id="OBSMUX1" value="10" token="EVSTAT0.OBSMUX1" description="EVSTAT0.OBSMUX1"/>
+         <bitenum id="OBSMUX0" value="9" token="EVSTAT0.OBSMUX0" description="EVSTAT0.OBSMUX0"/>
+         <bitenum id="ADC_FIFO_ALMOST_FULL" value="8" token="EVSTAT0.ADC_FIFO_ALMOST_FULL" description="EVSTAT0.ADC_FIFO_ALMOST_FULL"/>
+         <bitenum id="ADC_DONE" value="7" token="EVSTAT0.ADC_DONE" description="EVSTAT0.ADC_DONE"/>
+         <bitenum id="SMPH_AUTOTAKE_DONE" value="6" token="EVSTAT0.SMPH_AUTOTAKE_DONE" description="EVSTAT0.SMPH_AUTOTAKE_DONE"/>
+         <bitenum id="TIMER1_EV" value="5" token="EVSTAT0.TIMER1_EV" description="EVSTAT0.TIMER1_EV"/>
+         <bitenum id="TIMER0_EV" value="4" token="EVSTAT0.TIMER0_EV" description="EVSTAT0.TIMER0_EV"/>
+         <bitenum id="TDC_DONE" value="3" token="EVSTAT0.TDC_DONE" description="EVSTAT0.TDC_DONE"/>
+         <bitenum id="AUX_COMPB" value="2" token="EVSTAT0.AUX_COMPB" description="EVSTAT0.AUX_COMPB"/>
+         <bitenum id="AUX_COMPA" value="1" token="EVSTAT0.AUX_COMPA" description="EVSTAT0.AUX_COMPA"/>
+         <bitenum id="AON_RTC_CH2" value="0" token="EVSTAT0.AON_RTC_CH2" description="EVSTAT0.AON_RTC_CH2"/>
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED7" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="Vector 2 trigger event polarity.
+
+To manually trigger vector 2 execution:
+- AUX_SCE must sleep.
+- Set VEC2_EV to a known static value.
+- Toggle VEC2_POL twice." id="VEC2_POL" resetval="0x0">
+         <bitenum id="FALL" value="1" token="Falling edge triggers vector 2 execution." description="Falling edge triggers vector 2 execution."/>
+         <bitenum id="RISE" value="0" token="Rising edge triggers vector 2 execution." description="Rising edge triggers vector 2 execution."/>
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="Vector 2 trigger enable.
+
+When enabled, VEC2_EV event with VEC2_POL polarity triggers a jump to vector # 2 when AUX_SCE sleeps.
+
+Lower vectors (0 and 1) have priority." id="VEC2_EN" resetval="0x0">
+         <bitenum id="EN" value="1" token="Enable vector 2 trigger." description="Enable vector 2 trigger."/>
+         <bitenum id="DIS" value="0" token="Disable vector 2 trigger." description="Disable vector 2 trigger."/>
+      </bitfield>
+      <bitfield range="" begin="4" width="5" end="0" rwaccess="RW" description="Select vector 2 trigger source event." id="VEC2_EV" resetval="0x0">
+         <bitenum id="ADC_IRQ" value="31" token="EVSTAT1.ADC_IRQ" description="EVSTAT1.ADC_IRQ"/>
+         <bitenum id="MCU_EV" value="30" token="EVSTAT1.MCU_EV" description="EVSTAT1.MCU_EV"/>
+         <bitenum id="ACLK_REF" value="29" token="EVSTAT1.ACLK_REF" description="EVSTAT1.ACLK_REF"/>
+         <bitenum id="AUXIO15" value="28" token="EVSTAT1.AUXIO15" description="EVSTAT1.AUXIO15"/>
+         <bitenum id="AUXIO14" value="27" token="EVSTAT1.AUXIO14 " description="EVSTAT1.AUXIO14 "/>
+         <bitenum id="AUXIO13" value="26" token="EVSTAT1.AUXIO13 " description="EVSTAT1.AUXIO13 "/>
+         <bitenum id="AUXIO12" value="25" token="EVSTAT1.AUXIO12 " description="EVSTAT1.AUXIO12 "/>
+         <bitenum id="AUXIO11" value="24" token="EVSTAT1.AUXIO11" description="EVSTAT1.AUXIO11"/>
+         <bitenum id="AUXIO10" value="23" token="EVSTAT1.AUXIO10" description="EVSTAT1.AUXIO10"/>
+         <bitenum id="AUXIO9" value="22" token="EVSTAT1.AUXIO9  " description="EVSTAT1.AUXIO9  "/>
+         <bitenum id="AUXIO8" value="21" token="EVSTAT1.AUXIO8  " description="EVSTAT1.AUXIO8  "/>
+         <bitenum id="AUXIO7" value="20" token="EVSTAT1.AUXIO7  " description="EVSTAT1.AUXIO7  "/>
+         <bitenum id="AUXIO6" value="19" token="EVSTAT1.AUXIO6  " description="EVSTAT1.AUXIO6  "/>
+         <bitenum id="AUXIO5" value="18" token="EVSTAT1.AUXIO5  " description="EVSTAT1.AUXIO5  "/>
+         <bitenum id="AUXIO4" value="17" token="EVSTAT1.AUXIO4  " description="EVSTAT1.AUXIO4  "/>
+         <bitenum id="AUXIO3" value="16" token="EVSTAT1.AUXIO3  " description="EVSTAT1.AUXIO3  "/>
+         <bitenum id="AUXIO2" value="15" token="EVSTAT0.AUXIO2" description="EVSTAT0.AUXIO2"/>
+         <bitenum id="AUXIO1" value="14" token="EVSTAT0.AUXIO1" description="EVSTAT0.AUXIO1"/>
+         <bitenum id="AUXIO0" value="13" token="EVSTAT0.AUXIO0" description="EVSTAT0.AUXIO0"/>
+         <bitenum id="AON_PROG_WU" value="12" token="EVSTAT0.AON_PROG_WU" description="EVSTAT0.AON_PROG_WU"/>
+         <bitenum id="AON_SW" value="11" token="EVSTAT0.AON_SW" description="EVSTAT0.AON_SW"/>
+         <bitenum id="OBSMUX1" value="10" token="EVSTAT0.OBSMUX1" description="EVSTAT0.OBSMUX1"/>
+         <bitenum id="OBSMUX0" value="9" token="EVSTAT0.OBSMUX0" description="EVSTAT0.OBSMUX0"/>
+         <bitenum id="ADC_FIFO_ALMOST_FULL" value="8" token="EVSTAT0.ADC_FIFO_ALMOST_FULL" description="EVSTAT0.ADC_FIFO_ALMOST_FULL"/>
+         <bitenum id="ADC_DONE" value="7" token="EVSTAT0.ADC_DONE" description="EVSTAT0.ADC_DONE"/>
+         <bitenum id="SMPH_AUTOTAKE_DONE" value="6" token="EVSTAT0.SMPH_AUTOTAKE_DONE" description="EVSTAT0.SMPH_AUTOTAKE_DONE"/>
+         <bitenum id="TIMER1_EV" value="5" token="EVSTAT0.TIMER1_EV" description="EVSTAT0.TIMER1_EV"/>
+         <bitenum id="TIMER0_EV" value="4" token="EVSTAT0.TIMER0_EV" description="EVSTAT0.TIMER0_EV"/>
+         <bitenum id="TDC_DONE" value="3" token="EVSTAT0.TDC_DONE" description="EVSTAT0.TDC_DONE"/>
+         <bitenum id="AUX_COMPB" value="2" token="EVSTAT0.AUX_COMPB" description="EVSTAT0.AUX_COMPB"/>
+         <bitenum id="AUX_COMPA" value="1" token="EVSTAT0.AUX_COMPA" description="EVSTAT0.AUX_COMPA"/>
+         <bitenum id="AON_RTC_CH2" value="0" token="EVSTAT0.AON_RTC_CH2" description="EVSTAT0.AON_RTC_CH2"/>
+      </bitfield>
+   </register>
+   <register acronym="SCEWEVSEL" width="32" description="Sensor Controller Engine Wait Event Selection
+
+Configuration of this register controls bit index 7 in AUX_SCE:WUSTAT.EV_SIGNALS. This bit can be used by AUX_SCE WEV0, WEV1, BEV0 and BEV1 instructions" id="SCEWEVSEL" offset="0x8">
+      <bitfield range="" begin="31" width="27" end="5" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED5" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="5" end="0" rwaccess="RW" description="Select event source to connect to AUX_SCE:WUSTAT.EV_SIGNALS bit 7." id="WEV7_EV" resetval="0x0">
+         <bitenum id="ADC_IRQ" value="31" token="EVSTAT1.ADC_IRQ" description="EVSTAT1.ADC_IRQ"/>
+         <bitenum id="MCU_EV" value="30" token="EVSTAT1.MCU_EV" description="EVSTAT1.MCU_EV"/>
+         <bitenum id="ACLK_REF" value="29" token="EVSTAT1.ACLK_REF" description="EVSTAT1.ACLK_REF"/>
+         <bitenum id="AUXIO15" value="28" token="EVSTAT1.AUXIO15" description="EVSTAT1.AUXIO15"/>
+         <bitenum id="AUXIO14" value="27" token="EVSTAT1.AUXIO14 " description="EVSTAT1.AUXIO14 "/>
+         <bitenum id="AUXIO13" value="26" token="EVSTAT1.AUXIO13 " description="EVSTAT1.AUXIO13 "/>
+         <bitenum id="AUXIO12" value="25" token="EVSTAT1.AUXIO12 " description="EVSTAT1.AUXIO12 "/>
+         <bitenum id="AUXIO11" value="24" token="EVSTAT1.AUXIO11" description="EVSTAT1.AUXIO11"/>
+         <bitenum id="AUXIO10" value="23" token="EVSTAT1.AUXIO10" description="EVSTAT1.AUXIO10"/>
+         <bitenum id="AUXIO9" value="22" token="EVSTAT1.AUXIO9  " description="EVSTAT1.AUXIO9  "/>
+         <bitenum id="AUXIO8" value="21" token="EVSTAT1.AUXIO8  " description="EVSTAT1.AUXIO8  "/>
+         <bitenum id="AUXIO7" value="20" token="EVSTAT1.AUXIO7  " description="EVSTAT1.AUXIO7  "/>
+         <bitenum id="AUXIO6" value="19" token="EVSTAT1.AUXIO6  " description="EVSTAT1.AUXIO6  "/>
+         <bitenum id="AUXIO5" value="18" token="EVSTAT1.AUXIO5  " description="EVSTAT1.AUXIO5  "/>
+         <bitenum id="AUXIO4" value="17" token="EVSTAT1.AUXIO4  " description="EVSTAT1.AUXIO4  "/>
+         <bitenum id="AUXIO3" value="16" token="EVSTAT1.AUXIO3  " description="EVSTAT1.AUXIO3  "/>
+         <bitenum id="AUXIO2" value="15" token="EVSTAT0.AUXIO2" description="EVSTAT0.AUXIO2"/>
+         <bitenum id="AUXIO1" value="14" token="EVSTAT0.AUXIO1" description="EVSTAT0.AUXIO1"/>
+         <bitenum id="AUXIO0" value="13" token="EVSTAT0.AUXIO0" description="EVSTAT0.AUXIO0"/>
+         <bitenum id="AON_PROG_WU" value="12" token="EVSTAT0.AON_PROG_WU" description="EVSTAT0.AON_PROG_WU"/>
+         <bitenum id="AON_SW" value="11" token="EVSTAT0.AON_SW" description="EVSTAT0.AON_SW"/>
+         <bitenum id="OBSMUX1" value="10" token="EVSTAT0.OBSMUX1" description="EVSTAT0.OBSMUX1"/>
+         <bitenum id="OBSMUX0" value="9" token="EVSTAT0.OBSMUX0" description="EVSTAT0.OBSMUX0"/>
+         <bitenum id="ADC_FIFO_ALMOST_FULL" value="8" token="EVSTAT0.ADC_FIFO_ALMOST_FULL" description="EVSTAT0.ADC_FIFO_ALMOST_FULL"/>
+         <bitenum id="ADC_DONE" value="7" token="EVSTAT0.ADC_DONE" description="EVSTAT0.ADC_DONE"/>
+         <bitenum id="SMPH_AUTOTAKE_DONE" value="6" token="EVSTAT0.SMPH_AUTOTAKE_DONE" description="EVSTAT0.SMPH_AUTOTAKE_DONE"/>
+         <bitenum id="TIMER1_EV" value="5" token="EVSTAT0.TIMER1_EV" description="EVSTAT0.TIMER1_EV"/>
+         <bitenum id="TIMER0_EV" value="4" token="EVSTAT0.TIMER0_EV" description="EVSTAT0.TIMER0_EV"/>
+         <bitenum id="TDC_DONE" value="3" token="EVSTAT0.TDC_DONE" description="EVSTAT0.TDC_DONE"/>
+         <bitenum id="AUX_COMPB" value="2" token="EVSTAT0.AUX_COMPB" description="EVSTAT0.AUX_COMPB"/>
+         <bitenum id="AUX_COMPA" value="1" token="EVSTAT0.AUX_COMPA" description="EVSTAT0.AUX_COMPA"/>
+         <bitenum id="AON_RTC_CH2" value="0" token="EVSTAT0.AON_RTC_CH2" description="EVSTAT0.AON_RTC_CH2"/>
+      </bitfield>
+   </register>
+   <register acronym="EVTOAONFLAGS" width="32" description="Events To AON Flags
+
+This register contains a collection of event flags routed to AON_EVENT. 
+
+To clear an event flag, write to EVTOAONFLAGSCLR or write 0 to event flag in this register.
+" id="EVTOAONFLAGS" offset="0xc">
+      <bitfield range="" begin="31" width="23" end="9" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED9" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RW" description="This event flag is set when level selected by EVTOAONPOL.TIMER1_EV occurs on EVSTAT0.TIMER1_EV." id="TIMER1_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RW" description="This event flag is set when level selected by EVTOAONPOL.TIMER0_EV occurs on EVSTAT0.TIMER0_EV." id="TIMER0_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="This event flag is set when level selected by EVTOAONPOL.TDC_DONE occurs on EVSTAT0.TDC_DONE." id="TDC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="This event flag is set when level selected by EVTOAONPOL.ADC_DONE occurs on EVSTAT0.ADC_DONE." id="ADC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RW" description="This event flag is set when edge selected by EVTOAONPOL.AUX_COMPB occurs on EVSTAT0.AUX_COMPB." id="AUX_COMPB" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RW" description="This event flag is set when edge selected by EVTOAONPOL.AUX_COMPA occurs on EVSTAT0.AUX_COMPA." id="AUX_COMPA" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RW" description="This event flag is set when software writes a 1 to SWEVSET.SWEV2." id="SWEV2" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RW" description="This event flag is set when software writes a 1 to SWEVSET.SWEV1." id="SWEV1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RW" description="This event flag is set when software writes a 1 to SWEVSET.SWEV0." id="SWEV0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="EVTOAONPOL" width="32" description="Events To AON Polarity
+
+Event source polarity configuration for EVTOAONFLAGS." id="EVTOAONPOL" offset="0x10">
+      <bitfield range="" begin="31" width="23" end="9" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED9" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RW" description="Select the level of EVSTAT0.TIMER1_EV that sets EVTOAONFLAGS.TIMER1_EV." id="TIMER1_EV" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RW" description="Select the level of EVSTAT0.TIMER0_EV that sets EVTOAONFLAGS.TIMER0_EV." id="TIMER0_EV" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="Select level of EVSTAT0.TDC_DONE that sets EVTOAONFLAGS.TDC_DONE." id="TDC_DONE" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="Select the level of  EVSTAT0.ADC_DONE that sets EVTOAONFLAGS.ADC_DONE." id="ADC_DONE" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RW" description="Select the edge of  EVSTAT0.AUX_COMPB that sets EVTOAONFLAGS.AUX_COMPB." id="AUX_COMPB" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Falling edge" description="Falling edge"/>
+         <bitenum id="HIGH" value="0" token="Rising edge" description="Rising edge"/>
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RW" description="Select the edge of  EVSTAT0.AUX_COMPA that sets EVTOAONFLAGS.AUX_COMPA." id="AUX_COMPA" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Falling edge" description="Falling edge"/>
+         <bitenum id="HIGH" value="0" token="Rising edge" description="Rising edge"/>
+      </bitfield>
+      <bitfield range="" begin="2" width="3" end="0" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED2" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="DMACTL" width="32" description="Direct Memory Access Control" id="DMACTL" offset="0x14">
+      <bitfield range="" begin="31" width="29" end="3" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED3" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RW" description="UDMA0 Request mode" id="REQ_MODE" resetval="0x0">
+         <bitenum id="SINGLE" value="1" token="Single requests are generated on UDMA0 channel 7 when the condition configured in SEL is met." description="Single requests are generated on UDMA0 channel 7 when the condition configured in SEL is met."/>
+         <bitenum id="BURST" value="0" token="Burst requests are generated on UDMA0 channel 7 when the condition configured in SEL is met." description="Burst requests are generated on UDMA0 channel 7 when the condition configured in SEL is met."/>
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RW" description="uDMA ADC interface enable.
+
+0: Disable UDMA0 interface to ADC.
+1: Enable UDMA0 interface to ADC." id="EN" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RW" description="Select FIFO watermark level required to trigger a UDMA0 transfer of ADC FIFO data." id="SEL" resetval="0x0">
+         <bitenum id="FIFO_ALMOST_FULL" value="1" token="UDMA0 trigger event will be generated when the ADC FIFO is almost full (3/4 full)." description="UDMA0 trigger event will be generated when the ADC FIFO is almost full (3/4 full)."/>
+         <bitenum id="FIFO_NOT_EMPTY" value="0" token="UDMA0 trigger event will be generated when there are samples in the ADC FIFO." description="UDMA0 trigger event will be generated when there are samples in the ADC FIFO."/>
+      </bitfield>
+   </register>
+   <register acronym="SWEVSET" width="32" description="Software Event Set
+
+Set software event flags from AUX domain to AON and MCU domains. CPUs in MCU domain can read the event flags from EVTOAONFLAGS and clear them in EVTOAONFLAGSCLR. 
+
+Use of these event flags is software-defined." id="SWEVSET" offset="0x18">
+      <bitfield range="" begin="31" width="29" end="3" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED3" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="WO" description="Software event flag 2.
+
+0: No effect.
+1: Set software event flag 2." id="SWEV2" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="WO" description="Software event flag 1.
+
+0: No effect.
+1: Set software event flag 1." id="SWEV1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="WO" description="Software event flag 0.
+
+0: No effect.
+1: Set software event flag 0." id="SWEV0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="EVSTAT0" width="32" description="Event Status 0
+
+Register holds events 0 thru 15 of the 32-bit event bus that is synchronous to AUX clock. The following subscribers use the asynchronous version of events in this register.
+- AUX_ANAIF.
+- AUX_TDC.
+" id="EVSTAT0" offset="0x1c">
+      <bitfield range="" begin="31" width="16" end="16" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="15" width="1" end="15" rwaccess="RO" description="AUXIO2   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 2." id="AUXIO2" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="14" width="1" end="14" rwaccess="RO" description="AUXIO1   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 1." id="AUXIO1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="13" width="1" end="13" rwaccess="RO" description="AUXIO0   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 0." id="AUXIO0" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="12" width="1" end="12" rwaccess="RO" description="AON_EVENT:AUXWUSEL.WU2_EV OR AON_EVENT:AUXWUSEL.WU1_EV OR AON_EVENT:AUXWUSEL.WU0_EV" id="AON_PROG_WU" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="11" width="1" end="11" rwaccess="RO" description="AON_WUC:AUXCTL.SWEV" id="AON_SW" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="10" width="1" end="10" rwaccess="RO" description="Observation input 1 from IOC. 
+This event is configured by IOC:OBSAUXOUTPUT.SEL1." id="OBSMUX1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="9" width="1" end="9" rwaccess="RO" description="Observation input 0 from IOC. 
+This event is configured by IOC:OBSAUXOUTPUT.SEL0 and can be overridden by IOC:OBSAUXOUTPUT.SEL_MISC." id="OBSMUX0" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RO" description="AUX_ANAIF:ADCFIFOSTAT.ALMOST_FULL" id="ADC_FIFO_ALMOST_FULL" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RO" description="AUX_ANAIF ADC conversion done event." id="ADC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RO" description="See AUX_SMPH:AUTOTAKE.SMPH_ID for description." id="SMPH_AUTOTAKE_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RO" description="AUX_TIMER1_EV event, see AUX_TIMER:T1TARGET for description." id="TIMER1_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RO" description="AUX_TIMER0_EV event, see AUX_TIMER:T0TARGET for description." id="TIMER0_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RO" description="AUX_TDC:STAT.DONE " id="TDC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RO" description="Comparator B output" id="AUX_COMPB" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RO" description="Comparator A output" id="AUX_COMPA" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RO" description="AON_RTC:EVFLAGS.CH2" id="AON_RTC_CH2" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="EVSTAT1" width="32" description="Event Status 1
+
+Current event source levels, 31:16" id="EVSTAT1" offset="0x20">
+      <bitfield range="" begin="31" width="16" end="16" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED16" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="15" width="1" end="15" rwaccess="RO" description="The logical function for this event is configurable.
+
+When DMACTL.EN = 1 : 
+   Event = UDMA0 Channel 7 done event     OR     AUX_ANAIF:ADCFIFOSTAT.OVERFLOW      OR      AUX_ANAIF:ADCFIFOSTAT.UNDERFLOW
+
+When DMACTL.EN = 0 :
+   Event = (NOT AUX_ANAIF:ADCFIFOSTAT.EMPTY)      OR      AUX_ANAIF:ADCFIFOSTAT.OVERFLOW      OR      AUX_ANAIF:ADCFIFOSTAT.UNDERFLOW  
+
+Bit 7 in UDMA0:DONEMASK must be 0.    " id="ADC_IRQ" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="14" width="1" end="14" rwaccess="RO" description="Event from EVENT configured by EVENT:AUXSEL0." id="MCU_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="13" width="1" end="13" rwaccess="RO" description="TDC reference clock.
+It is configured by DDI_0_OSC:CTL0.ACLK_REF_SRC_SEL and enabled by AUX_WUC:REFCLKCTL.REQ." id="ACLK_REF" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="12" width="1" end="12" rwaccess="RO" description="AUXIO15 pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 7." id="AUXIO15" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="11" width="1" end="11" rwaccess="RO" description="AUXIO14 pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 6." id="AUXIO14" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="10" width="1" end="10" rwaccess="RO" description="AUXIO13 pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 5." id="AUXIO13" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="9" width="1" end="9" rwaccess="RO" description="AUXIO12 pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 4." id="AUXIO12" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RO" description="AUXIO11 pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 3." id="AUXIO11" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RO" description="AUXIO10 pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 2." id="AUXIO10" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RO" description="AUXIO9   pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 1." id="AUXIO9" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RO" description="AUXIO8   pin level, read value corresponds to AUX_AIODIO1:GPIODIN bit 0." id="AUXIO8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RO" description="AUXIO7   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 7." id="AUXIO7" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RO" description="AUXIO6   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 6." id="AUXIO6" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RO" description="AUXIO5   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 5." id="AUXIO5" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RO" description="AUXIO4   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 4." id="AUXIO4" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RO" description="AUXIO3   pin level, read value corresponds to AUX_AIODIO0:GPIODIN bit 3." id="AUXIO3" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="EVTOMCUPOL" width="32" description="Event To MCU Polarity
+
+Event source polarity configuration for EVTOMCUFLAGS." id="EVTOMCUPOL" offset="0x24">
+      <bitfield range="" begin="31" width="21" end="11" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED11" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="10" width="1" end="10" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.ADC_IRQ." id="ADC_IRQ" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="9" width="1" end="9" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.OBSMUX0." id="OBSMUX0" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.ADC_FIFO_ALMOST_FULL." id="ADC_FIFO_ALMOST_FULL" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.ADC_DONE." id="ADC_DONE" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.SMPH_AUTOTAKE_DONE." id="SMPH_AUTOTAKE_DONE" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.TIMER1_EV." id="TIMER1_EV" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.TIMER0_EV." id="TIMER0_EV" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.TDC_DONE." id="TDC_DONE" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.AUX_COMPB." id="AUX_COMPB" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.AUX_COMPA." id="AUX_COMPA" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RW" description="Select the event source level that sets EVTOMCUFLAGS.AON_WU_EV." id="AON_WU_EV" resetval="0x0">
+         <bitenum id="LOW" value="1" token="Low level" description="Low level"/>
+         <bitenum id="HIGH" value="0" token="High level" description="High level"/>
+      </bitfield>
+   </register>
+   <register acronym="EVTOMCUFLAGS" width="32" description="Events to MCU Flags
+
+This register contains a collection of event flags routed to MCU domain. 
+
+To clear an event flag, write to EVTOMCUFLAGSCLR or write 0 to event flag in this register. Follow procedure described in AUX_SYSIF:WUCLR to clear AUX_WU_EV event flag." id="EVTOMCUFLAGS" offset="0x28">
+      <bitfield range="" begin="31" width="21" end="11" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED11" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="10" width="1" end="10" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.ADC_IRQ occurs on EVSTAT0.ADC_IRQ." id="ADC_IRQ" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="9" width="1" end="9" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.MCU_OBSMUX0 occurs on EVSTAT0.MCU_OBSMUX0." id="OBSMUX0" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.ADC_FIFO_ALMOST_FULL occurs on EVSTAT0.ADC_FIFO_ALMOST_FULL." id="ADC_FIFO_ALMOST_FULL" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.ADC_DONE occurs on EVSTAT0.ADC_DONE." id="ADC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.SMPH_AUTOTAKE_DONE occurs on EVSTAT0.SMPH_AUTOTAKE_DONE." id="SMPH_AUTOTAKE_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.TIMER1_EV occurs on EVSTAT0.TIMER1_EV." id="TIMER1_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.TIMER0_EV occurs on EVSTAT0.TIMER0_EV." id="TIMER0_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.TDC_DONE occurs on EVSTAT0.TDC_DONE." id="TDC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RW" description="This event flag is set when edge selected by EVTOMCUPOL.AUX_COMPB occurs on EVSTAT0.AUX_COMPB." id="AUX_COMPB" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RW" description="This event flag is set when edge selected by EVTOMCUPOL.AUX_COMPA occurs on EVSTAT0.AUX_COMPA." id="AUX_COMPA" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RW" description="This event flag is set when level selected by EVTOMCUPOL.AON_WU_EV occurs on the reduction-OR of the AUX_EVCTL:EVSTAT0.RTC_CH2_EV, AUX_EVCTL:EVSTAT0.AON_SW, and AUX_EVCTL:EVSTAT0.AON_PROG_WU events." id="AON_WU_EV" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="COMBEVTOMCUMASK" width="32" description="Combined Event To MCU Mask
+
+Select event flags in EVTOMCUFLAGS that contribute to the AUX_COMB event to EVENT and system CPU.
+
+The AUX_COMB event is high as long as one or more of the included event flags are set." id="COMBEVTOMCUMASK" offset="0x2c">
+      <bitfield range="" begin="31" width="21" end="11" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED11" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="10" width="1" end="10" rwaccess="RW" description="EVTOMCUFLAGS.ADC_IRQ contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="ADC_IRQ" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="9" width="1" end="9" rwaccess="RW" description="EVTOMCUFLAGS.MCU_OBSMUX0 contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="OBSMUX0" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="RW" description="EVTOMCUFLAGS.ADC_FIFO_ALMOST_FULL contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="ADC_FIFO_ALMOST_FULL" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="RW" description="EVTOMCUFLAGS.ADC_DONE contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="ADC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="RW" description="EVTOMCUFLAGS.SMPH_AUTOTAKE_DONE contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="SMPH_AUTOTAKE_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="RW" description="EVTOMCUFLAGS.TIMER1_EV contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="TIMER1_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="RW" description="EVTOMCUFLAGS.TIMER0_EV contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="TIMER0_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RW" description="EVTOMCUFLAGS.TDC_DONE contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="TDC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RW" description="EVTOMCUFLAGS.AUX_COMPB contribution to the AUX_COMB event.
+
+0: Exclude
+1: Include." id="AUX_COMPB" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RW" description="EVTOMCUFLAGS.AUX_COMPA contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="AUX_COMPA" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RW" description="EVTOMCUFLAGS.AON_WU_EV contribution to the AUX_COMB event.
+
+0: Exclude.
+1: Include." id="AON_WU_EV" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="VECFLAGS" width="32" description="Vector Flags
+
+If a vector flag becomes 1 and AUX_SCE sleeps, AUX_SCE will wake up and execute the corresponding vector. The vector with the lowest index will execute first if multiple vectors flags are set. AUX_SCE must return to sleep to execute the next vector.
+
+During execution of a vector, AUX_SCE must clear the vector flag that triggered execution. Write 1 to bit index n in VECFLAGSCLR to clear vector flag n." id="VECFLAGS" offset="0x34">
+      <bitfield range="" begin="31" width="28" end="4" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED4" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="RW" description="Vector flag 3.
+
+The vector flag is set if the edge selected VECCFG1.VEC3_POL occurs on the event selected in VECCFG1.VEC3_EV.
+
+The flag is cleared by writing a 0 to this bit, or (preferably) a 1 to VECFLAGSCLR.VEC3." id="VEC3" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="RW" description="Vector flag 2.
+
+The vector flag is set if the edge selected VECCFG1.VEC2_POL occurs on the event selected in VECCFG1.VEC2_EV.
+
+The flag is cleared by writing a 0 to this bit, or (preferably) a 1 to VECFLAGSCLR.VEC2." id="VEC2" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="RW" description="Vector flag 1.
+
+The vector flag is set if the edge selected VECCFG0.VEC1_POL occurs on the event selected in VECCFG0.VEC1_EV.
+
+The flag is cleared by writing a 0 to this bit, or (preferably) a 1 to VECFLAGSCLR.VEC1." id="VEC1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="RW" description="Vector flag 0.
+
+The vector flag is set if the edge selected VECCFG0.VEC0_POL occurs on the event selected in VECCFG0.VEC0_EV.
+
+The flag is cleared by writing a 0 to this bit, or (preferably) a 1 to VECFLAGSCLR.VEC0." id="VEC0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="EVTOMCUFLAGSCLR" width="32" description="Events To MCU Flags Clear
+
+Clear event flags in EVTOMCUFLAGS. 
+
+In order to clear a level sensitive event flag, the event must be deasserted. " id="EVTOMCUFLAGSCLR" offset="0x38">
+      <bitfield range="" begin="31" width="21" end="11" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED11" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="10" width="1" end="10" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.ADC_IRQ.
+
+Read value is 0." id="ADC_IRQ" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="9" width="1" end="9" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.MCU_OBSMUX0.
+
+Read value is 0." id="OBSMUX0" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.ADC_FIFO_ALMOST_FULL.
+
+Read value is 0." id="ADC_FIFO_ALMOST_FULL" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.ADC_DONE.
+
+Read value is 0." id="ADC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.SMPH_AUTOTAKE_DONE.
+
+Read value is 0." id="SMPH_AUTOTAKE_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.TIMER1_EV.
+
+Read value is 0." id="TIMER1_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.TIMER0_EV.
+
+Read value is 0." id="TIMER0_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.TDC_DONE.
+
+Read value is 0." id="TDC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.AUX_COMPB.
+
+Read value is 0." id="AUX_COMPB" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.AUX_COMPA.
+
+Read value is 0." id="AUX_COMPA" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="WO" description="Write 1 to clear EVTOMCUFLAGS.AON_WU_EV.
+
+Read value is 0." id="AON_WU_EV" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="EVTOAONFLAGSCLR" width="32" description="Events To AON Clear
+
+Clear event flags in EVTOAONFLAGS. 
+
+In order to clear a level sensitive event flag, the event must be deasserted. " id="EVTOAONFLAGSCLR" offset="0x3c">
+      <bitfield range="" begin="31" width="23" end="9" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED9" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="8" width="1" end="8" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.TIMER1_EV.
+
+Read value is 0." id="TIMER1_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="1" end="7" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.TIMER0_EV.
+
+Read value is 0." id="TIMER0_EV" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="6" width="1" end="6" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.TDC_DONE.
+
+Read value is 0." id="TDC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="5" width="1" end="5" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.ADC_DONE.
+
+Read value is 0." id="ADC_DONE" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="4" width="1" end="4" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.AUX_COMPB.
+
+Read value is 0." id="AUX_COMPB" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.AUX_COMPA.
+
+Read value is 0." id="AUX_COMPA" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.SWEV2.
+
+Read value is 0." id="SWEV2" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.SWEV1.
+
+Read value is 0." id="SWEV1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="WO" description="Write 1 to clear EVTOAONFLAGS.SWEV0.
+
+Read value is 0." id="SWEV0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="VECFLAGSCLR" width="32" description="Vector Flags Clear
+
+Strobes for clearing flags in VECFLAGS." id="VECFLAGSCLR" offset="0x40">
+      <bitfield range="" begin="31" width="28" end="4" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED4" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="3" width="1" end="3" rwaccess="WO" description="Clear vector flag 3.
+
+0: No effect.
+1: Clear VECFLAGS.VEC3.
+
+Read value is 0." id="VEC3" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="2" width="1" end="2" rwaccess="WO" description="Clear vector flag 2.
+
+0: No effect.
+1: Clear VECFLAGS.VEC2.
+
+Read value is 0." id="VEC2" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="1" width="1" end="1" rwaccess="WO" description="Clear vector flag 1.
+
+0: No effect.
+1: Clear VECFLAGS.VEC1.
+
+Read value is 0." id="VEC1" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="0" width="1" end="0" rwaccess="WO" description="Clear vector flag 0.
+
+0: No effect.
+1: Clear VECFLAGS.VEC0.
+
+Read value is 0." id="VEC0" resetval="0x0">
+      </bitfield>
+   </register>
+</module>

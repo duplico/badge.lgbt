@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PropertyList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!--Nodes-->
+    <node id="FlashProgrammerNode">
+        <name>Flash Settings</name>
+        <children>
+            <!--<child>FlashDownloadSettingsGroup</child>-->
+            <child>FlashEraseSettingsGroup</child>
+            <child>FlashAlignCombineToggle</child>
+            <child>FlashAlignmentSize</child>
+            <child>DeviceInfoGroup</child>
+            <child>DeviceMacAddressGroup</child>
+        </children>
+    </node>
+    <!--Groups -->
+    <group id="FlashDownloadSettingsGroup">
+        <name>Download Settings</name>
+        <children>
+            <child>FlashDownloadSetting</child>
+        </children>
+    </group>
+    <group id="FlashEraseSettingsGroup">
+        <name>Erase Settings</name>
+        <children>
+            <child>FlashEraseSetting</child>
+            <child>FlashEraseButton</child>
+        </children>
+    </group>
+    <group id="DeviceInfoGroup">
+        <name>Device Information</name>
+        <children>
+            <child>DeviceInfoFlashSize</child>
+            <child>DeviceInfoRAMSize</child>
+            <child>DeviceInfoRevision</child>
+            <child>DeviceInfoRevisionTranslation</child>
+        </children>
+    </group>
+    <group id="DeviceMacAddressGroup">
+        <name>Device MAC Addresses</name>
+        <children>
+
+            <child>DeviceIeeePrimaryGroup</child>
+            <child>DeviceIeeeSecondaryGroup</child>
+        </children>
+    </group>
+    <group id="DeviceIeeePrimaryGroup">
+        <name>Primary IEEE Address</name>
+        <children>
+            <child>DeviceIeeePrimary</child>
+            <child>DeviceIeeePrimaryLoc</child>
+            <child>DeviceIeeePrimaryReadButton</child>
+        </children>
+    </group>
+    <group id="DeviceIeeeSecondaryGroup">
+        <name>Secondary IEEE Address</name>
+        <children>
+            <child>DeviceIeeeSecondary</child>
+            <child>DeviceIeeeSecondaryLoc</child>
+            <child>DeviceIeeeSecondaryReadButton</child>
+            <child>DeviceIeeeSecondaryWriteButton</child>
+        </children>
+    </group>
+    <!--Categories -->
+    <categories>
+        <category>Erase</category>
+        <category>Download</category>
+        <category>Primary IEEE Address</category>
+        <category>Secondary IEEE Address</category>
+        <category read="true">Device Info</category>
+    </categories>
+    <!--Property Definitions -->
+    <property id="DeviceIeeePrimary">
+        <target>generic</target>
+        <name>Primary IEEE Address</name>
+        <valueType>String</valueType>
+        <defaultValue>--</defaultValue>
+        <readOnly>1</readOnly>
+        <categories>
+            <category>Primary IEEE Address</category>
+        </categories>
+    </property>
+    <property id="DeviceIeeePrimaryLoc">
+        <target>generic</target>
+        <name>IEEE Factory Address Location</name>
+        <valueType>String</valueType>
+        <!-- <address in hex>:<length in_bytes> -->
+        <defaultValue>280028:8</defaultValue>
+        <readOnly>1</readOnly>
+        <hidden />
+    </property>
+    <property id="DeviceIeeePrimaryReadButton">
+        <target>generic</target> <!-- ISA name for Cortex-M3/4 -->
+        <name>Read</name>
+        <valueType>Button</valueType>
+        <action>DPActiveDebugSession.flash.performOperation("ReadPriIeee")</action>
+        <categories>
+            <category>Primary IEEE Address</category>
+        </categories>
+    </property>
+    <property id="DeviceIeeeSecondary">
+        <target>generic</target>
+        <name>Secondary IEEE Address</name>
+        <valueType>String</valueType>
+        <defaultValue>--</defaultValue>
+        <categories>
+            <category>Secondary IEEE Address</category>
+        </categories>
+    </property>
+    <property id="DeviceIeeeSecondaryLoc">
+        <target>generic</target>
+        <name>Secondary IEEE Address Location</name>
+        <valueType>String</valueType>
+        <!-- <address in hex>:<length in_bytes> -->
+        <defaultValue>27FFCC:8</defaultValue>
+        <readOnly>1</readOnly>
+        <hidden />
+    </property>
+    <property id="DeviceIeeeSecondaryReadButton">
+        <target>generic</target> <!-- ISA name for Cortex-M3/4 -->
+        <name>Read</name>
+        <valueType>Button</valueType>
+        <action>DPActiveDebugSession.flash.performOperation("ReadSecIeee")</action>
+        <categories>
+            <category>Secondary IEEE Address</category>
+        </categories>
+    </property>
+    <property id="DeviceIeeeSecondaryWriteButton">
+        <target>generic</target>
+        <name>Write</name>
+        <valueType>Button</valueType>
+        <action>DPActiveDebugSession.flash.performOperation("WriteSecIeee")</action>
+        <categories>
+            <category>Secondary IEEE Address</category>
+        </categories>
+    </property>
+    <property id="FlashEraseSetting">
+        <target>generic</target>
+        <name />
+        <valueType>ChoiceList</valueType>
+        <values>
+            <value>Entire Flash</value>
+            <value>Necessary Sectors Only (for Program Load)</value>
+        </values>
+        <defaultValue>Entire Flash</defaultValue>
+        <categories>
+            <category>Erase</category>
+        </categories>
+    </property>
+    <property id="FlashEraseButton">
+        <target>generic</target>
+        <name>Erase Flash</name>
+        <valueType>Button</valueType>
+        <disableIf>
+            <property id="FlashEraseSetting">Necessary Sectors Only (for Program Load)</property>
+        </disableIf>
+        <action>DPActiveDebugSession.flash.performOperation("Erase")</action>
+        <categories>
+            <category>Erase</category>
+        </categories>
+    </property>
+    <property id="FlashAlignCombineToggle">
+        <target>generic</target>
+        <name>Align program segments to 64-bit memory regions (for ECC calculation)</name>
+        <valueType>Boolean</valueType>
+        <defaultValue>1</defaultValue>
+        <hidden />
+    </property>
+    <property id="FlashAlignmentSize">
+        <!-- When set, this option combines all sections that is within the given range,
+             resulting in bigger programming chunks and improved speed. Holes are
+             programmed with FF data -->
+        <target>generic</target>
+        <name>Alignment Size: 0x</name>
+        <valueType>String</valueType>
+        <defaultValue>800</defaultValue><!-- HEX value -->
+        <hidden />
+    </property>
+    <property id="DeviceInfoFlashSize">
+        <target>generic</target>
+        <name>Flash Size</name>
+        <valueType>String</valueType>
+        <defaultValue>--</defaultValue>
+        <readOnly>1</readOnly>
+        <categories>
+            <category>Device Info</category>
+        </categories>
+    </property>
+    <property id="DeviceInfoRAMSize">
+        <target>generic</target>
+        <name>RAM Size</name>
+        <valueType>String</valueType>
+        <defaultValue>--</defaultValue>
+        <readOnly>1</readOnly>
+        <categories>
+            <category>Device Info</category>
+        </categories>
+    </property>
+    <property id="DeviceInfoRevision">
+        <target>generic</target>
+        <name>Revision</name>
+        <valueType>String</valueType>
+        <defaultValue>--</defaultValue>
+        <readOnly>1</readOnly>
+        <categories>
+            <category>Device Info</category>
+        </categories>
+    </property>
+    <property id="DeviceInfoRevisionTranslation">
+        <target>generic</target>
+        <name>Revision Translation</name>
+        <valueType>String</valueType>
+        <defaultValue>0:1.0:A:8:2.0:B</defaultValue>
+        <readOnly>1</readOnly>
+        <hidden />
+    </property>
+    <!-- fin -->
+</PropertyList>

@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module id="AUX_AIODIO" HW_revision="" XML_version="1.0" description="AUX Analog/Digital Input Output Controller  " xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="setup_parser.xsd">
+   <register acronym="GPIODOUT" width="32" description="General Purpose Input Output Data Out
+
+The output data register is used to set data on AUXIO that are controlled by instance i of AUX_AIODIO.  Hence, in formulas below i = 0 for AUX_AIODIO0 and  i = 1 for AUX_AIODIO1" id="GPIODOUT" offset="0x0">
+      <bitfield range="" begin="31" width="24" end="8" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="8" end="0" rwaccess="RW" description="Write 1 to bit index n in this bit vector to set AUXIO[8i+n].
+Write 0 to bit index n in this bit vector to clear AUXIO[8i+n]." id="IO7_0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="IOMODE" width="32" description="Input Output Mode
+
+This register controls pull-up, pull-down, and output mode for AUXIO that are controlled by instance i of AUX_AIODIO. Hence, in formulas below i = 0 for AUX_AIODIO0 and i = 1 for AUX_AIODIO1" id="IOMODE" offset="0x4">
+      <bitfield range="" begin="31" width="16" end="16" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED16" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="15" width="2" end="14" rwaccess="RW" description="Select mode for AUXIO[8i+7]." id="IO7" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 7 is 0: AUXIO[8i+7] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 7 is 1: AUXIO[8i+7] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 7 is 0: AUXIO[8i+7] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 7 is 1: AUXIO[8i+7] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 7 is 0: AUXIO[8i+7] is driven low.  
+
+When GPIODOUT bit 7 is 1: AUXIO[8i+7] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 7 is 0: AUXIO[8i+7] is driven low.  
+
+When GPIODOUT bit 7 is 1: AUXIO[8i+7] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 7 is 0: AUXIO[8i+7] is enabled for analog signal transfer.
+
+When GPIODIE bit 7 is 1: AUXIO[8i+7] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 7 is 0: AUXIO[8i+7] is enabled for analog signal transfer.
+
+When GPIODIE bit 7 is 1: AUXIO[8i+7] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 7 drives AUXIO[8i+7]." description="Output Mode:
+
+GPIODOUT bit 7 drives AUXIO[8i+7]."/>
+      </bitfield>
+      <bitfield range="" begin="13" width="2" end="12" rwaccess="RW" description="Select mode for AUXIO[8i+6]." id="IO6" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 6 is 0: AUXIO[8i+6] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 6 is 1: AUXIO[8i+6] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 6 is 0: AUXIO[8i+6] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 6 is 1: AUXIO[8i+6] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 6 is 0: AUXIO[8i+6] is driven low.  
+
+When GPIODOUT bit 6 is 1: AUXIO[8i+6] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 6 is 0: AUXIO[8i+6] is driven low.  
+
+When GPIODOUT bit 6 is 1: AUXIO[8i+6] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 6 is 0: AUXIO[8i+6] is enabled for analog signal transfer.
+
+When GPIODIE bit 6 is 1: AUXIO[8i+6] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 6 is 0: AUXIO[8i+6] is enabled for analog signal transfer.
+
+When GPIODIE bit 6 is 1: AUXIO[8i+6] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 6 drives AUXIO[8i+6]." description="Output Mode:
+
+GPIODOUT bit 6 drives AUXIO[8i+6]."/>
+      </bitfield>
+      <bitfield range="" begin="11" width="2" end="10" rwaccess="RW" description="Select mode for AUXIO[8i+5]." id="IO5" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 5 is 0: AUXIO[8i+5] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 5 is 1: AUXIO[8i+5] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 5 is 0: AUXIO[8i+5] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 5 is 1: AUXIO[8i+5] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 5 is 0: AUXIO[8i+5] is driven low.  
+
+When GPIODOUT bit 5 is 1: AUXIO[8i+5] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 5 is 0: AUXIO[8i+5] is driven low.  
+
+When GPIODOUT bit 5 is 1: AUXIO[8i+5] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 5 is 0: AUXIO[8i+5] is enabled for analog signal transfer.
+
+When GPIODIE bit 5 is 1: AUXIO[8i+5] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 5 is 0: AUXIO[8i+5] is enabled for analog signal transfer.
+
+When GPIODIE bit 5 is 1: AUXIO[8i+5] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 5 drives AUXIO[8i+5]." description="Output Mode:
+
+GPIODOUT bit 5 drives AUXIO[8i+5]."/>
+      </bitfield>
+      <bitfield range="" begin="9" width="2" end="8" rwaccess="RW" description="Select mode for AUXIO[8i+4]." id="IO4" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 4 is 0: AUXIO[8i+4] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 4 is 1: AUXIO[8i+4] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 4 is 0: AUXIO[8i+4] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 4 is 1: AUXIO[8i+4] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 4 is 0: AUXIO[8i+4] is driven low.  
+
+When GPIODOUT bit 4 is 1: AUXIO[8i+4] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 4 is 0: AUXIO[8i+4] is driven low.  
+
+When GPIODOUT bit 4 is 1: AUXIO[8i+4] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 4 is 0: AUXIO[8i+4] is enabled for analog signal transfer.
+
+When GPIODIE bit 4 is 1: AUXIO[8i+4] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 4 is 0: AUXIO[8i+4] is enabled for analog signal transfer.
+
+When GPIODIE bit 4 is 1: AUXIO[8i+4] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 4 drives AUXIO[8i+4]." description="Output Mode:
+
+GPIODOUT bit 4 drives AUXIO[8i+4]."/>
+      </bitfield>
+      <bitfield range="" begin="7" width="2" end="6" rwaccess="RW" description="Select mode for AUXIO[8i+3]." id="IO3" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 3 is 0: AUXIO[8i+3] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 3 is 1: AUXIO[8i+3] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 3 is 0: AUXIO[8i+3] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 3 is 1: AUXIO[8i+3] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 3 is 0: AUXIO[8i+3] is driven low.  
+
+When GPIODOUT bit 3 is 1: AUXIO[8i+3] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 3 is 0: AUXIO[8i+3] is driven low.  
+
+When GPIODOUT bit 3 is 1: AUXIO[8i+3] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 3 is 0: AUXIO[8i+3] is enabled for analog signal transfer.
+
+When GPIODIE bit 3 is 1: AUXIO[8i+3] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 3 is 0: AUXIO[8i+3] is enabled for analog signal transfer.
+
+When GPIODIE bit 3 is 1: AUXIO[8i+3] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 3 drives AUXIO[8i+3]." description="Output Mode:
+
+GPIODOUT bit 3 drives AUXIO[8i+3]."/>
+      </bitfield>
+      <bitfield range="" begin="5" width="2" end="4" rwaccess="RW" description="Select mode for AUXIO[8i+2]." id="IO2" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 2 is 0: AUXIO[8i+2] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 2 is 1: AUXIO[8i+2] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 2 is 0: AUXIO[8i+2] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 2 is 1: AUXIO[8i+2] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 2 is 0: AUXIO[8i+2] is driven low.  
+
+When GPIODOUT bit 2 is 1: AUXIO[8i+2] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 2 is 0: AUXIO[8i+2] is driven low.  
+
+When GPIODOUT bit 2 is 1: AUXIO[8i+2] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 2 is 0: AUXIO[8i+2] is enabled for analog signal transfer.
+
+When GPIODIE bit 2 is 1: AUXIO[8i+2] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 2 is 0: AUXIO[8i+2] is enabled for analog signal transfer.
+
+When GPIODIE bit 2 is 1: AUXIO[8i+2] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 2 drives AUXIO[8i+2]." description="Output Mode:
+
+GPIODOUT bit 2 drives AUXIO[8i+2]."/>
+      </bitfield>
+      <bitfield range="" begin="3" width="2" end="2" rwaccess="RW" description="Select mode for AUXIO[8i+1]." id="IO1" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 1 is 0: AUXIO[8i+1] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 1 is 1: AUXIO[8i+1] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 1 is 0: AUXIO[8i+1] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 1 is 1: AUXIO[8i+1] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 1 is 0: AUXIO[8i+1] is driven low.  
+
+When GPIODOUT bit 1 is 1: AUXIO[8i+1] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 1 is 0: AUXIO[8i+1] is driven low.  
+
+When GPIODOUT bit 1 is 1: AUXIO[8i+1] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 1 is 0: AUXIO[8i+1] is enabled for analog signal transfer.
+
+When GPIODIE bit 1 is 1: AUXIO[8i+1] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 1 is 0: AUXIO[8i+1] is enabled for analog signal transfer.
+
+When GPIODIE bit 1 is 1: AUXIO[8i+1] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 1 drives AUXIO[8i+1]." description="Output Mode:
+
+GPIODOUT bit 1 drives AUXIO[8i+1]."/>
+      </bitfield>
+      <bitfield range="" begin="1" width="2" end="0" rwaccess="RW" description="Select mode for AUXIO[8i+0]." id="IO0" resetval="0x0">
+         <bitenum id="OPEN_SOURCE" value="3" token="Open-Source Mode: 
+
+When GPIODOUT bit 0 is 0: AUXIO[8i+0] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 0 is 1: AUXIO[8i+0] is driven high.
+" description="Open-Source Mode: 
+
+When GPIODOUT bit 0 is 0: AUXIO[8i+0] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+
+When GPIODOUT bit 0 is 1: AUXIO[8i+0] is driven high.
+"/>
+         <bitenum id="OPEN_DRAIN" value="2" token="Open-Drain Mode: 
+
+When GPIODOUT bit 0 is 0: AUXIO[8i+0] is driven low.  
+
+When GPIODOUT bit 0 is 1: AUXIO[8i+0] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+" description="Open-Drain Mode: 
+
+When GPIODOUT bit 0 is 0: AUXIO[8i+0] is driven low.  
+
+When GPIODOUT bit 0 is 1: AUXIO[8i+0] is tri-stated or pulled. This depends on IOC:IOCFGn.PULL_CTL.
+"/>
+         <bitenum id="IN" value="1" token="Input Mode:
+
+When GPIODIE bit 0 is 0: AUXIO[8i+0] is enabled for analog signal transfer.
+
+When GPIODIE bit 0 is 1: AUXIO[8i+0] is enabled for digital input.
+" description="Input Mode:
+
+When GPIODIE bit 0 is 0: AUXIO[8i+0] is enabled for analog signal transfer.
+
+When GPIODIE bit 0 is 1: AUXIO[8i+0] is enabled for digital input.
+"/>
+         <bitenum id="OUT" value="0" token="Output Mode:
+
+GPIODOUT bit 0 drives AUXIO[8i+0]." description="Output Mode:
+
+GPIODOUT bit 0 drives AUXIO[8i+0]."/>
+      </bitfield>
+   </register>
+   <register acronym="GPIODIN" width="32" description="General Purpose Input Output Data In
+
+This register provides synchronized input data for AUXIO  that are controlled by instance i of AUX_AIODIO. Hence, in formulas below i = 0 for AUX_AIODIO0 and I = 1 for AUX_AIODIO1." id="GPIODIN" offset="0x8">
+      <bitfield range="" begin="31" width="24" end="8" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="8" end="0" rwaccess="RO" description="Bit n in this bit vector contains the value for AUXIO[8i+n] when GPIODIE bit n is set. Otherwise, bit n value is old." id="IO7_0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="GPIODOUTSET" width="32" description="General Purpose Input Output Data Out Set
+
+Set bits in GPIODOUT in instance i of AUX_AIODIO. Hence, in formulas below i = 0 for AUX_AIODIO0 and  i = 1 for AUX_AIODIO1." id="GPIODOUTSET" offset="0xc">
+      <bitfield range="" begin="31" width="24" end="8" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="8" end="0" rwaccess="RW" description="Write 1 to bit index n in this bit vector to set GPIODOUT bit n. 
+
+Read value is 0." id="IO7_0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="GPIODOUTCLR" width="32" description="General Purpose Input Output Data Out Clear
+
+Clear bits in GPIODOUT instance i of AUX_AIODIO. Hence, in formulas below i = 0 for AUX_AIODIO0 and i = 1 for AUX_AIODIO1." id="GPIODOUTCLR" offset="0x10">
+      <bitfield range="" begin="31" width="24" end="8" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="8" end="0" rwaccess="RW" description="Write 1 to bit index n in this bit vector to clear GPIODOUT bit n.
+
+Read value is 0." id="IO7_0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="GPIODOUTTGL" width="32" description="General Purpose Input Output Data Out Toggle
+
+Toggle bits in GPIODOUT in instance i of AUX_AIODIO. Hence, in formulas below i = 0 for AUX_AIODIO0 and i = 1 for AUX_AIODIO1." id="GPIODOUTTGL" offset="0x14">
+      <bitfield range="" begin="31" width="24" end="8" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="8" end="0" rwaccess="RW" description="Write 1 to bit index n in this bit vector to toggle GPIODOUT bit n. 
+
+Read value is 0." id="IO7_0" resetval="0x0">
+      </bitfield>
+   </register>
+   <register acronym="GPIODIE" width="32" description="General Purpose Input Output Digital Input Enable
+
+This register controls input buffers for AUXIO that are controlled by instance i of AUX_AIODIO.  Hence, in formulas below i = 0 for AUX_AIODIO0 and I = 1 for AUX_AIODIO1." id="GPIODIE" offset="0x18">
+      <bitfield range="" begin="31" width="24" end="8" rwaccess="RO" description="Software should not rely on the value of a reserved. Writing any other value than the reset value may result in undefined behavior." id="RESERVED8" resetval="0x0">
+      </bitfield>
+      <bitfield range="" begin="7" width="8" end="0" rwaccess="RW" description="Write 1 to bit index n in this bit vector to enable digital input buffer for AUXIO[8i+n]. 
+Write 0 to bit index n in this bit vector to disable digital input buffer for AUXIO[8i+n].
+
+You must enable the digital input buffer for AUXIO[8i+n] to read the pin value in GPIODIN.  
+You must disable the digital input buffer for analog input or pins that float to avoid current leakage. " id="IO7_0" resetval="0x0">
+      </bitfield>
+   </register>
+</module>

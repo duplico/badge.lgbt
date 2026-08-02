@@ -1,2 +1,5 @@
 /SingleMode_FlashOnly/
 /MultiMode_FlashOnly/
+/build/
+TOOLS/src/sysbios/makefile
+TOOLS/src/makefile.libs

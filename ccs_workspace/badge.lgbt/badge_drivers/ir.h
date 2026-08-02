@@ -30,6 +30,11 @@ extern uint8_t serial_ll_state;
 
 // Configuration
 #define IR_TIMEOUT_MS 500
+// Absolute ceiling on a single file transaction, no matter how recently the
+//  peer refreshed the per-frame timeout. A full 200-frame transfer at 19200
+//  baud takes 40-50 seconds plus resends, so this only cuts off transfers
+//  that were never going to finish.
+#define IR_TRANSACTION_LIMIT_MS 120000
 
 #define PTX_TIME_MS 100
 #define PRX_TIME_MS 1000

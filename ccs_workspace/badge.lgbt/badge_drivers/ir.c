@@ -43,6 +43,7 @@ uint8_t serial_phy_mode_ptx = 0;
 
 uint8_t serial_ll_state;
 uint32_t serial_ll_next_timeout;
+uint32_t serial_ll_transaction_deadline;
 Clock_Handle serial_timeout_clock_h;
 
 uint8_t serial_file_payload[STORAGE_ANIM_FRAME_SIZE] = {0,};
@@ -215,6 +216,11 @@ void serial_send_ack() {
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
     if (dest_state == SERIAL_LL_STATE_IDLE) {
         serial_peer_id = 0x0000000000000000;
+    } else if (serial_ll_state == SERIAL_LL_STATE_IDLE) {
+        // Entering a transaction. Frames refresh the per-frame timeout, but
+        //  the transaction as a whole gets a fixed time budget, so a peer
+        //  can't hold us out of IDLE forever by chattering.
+        serial_ll_transaction_deadline = Clock_getTicks() + (IR_TRANSACTION_LIMIT_MS * 100);
     }
 
     serial_ll_state = dest_state;
@@ -470,6 +476,13 @@ void serial_task_fn(UArg a0, UArg a1) {
     serial_ll_next_timeout = Clock_getTicks() + IR_TIMEOUT_MS * 100;
 
     while (1) {
+        if (serial_ll_state != SERIAL_LL_STATE_IDLE
+                && Clock_getTicks() >= serial_ll_transaction_deadline) {
+            // The transaction's absolute time budget is spent; abandon it
+            //  regardless of how recently the last frame arrived.
+            serial_timeout();
+        }
+
         if (serial_ll_next_timeout && Clock_getTicks() >= serial_ll_next_timeout) {
             serial_timeout();
         }

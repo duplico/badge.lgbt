@@ -38,7 +38,7 @@ uint8_t storage_file_exists(char *fname) {
     return 0;
 }
 
-uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t size) {
+uint8_t storage_read_file(char *fname, uint8_t *dest, uint32_t offset, uint16_t size) {
     spiffs_file fd;
     volatile int32_t stat;
 
@@ -112,7 +112,8 @@ uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
 
-    return storage_read_file(fname, (uint8_t *) dest, STORAGE_ANIM_HEADER_SIZE + STORAGE_ANIM_FRAME_SIZE*frame_number, STORAGE_ANIM_FRAME_SIZE);
+    // Frame offsets exceed 16 bits past frame 207, so this math must be 32-bit.
+    return storage_read_file(fname, (uint8_t *) dest, (uint32_t) STORAGE_ANIM_HEADER_SIZE + (uint32_t) STORAGE_ANIM_FRAME_SIZE * frame_number, STORAGE_ANIM_FRAME_SIZE);
 }
 
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {

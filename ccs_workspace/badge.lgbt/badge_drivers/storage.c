@@ -176,13 +176,20 @@ void storage_get_next_anim_name(char *name_out) {
         // If storage_next_anim_id == STORAGE_ANIMS_TO_CACHE, then that means
         //  the NEXT animation we receive will have an ID equal to the size
         //  of our cache, meaning an overrun. But NOT YET!
+        // led_anim_id can be stale relative to what's actually on flash
+        //  (it's persisted separately in /.animid), so the wrap and the
+        //  iteration cap below must not trust it to terminate this loop.
+        uint16_t ids_scanned = 0;
         do {
             next_id++;
-            if (next_id == storage_next_anim_id) {
+            if (next_id >= storage_next_anim_id || next_id >= STORAGE_ANIMS_TO_CACHE) {
                 next_id = 0;
             }
             if (next_id == led_anim_id) {
                 break; // just in case
+            }
+            if (++ids_scanned > STORAGE_ANIMS_TO_CACHE) {
+                break; // Scanned every possible slot; settle for this one.
             }
         } while (!storage_anim_id_cache[next_id][0]);
         strncpy(name_out, storage_anim_id_cache[next_id], ANIM_NAME_MAX_LEN);
@@ -299,6 +306,14 @@ void storage_init() {
         }
     }
     SPIFFS_closedir(&d);
+
+    // /.animid holds whatever was last written there, including by an
+    //  interrupted or garbage IR transfer; every ID on flash is below
+    //  storage_next_anim_id, so anything at or past it is not a real
+    //  animation ID.
+    if (led_anim_id >= storage_next_anim_id) {
+        led_anim_id = 0;
+    }
 
     led_anim_last_id_written = led_anim_id;
 

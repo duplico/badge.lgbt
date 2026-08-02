@@ -117,7 +117,15 @@ uint8_t storage_load_anim(char *anim_name, led_anim_t *dest) {
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
 
-    return storage_read_file(fname, (uint8_t *) dest, 0, STORAGE_ANIM_HEADER_SIZE);
+    if (!storage_read_file(fname, (uint8_t *) dest, 0, STORAGE_ANIM_HEADER_SIZE)) {
+        return 0;
+    }
+
+    // An animation loaded from flash is by definition not a direct animation,
+    //  so whatever pointer value the stored header carries is meaningless;
+    //  only NULL is valid here.
+    dest->direct_anim.anim_frames = NULL;
+    return 1;
 }
 
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]) {

@@ -280,9 +280,14 @@ void serial_rx_done(ir_header_t *header) {
             // The first message will be the animation header.
 
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
-            sprintf(fname, "/a/%s", serial_file_header.name);
 
-            // Validate that the name has a null term:
+            // The frame pointer in the received header is an address in the
+            //  sender's memory; only NULL is valid for an animation that
+            //  lives on flash.
+            serial_file_header.direct_anim.anim_frames = NULL;
+
+            // Names arriving over IR are untrusted; require a null term
+            //  before any string op touches the name.
             uint8_t null_termed = 0;
             for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
                 if (!serial_file_header.name[i]) {
@@ -295,6 +300,19 @@ void serial_rx_done(ir_header_t *header) {
                 // no null term
                 return;
             }
+
+            // The animation metadata is also untrusted. A zero-length
+            //  animation can never complete its transfer; an over-long one
+            //  eats flash (each frame is 315 bytes against 1 MiB total); and
+            //  the frame delay becomes a Clock timeout, which must not be
+            //  zero or near it.
+            if (serial_file_header.direct_anim.anim_len == 0 ||
+                    serial_file_header.direct_anim.anim_len > STORAGE_MAX_ANIM_FRAMES ||
+                    serial_file_header.direct_anim.anim_frame_delay_ms < 20) {
+                return;
+            }
+
+            snprintf(fname, sizeof(fname), "/a/%s", serial_file_header.name);
 
             // This is a good and valid animation, which we are receiving.
             // Time to show the receiving animation.
@@ -381,7 +399,7 @@ void serial_rx_done(ir_header_t *header) {
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                 serial_filepart++;
 
-                if (serial_filepart == serial_file_header.direct_anim.anim_len) {
+                if (serial_filepart >= serial_file_header.direct_anim.anim_len) {
                     // The file is finished!
                     storage_next_anim_id++;
                     SPIFFS_close(&storage_fs, serial_fd);

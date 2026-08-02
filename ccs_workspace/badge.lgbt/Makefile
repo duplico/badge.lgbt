@@ -69,6 +69,11 @@ CFLAGS_CORE := \
     --display_error_number \
     --gen_func_subsections=on
 
+# Exact build provenance compiled into the image (see version.h). Override to
+# stamp a build made outside a git checkout. Must be set before DEFINES, which
+# expands immediately.
+FW_BUILD ?= $(shell git -C $(PROJ_ROOT) describe --tags --always --dirty 2>/dev/null || echo unknown)
+
 # Predefined symbols (.cproject DEFINE list; the leading
 # ${COM_TI_SIMPLELINK_CC2640R2_SDK_SYMBOLS} macro expands to nothing).
 # The x-prefixed names (xFEATURE_MONITOR, xICALL_EVENTS, xUSE_ICALL) are
@@ -96,7 +101,8 @@ DEFINES := \
     --define=TBM_ACTIVE_ITEMS_ONLY \
     --define=xUSE_ICALL \
     --define=xdc_runtime_Assert_DISABLE_ALL \
-    --define=xdc_runtime_Log_DISABLE_ALL
+    --define=xdc_runtime_Log_DISABLE_ALL \
+    --define=BADGE_FW_BUILD='"$(FW_BUILD)"'
 
 # Include paths (.cproject INCLUDE_PATH list, macros resolved as above)
 INCLUDES := \

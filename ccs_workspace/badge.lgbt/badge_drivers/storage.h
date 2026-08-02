@@ -15,6 +15,11 @@
 #define STORAGE_ANIM_FRAME_SIZE (sizeof(rgbcolor_t)*15*7)
 #define STORAGE_ANIM_HEADER_SIZE sizeof(led_anim_t)
 
+// Ceiling on frames per stored animation. At 200 frames an animation costs
+//  200*315 B of frame data plus the 28 B header, about 63 KB against 1 MiB
+//  of flash, and runs far longer than any animation we ship.
+#define STORAGE_MAX_ANIM_FRAMES 200
+
 extern uint16_t storage_next_anim_id;
 extern char storage_anim_id_cache[STORAGE_ANIMS_TO_CACHE][ANIM_NAME_MAX_LEN];
 

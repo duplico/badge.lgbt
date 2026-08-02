@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <third_party/spiffs/SPIFFSNVS.h>
 #include <third_party/spiffs/spiffs.h>
@@ -27,6 +28,18 @@ SPIFFSNVS_Data   spiffsnvs;
 uint16_t storage_next_anim_id = 0;
 
 char storage_anim_id_cache[STORAGE_ANIMS_TO_CACHE][ANIM_NAME_MAX_LEN] = {0,};
+
+/// Record an animation name in the ID cache, if its ID fits.
+/**
+ ** Animation IDs grow without bound, but the cache only covers the first
+ ** STORAGE_ANIMS_TO_CACHE of them; IDs past the end are simply not cached.
+ */
+void storage_cache_anim_name(uint16_t id, const char *name) {
+    if (id >= STORAGE_ANIMS_TO_CACHE) {
+        return;
+    }
+    strncpy(storage_anim_id_cache[id], name, ANIM_NAME_MAX_LEN);
+}
 
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
@@ -150,8 +163,8 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     } else {
     }
 
-    if (unlocked && write_anim.id < STORAGE_ANIMS_TO_CACHE) {
-        strncpy(storage_anim_id_cache[write_anim.id], write_anim.name, ANIM_NAME_MAX_LEN);
+    if (unlocked) {
+        storage_cache_anim_name(write_anim.id, write_anim.name);
     }
 }
 
@@ -280,8 +293,8 @@ void storage_init() {
                 led_anim_ambient = led_anim_curr;
                 led_anim_last_chosen = led_anim_curr;
             }
-            if (id_candidate.id < STORAGE_ANIMS_TO_CACHE && id_candidate.unlocked) {
-                strncpy(storage_anim_id_cache[id_candidate.id], &(pe->name[3]), ANIM_NAME_MAX_LEN);
+            if (id_candidate.unlocked) {
+                storage_cache_anim_name(id_candidate.id, (char *) &(pe->name[3]));
             }
         }
     }

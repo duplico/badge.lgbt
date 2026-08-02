@@ -331,7 +331,7 @@ void serial_rx_done(ir_header_t *header) {
                     //  version says it should be unlocked, then we should
                     //  rewrite the header.
                     header_only = 1;
-                    strncpy(storage_anim_id_cache[local_copy.id], serial_file_header.name, ANIM_NAME_MAX_LEN);
+                    storage_cache_anim_name(local_copy.id, serial_file_header.name);
                 } else {
                     // Local copy is locked. Remote copy is locked.
                     // Nothing to save.
@@ -388,7 +388,7 @@ void serial_rx_done(ir_header_t *header) {
                     led_set_anim(serial_file_header.name, 1);
                     led_anim_id = led_anim_ambient.id;
                     if (serial_file_header.unlocked) {
-                        strncpy(storage_anim_id_cache[led_anim_ambient.id], serial_file_header.name, ANIM_NAME_MAX_LEN);
+                        storage_cache_anim_name(led_anim_ambient.id, serial_file_header.name);
                     }
                     serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
                 }

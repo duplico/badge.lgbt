@@ -107,3 +107,14 @@ ccs_workspace/badge.lgbt-animloader/.xdchelp
 # CLI build output
 ccs_workspace/badge.lgbt/build/
 ccs_workspace/badge.lgbt-animloader/build/
+ccs_workspace/badge.lgbt-dongle/build/
+
+# Committed device-support libraries for the dongle CLI build (see
+# ccs_workspace/badge.lgbt-dongle/tools/toolchain.lock) — exempt from the
+# global *.a / *.lib ignores above.
+!ccs_workspace/badge.lgbt-dongle/ccs_base_files/lib/**/*.a
+!ccs_workspace/badge.lgbt-dongle/ccs_base_files/lib/**/*.lib
+
+venv/
+
+scripts/*_preview.gif

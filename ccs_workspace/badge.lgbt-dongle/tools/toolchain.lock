@@ -1,0 +1,25 @@
+# SHA-256 checksums of the licensed toolchain inputs for the dongle CLI build.
+#
+# CGT installer: TI MSP430 CGT 21.6.2.LTS Linux x64, from
+# https://www.ti.com/tool/MSP-CGT (direct:
+# https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-p4jWEYpR8n/21.6.2.LTS/ti_cgt_msp430_21.6.2.LTS_linux-x64_installer.bin)
+# The .ccsproject pins CGT 20.2.5.LTS; 21.6.2.LTS is the publicly downloadable
+# LTS release and links this project cleanly (same precedent as qc2024's CLI
+# build, which uses 21.6.2.LTS against a 21.6.1.LTS project pin).
+d5e6c951146b00098b3e4c4bd8f172f2918d174fd895e5177d6fec470c1dcc94  ti_cgt_msp430_21.6.2.LTS_linux-x64_installer.bin
+
+# Device-support files, copied into ccs_base_files/ from a CCS install's
+# ccs_base/msp430/ (source: CCS 12.7.1, ccs_base/msp430/include and
+# ccs_base/msp430/lib/5xx_6xx_FRxx). This is the complete closure for this
+# project: main.c includes <msp430fr2433.h> directly (not msp430.h), which
+# includes only in430.h and the CGT's own <intrinsics.h>;
+# lnk_msp430fr2433.cmd pulls in the device peripheral map via
+# `-l msp430fr2433.cmd`; libmath.a is the RTS math library named in
+# .cproject's link libraries — it is an index archive whose members resolve
+# to the MSPMATHLIB large-code/small-data variant, which must be present in
+# the same directory or the link warns (#10207-D).
+120c092a393fd422495372d52b665bb28eed151e7f441a9f513dc9a5b411fcda  ccs_base_files/include/msp430fr2433.h
+5dc3812a5aad4799dd6cda24164b06786b76ddcf148a32c4fdc45dc084953e9b  ccs_base_files/include/in430.h
+eaf44267eb0770bb0554585dc055632875d9cc50d08e0490f9d9a7169f27e715  ccs_base_files/include/msp430fr2433.cmd
+6aeb4279689a0a69a70dad9721761fd2d7d125e93c1db41f176d9272369d0d37  ccs_base_files/lib/5xx_6xx_FRxx/libmath.a
+ea4bb1b987df79c2c7b6072b5f10f5686eded04bbe5cebca991e5dd99564d53c  ccs_base_files/lib/5xx_6xx_FRxx/MSPMATHLIB_CCS_msp430_5xx_6xx_FRxx_large_code_small_data.lib

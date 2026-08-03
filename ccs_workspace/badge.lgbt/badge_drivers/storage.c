@@ -119,11 +119,14 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
 
     status = SPIFFS_read(&storage_fs, fd, (uint8_t *) &read_anim, sizeof(led_anim_t));
 
-    if (status < 0) {
+    SPIFFS_close(&storage_fs, fd);
+
+    if (status != (int32_t) sizeof(led_anim_t)) {
+        // A file too short to hold a whole header leaves read_anim partly
+        //  uninitialized, and the length out of that header is what the size
+        //  check below is built on.
         return 0;
     }
-
-    SPIFFS_close(&storage_fs, fd);
 
     return stat.size == (STORAGE_ANIM_HEADER_SIZE + read_anim.direct_anim.anim_len * STORAGE_ANIM_FRAME_SIZE);
 }

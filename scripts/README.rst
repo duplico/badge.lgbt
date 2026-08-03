@@ -52,3 +52,31 @@ running the script. For animated GIFs, the image will be saved as
 
 For gifs, an optional `--frame-dur <ms>` is allowed, which sets the
 animation frame duration to <ms> milliseconds.
+
+controller: Identifying a badge
+-------------------------------
+
+Every controller command takes the serial port of the IR dongle as its first
+argument. The `info` command asks the badge what it is:
+
+ python controller.py <port> info
+
+It prints the wire protocol version, the badge's firmware version, and the
+features that firmware advertises. 2021 badges do not answer this at all, so
+the command reports that the badge is running pre-2026 firmware instead.
+
+controller: Deleting an animation
+---------------------------------
+
+To remove an animation from a badge, give its name:
+
+ python controller.py <port> delete <name>
+
+The controller checks the badge's advertised features first and refuses to
+send the command to firmware that doesn't support it. A badge only accepts
+deletions from the controller, so badges can't delete each other's animations
+while trading over IR.
+
+If the badge is showing the animation being deleted, it switches to another
+animation first. A badge that doesn't have the named animation refuses the
+delete, and the command says so.

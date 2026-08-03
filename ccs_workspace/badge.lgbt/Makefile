@@ -290,6 +290,24 @@ $(CONFIGPKG)/compiler.opt: $(XDC_CFG) | $(BUILD_DIR)
 # ---- Compile rules ----------------------------------------------------------
 $(ALL_OBJS): $(CONFIGPKG)/compiler.opt
 
+# The build stamp reaches the image through a --define rather than a source
+# file, so nothing about badge.c changes when a new commit changes it. Route it
+# through a file whose contents make tracks, and rewrite that file only when the
+# value actually differs, so the stamp stays honest without rebuilding on every
+# invocation.
+FW_BUILD_STAMP := $(BUILD_DIR)/fw_build.stamp
+
+.PHONY: $(FW_BUILD_STAMP).check
+$(FW_BUILD_STAMP).check: | $(BUILD_DIR)
+	@printf '%s' '$(FW_BUILD)' > $(FW_BUILD_STAMP).new
+	@cmp -s $(FW_BUILD_STAMP).new $(FW_BUILD_STAMP) \
+	    || mv $(FW_BUILD_STAMP).new $(FW_BUILD_STAMP)
+	@rm -f $(FW_BUILD_STAMP).new
+
+$(FW_BUILD_STAMP): $(FW_BUILD_STAMP).check ;
+
+$(BUILD_DIR)/badge.obj: $(FW_BUILD_STAMP)
+
 $(BUILD_DIR)/%.obj: $(PROJ_ROOT)%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) --output_file=$@ $<
 

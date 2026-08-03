@@ -91,6 +91,20 @@ const led_anim_t *led_direct_anims[DIRECT_CNT] = {
                                        &wave_anim,
 };
 
+/// Is name one of the animations compiled into the firmware?
+/**
+ ** These are written back to flash by led_init(), so removing one only makes
+ ** it reappear on the next boot, having consumed another animation ID.
+ */
+uint8_t led_is_system_anim(char *name) {
+    for (uint16_t i=0; i<DIRECT_CNT; i++) {
+        if (!strncmp(name, led_direct_anims[i]->name, ANIM_NAME_MAX_LEN)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void led_next_frame_swi(UArg a0) {
     Event_post(ui_event_h, UI_EVENT_LED_FRAME);
 }

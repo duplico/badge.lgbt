@@ -360,6 +360,13 @@ void serial_delete_anim(ir_header_t *header) {
 
     snprintf(name, sizeof(name), "%s", (char *) serial_file_payload);
 
+    if (led_is_system_anim(name)) {
+        // The animations the firmware ships with back the transfer and
+        //  startup displays, and led_init() writes them back to flash.
+        serial_send_nack();
+        return;
+    }
+
     serial_leave_anim(name);
 
     if (storage_delete_anim(name)) {

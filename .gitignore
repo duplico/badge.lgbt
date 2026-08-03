@@ -63,6 +63,8 @@ targetConfigs
 
 # Python
 *.pyc
+__pycache__/
+.venv/
 
 # Project specific files
 ccs_workspace/badge_lgbt/SingleMode_FlashOnly/

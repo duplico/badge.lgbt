@@ -43,16 +43,17 @@ Flashing release binaries does not require CCS: `uniflash_windows_badge-2021-r1/
 
 ## Python host tooling (`scripts/`)
 
-Setup (see `scripts/README.rst`): create a venv at `../venv`, activate, then
-`pip install -r requirements.txt`.
+Two flat modules packaged with uv (`scripts/pyproject.toml`, Python 3.11+). `uv sync` in
+`scripts/`, then `uv run badge-img` / `uv run badge-ctl`.
 
-- `convert_image.py` (click CLI): converts animated GIFs / still BMPs into badge format.
-  `--preview` renders what the image will look like on the 15x7 screen; `--gather` emits
+- `convert_image.py` → `badge-img` (click CLI): converts animated GIFs / still BMPs into badge
+  format. `--preview` renders what the image will look like on the 15x7 screen; `--gather` emits
   C source (frame arrays + `led_anim_t` structs + `anim_list[]`) — this is how
-  `badge.lgbt-animloader/badge_drivers/anims.c` is generated from the GIFs in `img/`.
-- `controller.py` (argparse CLI): drives a badge over the serial protocol through the dongle.
-  Subcommands: `putfile` (upload an animation), `getfile`, `setname`. Takes the serial port as
-  a positional arg.
+  `badge.lgbt-animloader/badge_drivers/anims.c` is generated from the GIFs in `img/`. It also
+  owns the shared screen geometry and animation-name-length constants.
+- `controller.py` → `badge-ctl` (click CLI): drives a badge over the serial protocol through the
+  dongle. Subcommands: `putfile` (upload an animation), `getfile`, `delete`, `info`. Takes the
+  serial port as a positional arg before the subcommand.
 
 `img/` holds the source GIFs: `preload/` = animations shipped in the animloader, `direct/` =
 system animations compiled into the main firmware (pairing, send/recv, startup), `yes/` and
@@ -89,4 +90,5 @@ Three projects:
 The wire protocol (header layout, opcodes, `CRC_SEED` 0x8FB6, CRC16 algorithm, frame size
 315 = 15x7x3 bytes, `ANIM_NAME_MAX_LEN` 16) is implemented independently in
 `badge_drivers/ir.c`/`ir.h` (badge) and `scripts/controller.py` (struct format strings and
-constants at the top). A change to either must be mirrored in the other.
+constants at the top; screen geometry and name lengths come from `convert_image.py`). A change
+to either must be mirrored in the other.

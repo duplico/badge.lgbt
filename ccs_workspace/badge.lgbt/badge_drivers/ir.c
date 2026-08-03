@@ -379,13 +379,17 @@ void serial_delete_anim(ir_header_t *header) {
         return;
     }
 
-    serial_leave_anim(name);
-
-    if (storage_delete_anim(name)) {
-        serial_send_ack();
-    } else {
+    // The removal comes first so a NACK means the badge is exactly as the
+    //  controller left it. It also empties the animation's cache slot before
+    //  serial_leave_anim() goes looking for something to switch to, so the
+    //  scan can't land back on the animation that just went away.
+    if (!storage_delete_anim(name)) {
         serial_send_nack();
+        return;
     }
+
+    serial_leave_anim(name);
+    serial_send_ack();
 }
 
 void serial_rx_done(ir_header_t *header) {

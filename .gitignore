@@ -101,3 +101,7 @@ ccs_workspace/badge.lgbt-dongle/Debug/
 ccs_workspace/badge.lgbt-animloader/.config/
 
 ccs_workspace/badge.lgbt-animloader/.xdchelp
+
+# CLI build output
+ccs_workspace/badge.lgbt/build/
+ccs_workspace/badge.lgbt-animloader/build/

@@ -45,6 +45,9 @@ SERIAL_OPCODE_VERSION=0x04
 SERIAL_OPCODE_PUTFILE=0x09
 SERIAL_OPCODE_APPFILE=0x0A
 SERIAL_OPCODE_DELFILE=0x0B
+# Reserved for setting a badge handle. No implementation on either side of the
+# link; kept so the value is not handed to something else.
+SERIAL_OPCODE_SETNAME=0x0D
 SERIAL_OPCODE_GETFILE=0x13
 
 SERIAL_CAP_DELETE=0x0001

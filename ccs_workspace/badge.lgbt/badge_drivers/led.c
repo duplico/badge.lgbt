@@ -145,8 +145,10 @@ void led_load_frame() {
     } else {
         // If anim_frames is NULL, then we need to reference the SPI flash.
         if (!storage_load_frame(anim.name, frame, scratch)) {
-            // Nothing came back, so scratch still holds stack. Keep the frame
-            //  that is already up and come back for the next one.
+            // Nothing came back, so scratch still holds stack. Hold the frame
+            //  that's already up and come back for the next one; the panel
+            //  pauses instead of painting noise, and a read that fails once
+            //  costs a single frame.
             led_arm_frame_clock(anim.direct_anim.anim_frame_delay_ms);
             return;
         }

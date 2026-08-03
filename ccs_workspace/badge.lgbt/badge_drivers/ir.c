@@ -456,7 +456,14 @@ void serial_rx_done(ir_header_t *header) {
             if (storage_anim_saved_and_valid(serial_file_header.name)) {
                 // We do already have the animation.
                 led_anim_t local_copy;
-                storage_load_anim(serial_file_header.name, &local_copy);
+                if (!storage_load_anim(serial_file_header.name, &local_copy)) {
+                    // The file passed its size check but its header wouldn't
+                    //  read back, so there's no ID or unlock bit to reason
+                    //  from. Put the display back and let the sender know.
+                    led_set_anim_direct(led_anim_idle, 1);
+                    serial_send_nack();
+                    return;
+                }
                 serial_file_header.id = local_copy.id;
 
                 // We know right now that we're just going to be switching to it,
@@ -520,7 +527,14 @@ void serial_rx_done(ir_header_t *header) {
                     serial_peer_id = header->from_id;
                 }
             } else {
-                // I don't believe there's any special cleanup needed here.
+                // There's nowhere to put the animation. The receive display
+                //  is already up, and only the transfer states restore it,
+                //  so put the ambient animation back here and return to idle
+                //  rather than leaving the badge showing "recv" until it's
+                //  power cycled.
+                serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                led_set_anim_direct(led_anim_idle, 1);
+                serial_send_nack();
             }
         }
         break;

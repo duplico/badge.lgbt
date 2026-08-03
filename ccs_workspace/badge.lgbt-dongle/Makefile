@@ -97,9 +97,11 @@ LFLAGS := \
 # Libraries must come after the objects and linker command file on the cl430
 # command line: the TI linker only searches an archive for symbols already
 # undefined when it reaches that archive.
+# Order matches .cproject: an archive only satisfies symbols still undefined
+# when the linker reaches it, so the sequence is part of the configuration.
 LFLAGS_LIBS := \
-    --library=libc.a \
-    --library=libmath.a
+    --library=libmath.a \
+    --library=libc.a
 
 # ---- Sources ---------------------------------------------------------------
 SRCS    := $(PROJ_ROOT)main.c

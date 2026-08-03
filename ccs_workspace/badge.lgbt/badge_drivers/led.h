@@ -47,5 +47,6 @@ void led_init();
 void led_next_anim();
 void led_set_anim(char *name, uint8_t ambient);
 void led_set_anim_direct(led_anim_t anim, uint8_t ambient);
+uint8_t led_is_system_anim(char *name);
 
 #endif /* BADGE_DRIVERS_LED_H_ */

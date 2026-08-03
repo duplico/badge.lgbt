@@ -582,6 +582,12 @@ void serial_timeout() {
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
         led_set_anim_direct(led_anim_idle, 1); // TODO: failure anim?
         SPIFFS_close(&storage_fs, serial_fd);
+        // Only a transfer that created or truncated the file reaches this
+        //  state, so the frames on flash are this transfer's and there is no
+        //  older copy underneath them. Nothing else will ever finish the
+        //  file, so it goes away with the transfer; otherwise a peer that
+        //  opens transfers and falls silent fills the partition.
+        storage_delete_anim(serial_file_header.name);
         break;
     case SERIAL_LL_STATE_C_FILE_RX_DONE:
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);

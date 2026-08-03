@@ -243,6 +243,18 @@ void serial_send_version() {
     serial_send(SERIAL_OPCODE_VERSION, (uint8_t *) &version_out, sizeof(version_out));
 }
 
+/// Has the deadline standing at ``deadline`` ticks arrived?
+/**
+ ** Clock_getTicks() is a 32-bit count of 10 us ticks, so it wraps about every
+ ** twelve hours. Deadlines are therefore compared by signed difference, which
+ ** orders correctly across the wrap for any interval shorter than half the
+ ** tick range - a little under six hours, far longer than anything the link
+ ** layer waits on.
+ */
+uint8_t serial_deadline_passed(uint32_t deadline) {
+    return ((int32_t) (Clock_getTicks() - deadline)) >= 0;
+}
+
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
     if (dest_state == SERIAL_LL_STATE_IDLE) {
         serial_peer_id = 0x0000000000000000;
@@ -592,13 +604,13 @@ void serial_task_fn(UArg a0, UArg a1) {
 
     while (1) {
         if (serial_ll_state != SERIAL_LL_STATE_IDLE
-                && Clock_getTicks() >= serial_ll_transaction_deadline) {
+                && serial_deadline_passed(serial_ll_transaction_deadline)) {
             // The transaction's absolute time budget is spent; abandon it
             //  regardless of how recently the last frame arrived.
             serial_timeout();
         }
 
-        if (serial_ll_next_timeout && Clock_getTicks() >= serial_ll_next_timeout) {
+        if (serial_ll_next_timeout && serial_deadline_passed(serial_ll_next_timeout)) {
             serial_timeout();
         }
 

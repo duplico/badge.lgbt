@@ -44,13 +44,34 @@ extern uint8_t serial_ll_state;
 #define CRC_SEED 0x8FB6
 #define SERIAL_PHY_SYNC_WORD 0xAC
 
+/// Wire protocol version, in the low byte of version_header.
+#define SERIAL_PROTO_VERSION 0x0001
+
+/// Sender feature level, in the high byte of version_header.
+/**
+ ** Peers mask version_header down to its low byte to check the protocol
+ ** version, so the high byte is a free hint about what the sender knows how
+ ** to do. It is a coarse signal only; SERIAL_OPCODE_VERSION carries the
+ ** authoritative answer.
+ */
+#define SERIAL_FEATURE_LEVEL 0x0100
+
+#define SERIAL_VERSION_HEADER (SERIAL_FEATURE_LEVEL | SERIAL_PROTO_VERSION)
+
 #define SERIAL_OPCODE_HELO      0x01
 #define SERIAL_OPCODE_ACK       0x02
 #define SERIAL_OPCODE_NACK      0x03
+#define SERIAL_OPCODE_VERSION   0x04
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
 #define SERIAL_OPCODE_DELFILE   0x0B
 #define SERIAL_OPCODE_GETFILE   0x13
+
+/// Capability bits reported in SERIAL_OPCODE_VERSION.
+#define SERIAL_CAP_DELETE 0x0001
+
+/// Everything this firmware advertises.
+#define SERIAL_CAPABILITIES (SERIAL_CAP_DELETE)
 
 /// from_id of the USB controller, which alone may send SERIAL_OPCODE_DELFILE.
 /**
@@ -80,6 +101,16 @@ typedef struct {
     __packed uint16_t crc16_payload;
     __packed uint16_t crc16_header;
 } ir_header_t;
+
+/// Payload of a SERIAL_OPCODE_VERSION message, sent in answer to a HELO.
+typedef struct {
+    __packed uint16_t proto_version;
+    /// Release year, as years since 2000.
+    __packed uint8_t fw_year;
+    /// Release number within the year.
+    __packed uint8_t fw_rev;
+    __packed uint16_t capabilities;
+} ir_version_t;
 
 uint16_t crc16_buf(volatile uint8_t *sbuf, uint16_t len);
 uint16_t crc_build(uint8_t data, uint8_t start_over);

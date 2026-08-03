@@ -26,6 +26,7 @@
 #include <board.h>
 #include <post.h>
 #include <badge.h>
+#include <version.h>
 
 #include <badge_drivers/storage.h>
 #include <badge_drivers/tlc6983.h>
@@ -97,8 +98,9 @@ uint8_t validate_header(ir_header_t *header) {
         return 0;
     }
 
-    if ((header->version_header & 0x00ff) != 0x0001) {
-        // Unknown protocol version.
+    if ((header->version_header & 0x00ff) != SERIAL_PROTO_VERSION) {
+        // Unknown protocol version. The high byte is the sender's feature
+        //  level, which is a hint and not part of this check.
         return 0;
     }
 
@@ -116,6 +118,13 @@ uint8_t validate_header(ir_header_t *header) {
          break;
     case SERIAL_OPCODE_DELFILE:
         if (header->payload_len != ANIM_NAME_MAX_LEN) {
+            return 0;
+        }
+        break;
+    case SERIAL_OPCODE_VERSION:
+        // Only ever sent, never received, by a badge; listed so the table
+        //  describes the whole protocol.
+        if (header->payload_len != sizeof(ir_version_t)) {
             return 0;
         }
         break;
@@ -194,7 +203,7 @@ uint16_t buffer_rank(uint8_t *buf, uint16_t len) {
 /// Send a message, applying the payload, len, crc, and from-ID.
 void serial_send(uint8_t opcode, uint8_t *payload, uint16_t payload_len) {
     ir_header_t header_out;
-    header_out.version_header = 0x0001;
+    header_out.version_header = SERIAL_VERSION_HEADER;
     header_out.opcode = opcode;
     header_out.from_id = badge_id;
     header_out.payload_len = payload_len;
@@ -220,6 +229,18 @@ void serial_send_ack() {
 
 void serial_send_nack() {
     serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+}
+
+/// Answer a HELO with who we are and what we can do.
+void serial_send_version() {
+    ir_version_t version_out;
+
+    version_out.proto_version = SERIAL_PROTO_VERSION;
+    version_out.fw_year = BADGE_FW_YEAR_WIRE;
+    version_out.fw_rev = BADGE_FW_REV_WIRE;
+    version_out.capabilities = SERIAL_CAPABILITIES;
+
+    serial_send(SERIAL_OPCODE_VERSION, (uint8_t *) &version_out, sizeof(version_out));
 }
 
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
@@ -360,7 +381,9 @@ void serial_rx_done(ir_header_t *header) {
         if (header->opcode == SERIAL_OPCODE_GETFILE) {
             Event_post(ir_event_h, IR_EVENT_SENDFILE);
         }
-        // TODO: HELO
+        if (header->opcode == SERIAL_OPCODE_HELO) {
+            serial_send_version();
+        }
         if (header->opcode == SERIAL_OPCODE_DELFILE) {
             serial_delete_anim(header);
         }

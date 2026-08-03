@@ -114,6 +114,11 @@ uint8_t validate_header(ir_header_t *header) {
             return 0;
         }
          break;
+    case SERIAL_OPCODE_DELFILE:
+        if (header->payload_len != ANIM_NAME_MAX_LEN) {
+            return 0;
+        }
+        break;
     // All these have zero length payloads:
     case SERIAL_OPCODE_HELO:
     case SERIAL_OPCODE_ACK:
@@ -213,6 +218,10 @@ void serial_send_ack() {
     serial_send(SERIAL_OPCODE_ACK, NULL, 0);
 }
 
+void serial_send_nack() {
+    serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+}
+
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
     if (dest_state == SERIAL_LL_STATE_IDLE) {
         serial_peer_id = 0x0000000000000000;
@@ -266,6 +275,79 @@ void serial_file_send_next() {
 }
 
 
+/// Stop showing the named animation, if it's the one on the screen.
+/**
+ ** Switches to the next animation we have, or to a compiled-in one if there
+ ** isn't another to switch to. Also drags led_anim_last_chosen along, so the
+ ** ID that eventually lands in /.animid can't name the doomed animation.
+ */
+void serial_leave_anim(char *name) {
+    char next_name[ANIM_NAME_MAX_LEN] = {0,};
+
+    if (strncmp(led_anim_ambient.name, name, ANIM_NAME_MAX_LEN)) {
+        // Not the animation we're showing, so only the bookkeeping below
+        //  matters.
+        if (!strncmp(led_anim_last_chosen.name, name, ANIM_NAME_MAX_LEN)) {
+            led_anim_last_chosen = led_anim_ambient;
+        }
+        return;
+    }
+
+    storage_get_next_anim_name(next_name);
+
+    if (next_name[0] && strncmp(next_name, name, ANIM_NAME_MAX_LEN)) {
+        led_set_anim(next_name, 1);
+    }
+
+    if (!strncmp(led_anim_ambient.name, name, ANIM_NAME_MAX_LEN)) {
+        // There was nothing else to switch to, or the switch didn't take.
+        //  A compiled-in animation lives in flash with the code, so it can't
+        //  be deleted out from under us.
+        led_set_anim_direct(recv_anim, 1);
+    }
+
+    led_anim_id = led_anim_ambient.id;
+    led_anim_last_chosen = led_anim_ambient;
+}
+
+/// Delete an animation at the controller's request.
+void serial_delete_anim(ir_header_t *header) {
+    char name[ANIM_NAME_MAX_LEN] = {0,};
+
+    if (header->from_id != SERIAL_CONTROLLER_ID) {
+        // Only the controller deletes. Anyone can claim to be the controller,
+        //  so this keeps badges from deleting each other's animations by
+        //  accident, nothing more.
+        serial_send_nack();
+        return;
+    }
+
+    // The name is untrusted; require a null term before any string op, and
+    //  refuse an empty name.
+    uint8_t null_termed = 0;
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!serial_file_payload[i]) {
+            null_termed = 1;
+            break;
+        }
+    }
+
+    if (!null_termed || !serial_file_payload[0]) {
+        serial_send_nack();
+        return;
+    }
+
+    snprintf(name, sizeof(name), "%s", (char *) serial_file_payload);
+
+    serial_leave_anim(name);
+
+    if (storage_delete_anim(name)) {
+        serial_send_ack();
+    } else {
+        serial_send_nack();
+    }
+}
+
 void serial_rx_done(ir_header_t *header) {
     // If this is called, it's already been validated.
     // NB: payload will be freed immediately after this returns, so
@@ -279,6 +361,9 @@ void serial_rx_done(ir_header_t *header) {
             Event_post(ir_event_h, IR_EVENT_SENDFILE);
         }
         // TODO: HELO
+        if (header->opcode == SERIAL_OPCODE_DELFILE) {
+            serial_delete_anim(header);
+        }
         if (header->opcode == SERIAL_OPCODE_PUTFILE) {
             char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
             uint8_t header_only = 0;
@@ -516,7 +601,7 @@ void serial_task_fn(UArg a0, UArg a1) {
                     } else {
                         // We got something, but it was framed wrong or garbled, so if possible
                         //  we'd like a re-send, which also tolls our timeout:
-                        serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+                        serial_send_nack();
                         serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                     }
 
@@ -525,7 +610,7 @@ void serial_task_fn(UArg a0, UArg a1) {
                     serial_rx_done(&header_in);
                 }
             } else {
-                serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+                serial_send_nack();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             }
         } else if (result == UART_ERROR) {

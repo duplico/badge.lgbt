@@ -65,6 +65,9 @@ extern uint8_t serial_ll_state;
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
 #define SERIAL_OPCODE_DELFILE   0x0B
+/// Reserved for setting a badge handle. No implementation on either side of
+/// the link; kept so the value is not handed to something else.
+#define SERIAL_OPCODE_SETNAME   0x0D
 #define SERIAL_OPCODE_GETFILE   0x13
 
 /// Capability bits reported in SERIAL_OPCODE_VERSION.

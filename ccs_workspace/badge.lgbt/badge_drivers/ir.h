@@ -49,7 +49,15 @@ extern uint8_t serial_ll_state;
 #define SERIAL_OPCODE_NACK      0x03
 #define SERIAL_OPCODE_PUTFILE   0x09
 #define SERIAL_OPCODE_APPFILE   0x0A
+#define SERIAL_OPCODE_DELFILE   0x0B
 #define SERIAL_OPCODE_GETFILE   0x13
+
+/// from_id of the USB controller, which alone may send SERIAL_OPCODE_DELFILE.
+/**
+ ** Any badge could put this ID in a header, so it stops mistakes rather than
+ ** attackers: badges trading animations can't delete each other's.
+ */
+#define SERIAL_CONTROLLER_ID 0x1234000000000000ULL
 
 #define SERIAL_ID_ANY 0xffff
 

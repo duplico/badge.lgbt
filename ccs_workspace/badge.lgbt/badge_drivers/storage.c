@@ -41,6 +41,21 @@ void storage_cache_anim_name(uint16_t id, const char *name) {
     strncpy(storage_anim_id_cache[id], name, ANIM_NAME_MAX_LEN);
 }
 
+/// Drop an animation name from the ID cache, if that slot still holds it.
+/**
+ ** The ID comes from the animation's own header, so the slot is only cleared
+ ** when it actually names this animation.
+ */
+void storage_uncache_anim_name(uint16_t id, const char *name) {
+    if (id >= STORAGE_ANIMS_TO_CACHE) {
+        return;
+    }
+    if (strncmp(storage_anim_id_cache[id], name, ANIM_NAME_MAX_LEN)) {
+        return;
+    }
+    memset(storage_anim_id_cache[id], 0x00, ANIM_NAME_MAX_LEN);
+}
+
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -135,6 +150,53 @@ uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*
 
     // Frame offsets exceed 16 bits past frame 207, so this math must be 32-bit.
     return storage_read_file(fname, (uint8_t *) dest, (uint32_t) STORAGE_ANIM_HEADER_SIZE + (uint32_t) STORAGE_ANIM_FRAME_SIZE * frame_number, STORAGE_ANIM_FRAME_SIZE);
+}
+
+/// Remove a stored animation from flash and from the ID cache.
+/**
+ ** Returns 1 if the animation is gone, 0 if there was no such animation or
+ ** the removal failed. The name is treated as untrusted: it must carry a null
+ ** term within ANIM_NAME_MAX_LEN and must not be empty.
+ **
+ ** storage_next_anim_id is deliberately left alone. It only ever moves
+ ** forward, so a freed ID is never handed out again and can't collide with an
+ ** animation a peer already knows by that ID.
+ */
+uint8_t storage_delete_anim(char *anim_name) {
+    char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
+    led_anim_t doomed;
+    uint8_t have_header;
+
+    uint8_t null_termed = 0;
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!anim_name[i]) {
+            null_termed = 1;
+            break;
+        }
+    }
+
+    if (!null_termed || !anim_name[0]) {
+        return 0;
+    }
+
+    snprintf(fname, sizeof(fname), "/a/%s", anim_name);
+
+    if (!storage_file_exists(fname)) {
+        return 0;
+    }
+
+    // The ID lives in the file, so read it before the file goes away.
+    have_header = storage_load_anim(anim_name, &doomed);
+
+    if (SPIFFS_remove(&storage_fs, fname) != SPIFFS_OK) {
+        return 0;
+    }
+
+    if (have_header) {
+        storage_uncache_anim_name(doomed.id, anim_name);
+    }
+
+    return 1;
 }
 
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {

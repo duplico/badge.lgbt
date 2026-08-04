@@ -159,6 +159,15 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     // TODO: if failed, delete or something?
 }
 
+/// Record that the animation set is completely written at this generation.
+/**
+ ** Called once the seeding loop has finished, so an interrupted run leaves the
+ ** generation absent and the next boot reformats and starts over.
+ */
+void storage_mark_initialized() {
+    storage_overwrite_file("/.initialized", &storage_flag_expected, sizeof(storage_flag_expected));
+}
+
 void storage_init() {
     volatile int32_t status;
     status = SPIFFSNVS_config(&spiffsnvs, BADGE_NVSSPI25X0, &storage_fs, &fsConfig,
@@ -199,7 +208,6 @@ void storage_init() {
             post_errors++;
             return;
         }
-        storage_overwrite_file("/.initialized", &storage_flag_expected, sizeof(storage_flag_expected)); // Write our magic value.
     }
 
     post_status_spiffs = 1;

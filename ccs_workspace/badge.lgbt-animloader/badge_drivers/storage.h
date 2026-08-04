@@ -18,6 +18,7 @@
 extern uint16_t storage_next_anim_id;
 
 void storage_init();
+void storage_mark_initialized();
 uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t size);
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]);
 void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked);

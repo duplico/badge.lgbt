@@ -64,6 +64,8 @@ void ui_task_fn(UArg a0, UArg a1) {
         }
     }
 
+    storage_mark_initialized();
+
     while (1) {
         Task_yield();
     }

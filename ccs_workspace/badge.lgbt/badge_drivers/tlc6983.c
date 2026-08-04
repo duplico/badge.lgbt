@@ -192,7 +192,7 @@ void tlc_init() {
     Task_sleep(100);
 
     uint16_t fc0[3] = {
-                       FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1 | FC_0_0_PDC_EN__EN,
+                       FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1,
                        FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
                        FC_0_0_RESERVED | FC_0_0_PDC_EN__EN
     };

@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include <ti/sysbios/knl/Clock.h>
+#include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Event.h>
 
 #include <badge.h>
@@ -97,13 +98,30 @@ void led_next_frame_swi(UArg a0) {
 void led_load_frame() {
     rgbcolor_t scratch[7][15];
     rgbcolor_t (*src)[15];
+    led_anim_t anim;
+    uint16_t frame;
+    UInt task_key;
 
-    if (led_anim_curr.direct_anim.anim_frames) {
+    // The UI and IR tasks write these while the TLC task reads them, and a
+    // led_anim_t copy is not atomic. Every writer holds the same gate, so a
+    // gated copy never sees a torn descriptor or a stale frame index.
+    task_key = Task_disable();
+    anim = led_anim_curr;
+    frame = led_anim_frame;
+    Task_restore(task_key);
+
+    if (anim.direct_anim.anim_frames) {
         // If anim_frames is a valid pointer, this is a direct animation.
-        src = led_anim_curr.direct_anim.anim_frames[led_anim_frame];
+        src = anim.direct_anim.anim_frames[frame];
     } else {
         // If anim_frames is NULL, then we need to reference the SPI flash.
-        storage_load_frame(led_anim_curr.name, led_anim_frame, scratch);
+        if (!storage_load_frame(anim.name, frame, scratch)) {
+            // Nothing came back, so scratch still holds stack. Keep the frame
+            //  that is already up and come back for the next one.
+            Clock_setTimeout(led_frame_clock_h, anim.direct_anim.anim_frame_delay_ms*100);
+            Clock_start(led_frame_clock_h);
+            return;
+        }
         src = scratch;
     }
 
@@ -115,11 +133,12 @@ void led_load_frame() {
         }
     }
 
-    Clock_setTimeout(led_frame_clock_h, led_anim_curr.direct_anim.anim_frame_delay_ms*100);
+    Clock_setTimeout(led_frame_clock_h, anim.direct_anim.anim_frame_delay_ms*100);
     Clock_start(led_frame_clock_h);
 }
 
 void led_set_anim_direct(led_anim_t anim, uint8_t ambient) {
+    UInt task_key = Task_disable();
     if (ambient) {
         led_anim_ambient = anim;
     }
@@ -127,6 +146,7 @@ void led_set_anim_direct(led_anim_t anim, uint8_t ambient) {
 
     led_anim_curr = anim;
     led_anim_frame = 0;
+    Task_restore(task_key);
 
     Event_post(tlc_event_h, TLC_EVENT_NEXTFRAME);
 }
@@ -139,13 +159,18 @@ void led_set_anim(char *name, uint8_t ambient) {
 }
 
 void led_next_frame() {
+    UInt task_key = Task_disable();
     led_anim_frame++;
     if (led_anim_frame >= led_anim_curr.direct_anim.anim_len) {
         if (led_curr_ambient) {
             led_anim_frame = 0;
+            Task_restore(task_key);
         } else {
+            Task_restore(task_key);
             led_set_anim_direct(led_anim_ambient, TRUE);
         }
+    } else {
+        Task_restore(task_key);
     }
 
     Event_post(tlc_event_h, TLC_EVENT_NEXTFRAME);

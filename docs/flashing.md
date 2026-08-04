@@ -61,8 +61,8 @@ animloader build (`user_files/images/badge.lgbt-animloader.hex`).
 
 ### Driving DSLite from a WSL shell
 
-Proven pattern (qc2024, `tools/perf/flash-fw-dslite.sh` header there has
-the full write-up):
+Proven pattern, spelled out in full here so nothing outside this
+repository has to be consulted:
 
 - Invoke via `cmd.exe /c "<one command string>"` with **no quotes around
   individual arguments** — cmd.exe does not do shell-style per-arg

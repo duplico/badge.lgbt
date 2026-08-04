@@ -128,6 +128,22 @@ check-toolchain:
 		echo ""; \
 		exit 1; \
 	fi
+	@if [ ! -x "$(HEX)" ]; then \
+		echo ""; \
+		echo "ERROR: TI MSP430 hex utility not found at: $(HEX)"; \
+		echo "'make hex' needs it to emit the TI-TXT image. A CGT_ROOT with"; \
+		echo "cl430 but no hex430 is usually a partial install."; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(DEV_DIR)/include/msp430fr2433.h" ]; then \
+		echo ""; \
+		echo "ERROR: device support files missing from ccs_base_files/."; \
+		echo "These are committed; a partial checkout or a moved PROJ_ROOT is"; \
+		echo "the usual cause. See tools/toolchain.lock for what belongs there."; \
+		echo ""; \
+		exit 1; \
+	fi
 
 $(BUILD_DIR)/main.obj: $(PROJ_ROOT)main.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) --output_file=$@ $<

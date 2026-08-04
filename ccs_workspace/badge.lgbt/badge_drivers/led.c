@@ -175,16 +175,20 @@ void led_next_frame() {
     UInt task_key = Task_disable();
     led_anim_frame++;
     if (led_anim_frame >= led_anim_curr.direct_anim.anim_len) {
-        if (led_curr_ambient) {
-            led_anim_frame = 0;
+        // Wrap before the gate drops. The TLC task loads a frame whenever it
+        //  finds TLC_EVENT_NEXTFRAME already posted, so an index one past the
+        //  end of the current animation must never be visible to it, even for
+        //  the instant it takes to hand over to led_set_anim_direct.
+        led_anim_frame = 0;
+        if (!led_curr_ambient) {
             Task_restore(task_key);
-        } else {
-            Task_restore(task_key);
+            // This posts TLC_EVENT_NEXTFRAME once the descriptor and the frame
+            //  index agree, so there is nothing left to post here.
             led_set_anim_direct(led_anim_ambient, TRUE);
+            return;
         }
-    } else {
-        Task_restore(task_key);
     }
+    Task_restore(task_key);
 
     Event_post(tlc_event_h, TLC_EVENT_NEXTFRAME);
 }

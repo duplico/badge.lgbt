@@ -38,6 +38,13 @@ BAUD_RATE = 19200
 # usually works; a badge that keeps refusing is not going to start.
 MAX_FRAME_ATTEMPTS = 8
 
+# Bounds the badge enforces on an animation header, mirroring
+# STORAGE_MAX_ANIM_FRAMES and the frame-delay floor in ir.c. A header outside
+# them is dropped silently rather than NACKed, so check here: otherwise the
+# only symptom is putfile waiting out its timeout with nothing to explain it.
+MAX_ANIM_FRAMES = 200
+MIN_FRAME_DELAY_MS = 20
+
 SERIAL_OPCODE_HELO=0x01
 SERIAL_OPCODE_ACK=0x02
 SERIAL_OPCODE_NACK=0x03
@@ -184,6 +191,16 @@ def send_image(ser: serial.Serial, name: str, image: BadgeImage, unlock: bool):
     # Encoding a frame runs PIL transposes over it, so do the whole animation
     # once here rather than once per frame sent.
     frames = image.img_bytes()
+
+    if not frames:
+        raise click.BadParameter("That image has no frames.")
+    if len(frames) > MAX_ANIM_FRAMES:
+        raise click.BadParameter("The badge holds at most %d frames, and that "
+                                 "animation has %d." % (MAX_ANIM_FRAMES, len(frames)))
+    if image.frame_delay_ms < MIN_FRAME_DELAY_MS:
+        raise click.BadParameter("The badge needs a frame duration of at least "
+                                 "%d ms, and that animation asks for %d."
+                                 % (MIN_FRAME_DELAY_MS, image.frame_delay_ms))
 
     anim_header = struct.pack(ANIM_META_FMT, check_anim_name(name), 0x00000000, len(frames), image.frame_delay_ms, 0, 1 if unlock else 0)
 

@@ -188,7 +188,8 @@ uint8_t storage_reformat() {
  ** generation absent and the next boot reformats and starts over.
  */
 void storage_mark_initialized() {
-    storage_overwrite_file("/.initialized", &storage_flag_expected, sizeof(storage_flag_expected));
+    storage_overwrite_file("/.initialized", (uint8_t *) &storage_flag_expected,
+                           sizeof(storage_flag_expected));
 }
 
 void storage_init() {
@@ -205,7 +206,8 @@ void storage_init() {
         spiffsReadWriteCache, sizeof(spiffsReadWriteCache), NULL);
 
     if (status == SPIFFSNVS_STATUS_SUCCESS) {
-        if (!storage_read_file("/.initialized", &storage_flag, 0, sizeof(storage_flag)) || storage_flag != storage_flag_expected) {
+        if (!storage_read_file("/.initialized", (uint8_t *) &storage_flag, 0, sizeof(storage_flag))
+                || storage_flag != storage_flag_expected) {
             status = SPIFFS_ERR_NOT_A_FS; // If our magic value isn't present, we need to reformat _anyway_.
         }
     }

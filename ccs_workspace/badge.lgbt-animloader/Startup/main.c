@@ -42,7 +42,7 @@ uint16_t badge_anim_id = 0x00;
 extern const led_anim_t *anim_list[];
 extern const uint16_t anim_count;
 #define ALL_UNLOCKED_COUNT 4
-/// Seeding passes to try; a second pass wipes the filesystem first.
+/// Seeding passes to try. Each one wipes the filesystem before writing.
 #define STORAGE_SEED_ATTEMPTS 2
 
 void ui_task_fn(UArg a0, UArg a1) {

@@ -26,7 +26,12 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
-#define STORAGE_FLAG 0x0009
+/// Generation of the animation set written to flash. A badge whose
+/// /.initialized does not carry this value has its filesystem reformatted and
+/// reseeded once, then stops. Raise it to reseed every badge again -- after
+/// changing the animation set, or to repair damage the per-file size checks
+/// cannot see, such as corrupted file contents or a full filesystem.
+#define STORAGE_FLAG 0x000A
 
 uint16_t storage_flag = 0x0000;
 uint16_t storage_flag_expected = STORAGE_FLAG;

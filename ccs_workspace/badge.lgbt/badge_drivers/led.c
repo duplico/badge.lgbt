@@ -95,6 +95,21 @@ void led_next_frame_swi(UArg a0) {
     Event_post(ui_event_h, UI_EVENT_LED_FRAME);
 }
 
+/// Shortest interval the frame clock will accept, in system ticks (10 ms).
+/// An animation descriptor of all zeroes -- what a badge with no stored
+///  animations plays -- would otherwise arm a zero-timeout clock and spin.
+#define LED_FRAME_TICKS_MIN 1000
+
+/// Arm the frame clock for an animation's inter-frame delay, floored.
+static void led_arm_frame_clock(uint16_t delay_ms) {
+    uint32_t ticks = (uint32_t) delay_ms * 100;
+    if (ticks < LED_FRAME_TICKS_MIN) {
+        ticks = LED_FRAME_TICKS_MIN;
+    }
+    Clock_setTimeout(led_frame_clock_h, ticks);
+    Clock_start(led_frame_clock_h);
+}
+
 void led_load_frame() {
     rgbcolor_t scratch[7][15];
     rgbcolor_t (*src)[15];
@@ -118,8 +133,7 @@ void led_load_frame() {
         if (!storage_load_frame(anim.name, frame, scratch)) {
             // Nothing came back, so scratch still holds stack. Keep the frame
             //  that is already up and come back for the next one.
-            Clock_setTimeout(led_frame_clock_h, anim.direct_anim.anim_frame_delay_ms*100);
-            Clock_start(led_frame_clock_h);
+            led_arm_frame_clock(anim.direct_anim.anim_frame_delay_ms);
             return;
         }
         src = scratch;
@@ -133,8 +147,7 @@ void led_load_frame() {
         }
     }
 
-    Clock_setTimeout(led_frame_clock_h, anim.direct_anim.anim_frame_delay_ms*100);
-    Clock_start(led_frame_clock_h);
+    led_arm_frame_clock(anim.direct_anim.anim_frame_delay_ms);
 }
 
 void led_set_anim_direct(led_anim_t anim, uint8_t ambient) {

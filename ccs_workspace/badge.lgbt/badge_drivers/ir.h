@@ -78,8 +78,12 @@ extern uint8_t serial_ll_state;
 
 /// from_id of the USB controller, which alone may send SERIAL_OPCODE_DELFILE.
 /**
- ** Any badge could put this ID in a header, so it stops mistakes rather than
- ** attackers: badges trading animations can't delete each other's.
+ ** This is an accident guard, not an access control, and it is not meant to
+ ** be one. from_id is an ordinary header field the sender fills in, and this
+ ** value is a public constant that also appears in the host tool, so any peer
+ ** willing to write it there can delete another badge's animations. What it
+ ** buys is that badges trading animations in the ordinary way cannot delete
+ ** each other's by accident. System animations are refused regardless.
  */
 #define SERIAL_CONTROLLER_ID 0x1234000000000000ULL
 

@@ -17,6 +17,10 @@
 #include <ti/sysbios/knl/Event.h>
 #include <ti/sysbios/hal/Hwi.h>
 
+#include <inc/hw_types.h>
+#include <inc/hw_memmap.h>
+#include <inc/hw_gpio.h>
+
 #include <board.h>
 
 #include <badge.h>
@@ -41,7 +45,7 @@ rgbcolor16_t tlc_display_curr[7][15] = {0, };
 uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 
 /// The LED SCLK frequency, in Hz.
-#define     LED_CLK   6000000
+#define     LED_CLK   12000000
 
 // 1 frame is divided into SUBPERIODS, which each has a SEGMENT per scan line
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM + BLK_ADJ)
@@ -58,10 +62,13 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 /// Current value of the bit-banged CCSI clock.
 uint8_t sclk_val = 0;
 /// Toggle the SCLK for when we're bit-banging the CCSI.
+#define CCSI_SCLK_PIN_M (1UL << BADGE_TLC_CCSI_SCLK)
+#define CCSI_MOSI_PIN_M (1UL << BADGE_TLC_CCSI_MOSI)
+
 inline void SCLK_toggle() {
-    __nop(); //__nop();
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_SCLK, sclk_val); sclk_val = !sclk_val;
-    __nop(); //__nop();
+    __nop();
+    HWREG(GPIO_BASE + GPIO_O_DOUTTGL31_0) = CCSI_SCLK_PIN_M;
+    __nop();
 }
 
 /// Software interrupt for when the screen should refresh.
@@ -79,7 +86,7 @@ void ccsi_bb_start() {
     //  (otherwise, if the PWM ended when our sclk_val variable is 1,
     //   but the PWM was LOW, we could think we're doing a transition
     //   when actually keeping SCLK the same.)
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
+    if (1) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
     // TODO: Do we actually need to click the clock 19 times, so that
     //  we guarantee a correct START?
     SCLK_toggle();
@@ -94,30 +101,30 @@ void ccsi_bb_end() {
 /// Transmit a bit-banged CCSI frame. NOTE: PWM must be stopped.
 void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // SIMO LOW (START)
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 0);
+    if (0) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
     SCLK_toggle();
 
     // Send the 16-bit command, MSB first.
     for (uint8_t i = 0; i<16; i++) {
-        PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((cmd & (0x0001 << (15-i))) ? 1 : 0));
+        if (((cmd & (0x0001 << (15-i))) ? 1 : 0)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
         SCLK_toggle();
     }
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((cmd & 0x0001) ? 0 : 1)); // Parity bit
+    if (((cmd & 0x0001) ? 0 : 1)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; } // Parity bit
     SCLK_toggle();
 
     // Transmit each 16-bit word plus 1 parity bit for every word in payload.
     for (uint16_t index = 0; index<len; index++) {
         for (uint8_t i = 0; i<16; i++) {
-            PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((payload[index] & (0x0001 << (15-i))) ? 1 : 0));
+            if (((payload[index] & (0x0001 << (15-i))) ? 1 : 0)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
             SCLK_toggle(); // click for data bit
         }
-        PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((payload[index] & 0x0001) ? 0 : 1));
+        if (((payload[index] & 0x0001) ? 0 : 1)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
         SCLK_toggle(); // click for parity bit
     }
 
     // SIMO high (STOP)
     // Continue toggling SCLK (at least x18)
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
+    if (1) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
     for (uint8_t i=0; i<18; i++) {
         SCLK_toggle();
     }
@@ -177,7 +184,7 @@ void tlc_init() {
     }
 
     // Set SIMO high
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
+    if (1) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
     PWM_start(tlc_pwm_h);
 
     // with pwm on, we should just wait a bit for the module to stabilize.

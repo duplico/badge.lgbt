@@ -105,6 +105,12 @@ def await_serial(ser, opcode=None):
         payload = ser.read(header.payload_len)
         if len(payload) != header.payload_len:
             raise TimeoutError("Badge stopped sending partway through a message.")
+        # The badge checksums the payload as well as the header, and an IR link
+        # garbles bodies as readily as headers. Accepting one unchecked means
+        # decoding corrupt frames as if they were good.
+        if crc16_buf(payload) != header.crc16_payload:
+            raise ValueError("Payload checksum mismatch on opcode %d: the link "
+                             "garbled a message." % header.opcode)
         return header, payload
     return header, None
 
@@ -230,23 +236,26 @@ def get_image(ser: serial.Serial, output: str = None):
     send_message(ser, SERIAL_OPCODE_GETFILE)
     header, payload = await_serial(ser, SERIAL_OPCODE_PUTFILE)
     badge_id = header.from_id
-    send_message(ser, SERIAL_OPCODE_ACK)
     frame = 0
 
     if not payload or len(payload) != ANIM_HEADER_SIZE:
         raise ValueError("Malformed animation header from badge.")
+    send_message(ser, SERIAL_OPCODE_ACK)
     anim = AnimMeta._make(struct.unpack(ANIM_META_FMT, payload))
     clean_anim_name = anim.name.split(b'\0', 1)[0].decode('ascii')
     if output is None:
         output = '%s_loaded.gif' % clean_anim_name
     print("Got PUTFILE from badge %x for image %s" % (badge_id, clean_anim_name))
     while True:
-        header, payload = await_serial(ser)
+        # Name the opcode, and check the frame before acknowledging it: an ACK
+        # for something never accepted leaves the badge a frame ahead.
+        header, payload = await_serial(ser, SERIAL_OPCODE_APPFILE)
+        if not payload or len(payload) != FRAME_BYTES:
+            raise ValueError("Badge sent a %d byte frame, expected %d."
+                             % (len(payload) if payload else 0, FRAME_BYTES))
         send_message(ser, SERIAL_OPCODE_ACK)
         frame += 1
         print("Got frame %d/%d." % (frame, anim.anim_len))
-        if not payload or len(payload) != FRAME_BYTES:
-            raise ValueError("Got invalid message")
         frames.append(Image.frombytes('RGB', SCREEN_SIZE, payload).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM))
         if frame == anim.anim_len:
             frames[0].save(output, save_all=True, append_images=frames[1:], loop=0, duration=anim.anim_frame_delay_ms/10)

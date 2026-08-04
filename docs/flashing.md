@@ -1,5 +1,7 @@
 # Flashing runbook
 
+Building the images these procedures flash is covered in `toolchain.md`.
+
 How to get firmware onto the three targets: the badge (CC2640R2F), the
 animloader (same chip, flashed first), and the controller dongle
 (MSP430FR2433). Assumes a WSL2 shell on a Windows host with CCS 12.7.1 at

@@ -69,9 +69,6 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
 #define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 10)
 
-/// Current value of the bit-banged CCSI clock.
-uint8_t sclk_val = 0;
-/// Toggle the SCLK for when we're bit-banging the CCSI.
 #define CCSI_SCLK_PIN_M (1UL << BADGE_TLC_CCSI_SCLK)
 #define CCSI_MOSI_PIN_M (1UL << BADGE_TLC_CCSI_MOSI)
 
@@ -111,12 +108,10 @@ void ccsi_bb_start() {
     PWM_stop(tlc_pwm_h);
     Task_sleep(1);
 
-    // Set MOSI high, and click the clock 2 times, so we guarantee our
-    //  clock transitions occur when we think they should.
-    //  (otherwise, if the PWM ended when our sclk_val variable is 1,
-    //   but the PWM was LOW, we could think we're doing a transition
-    //   when actually keeping SCLK the same.)
-    if (1) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
+    // Give the TLC a clean IDLE -- SIN high, clock moving -- before the
+    //  first START. Toggling produces a real edge whatever level the PWM
+    //  happened to stop at.
+    CCSI_MOSI_HIGH();
     // TODO: Do we actually need to click the clock 19 times, so that
     //  we guarantee a correct START?
     SCLK_toggle();
@@ -199,7 +194,7 @@ void tlc_init() {
     }
 
     // Set SIMO high
-    if (1) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
+    CCSI_MOSI_HIGH();
     PWM_start(tlc_pwm_h);
 
     // with pwm on, we should just wait a bit for the module to stabilize.

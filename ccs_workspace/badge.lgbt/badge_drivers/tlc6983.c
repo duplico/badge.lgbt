@@ -75,10 +75,30 @@ uint8_t sclk_val = 0;
 #define CCSI_SCLK_PIN_M (1UL << BADGE_TLC_CCSI_SCLK)
 #define CCSI_MOSI_PIN_M (1UL << BADGE_TLC_CCSI_MOSI)
 
+#define CCSI_MOSI_HIGH() (HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M)
+#define CCSI_MOSI_LOW()  (HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M)
+
+/// Toggle SCLK. The TLC samples SIN on both edges and needs 10 ns of setup;
+/// a register write either side of this is already several times that.
 inline void SCLK_toggle() {
-    __nop();
     HWREG(GPIO_BASE + GPIO_O_DOUTTGL31_0) = CCSI_SCLK_PIN_M;
-    __nop();
+}
+
+/// Send one 17-bit CCSI unit: 16 data bits MSB first, then the check bit,
+/// which is the inverse of the last data bit so a unit can never extend an
+/// 18-edge run of HIGH into a premature END.
+static void ccsi_send_unit(uint16_t word) {
+    uint32_t pattern = ((uint32_t) word << 1) | ((word & 0x0001) ? 0 : 1);
+    uint32_t mask;
+
+    for (mask = 0x00010000; mask; mask >>= 1) {
+        if (pattern & mask) {
+            CCSI_MOSI_HIGH();
+        } else {
+            CCSI_MOSI_LOW();
+        }
+        SCLK_toggle();
+    }
 }
 
 /// Software interrupt for when the screen should refresh.
@@ -111,34 +131,19 @@ void ccsi_bb_end() {
 /// Transmit a bit-banged CCSI frame. NOTE: PWM must be stopped.
 void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // SIMO LOW (START)
-    if (0) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
+    CCSI_MOSI_LOW();
     SCLK_toggle();
 
-    // Send the 16-bit command, MSB first.
-    for (uint8_t i = 0; i<16; i++) {
-        if (((cmd & (0x0001 << (15-i))) ? 1 : 0)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
-        SCLK_toggle();
-    }
-    if (((cmd & 0x0001) ? 0 : 1)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; } // Parity bit
-    SCLK_toggle();
-
-    // Transmit each 16-bit word plus 1 parity bit for every word in payload.
-    for (uint16_t index = 0; index<len; index++) {
-        for (uint8_t i = 0; i<16; i++) {
-            if (((payload[index] & (0x0001 << (15-i))) ? 1 : 0)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
-            SCLK_toggle(); // click for data bit
-        }
-        if (((payload[index] & 0x0001) ? 0 : 1)) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
-        SCLK_toggle(); // click for parity bit
+    ccsi_send_unit(cmd);
+    for (uint16_t index = 0; index < len; index++) {
+        ccsi_send_unit(payload[index]);
     }
 
-    // SIMO high (STOP)
-    // Continue toggling SCLK (at least x18)
-    if (1) { HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M; } else { HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M; }
-    for (uint8_t i=0; i<18; i++) {
+    // SIMO high (STOP), then keep clocking at least 18 more edges.
+    CCSI_MOSI_HIGH();
+    for (uint8_t i = 0; i < 18; i++) {
         SCLK_toggle();
     }
-    return;
 }
 
 void tlc_task_fn(UArg a0, UArg a1) {

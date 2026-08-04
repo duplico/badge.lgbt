@@ -124,7 +124,7 @@ in `tools/toolchain.lock` there):
 
 ```bash
 cd ccs_workspace/badge.lgbt-dongle && make hex
-# -> build/badge.lgbt-dongle.hex (TI-TXT)
+# -> build/badge.lgbt-dongle.txt (TI-TXT)
 ```
 
 Flash over Spy-Bi-Wire via the eZ-FET/MSP-FET (wiring above), using the
@@ -133,11 +133,13 @@ it a Windows-style image path (`wslpath -w`), and run it from its own
 directory (it loads `MSP430.dll` and writes logs there):
 
 ```bash
-cp ccs_workspace/badge.lgbt-dongle/build/badge.lgbt-dongle.hex /mnt/c/temp/
+cp ccs_workspace/badge.lgbt-dongle/build/badge.lgbt-dongle.txt /mnt/c/temp/
 cd /mnt/c/ti/MSPFlasher_1.3.20
-./MSP430Flasher.exe -n MSP430FR2433 -w "C:\temp\badge.lgbt-dongle.hex" -v -z "[RESET,VCC]"
+./MSP430Flasher.exe -n MSP430FR2433 -w "C:\temp\badge.lgbt-dongle.txt" -v -z "[RESET,VCC]"
 ```
 
+- The `.txt` extension is load-bearing: MSP430Flasher selects its parser
+  from it, reading `.a43`/`.hex` as Intel-Hex and only `.txt` as TI-TXT.
 - Default erase (full erase before write) is what you want for a whole
   image; `-e NO_ERASE` is only for surgical FRAM writes (qc2024's
   `flashing/flash.py` is the reference for that pattern).

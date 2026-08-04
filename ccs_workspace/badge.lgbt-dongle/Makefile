@@ -14,7 +14,7 @@
 #
 # Usage:
 #   make CGT_ROOT=$$HOME/ti/ti-cgt-msp430_21.6.2.LTS
-#   make hex          # also produce TI-TXT image (MSP430Flasher's format)
+#   make hex          # also produce the TI-TXT image MSP430Flasher wants
 #   make print-flags
 #   make clean
 
@@ -36,7 +36,9 @@ TARGET    := badge.lgbt-dongle
 OUT       := $(BUILD_DIR)/$(TARGET).out
 MAP       := $(BUILD_DIR)/$(TARGET).map
 XML       := $(BUILD_DIR)/$(TARGET)_linkInfo.xml
-HEX_OUT   := $(BUILD_DIR)/$(TARGET).hex
+# MSP430Flasher picks its parser from the extension: .txt is TI-TXT,
+#  .a43/.hex is Intel-Hex. The image below is TI-TXT, so it must be .txt.
+HEX_OUT   := $(BUILD_DIR)/$(TARGET).txt
 
 # ---- Compiler flags (derived from .cproject) --------------------------------
 CFLAGS := \
@@ -133,7 +135,6 @@ $(BUILD_DIR)/main.obj: $(PROJ_ROOT)main.c | $(BUILD_DIR)
 $(OUT): $(OBJS) $(LNK_CMD)
 	$(CC) $(LFLAGS_FRONTEND) -z $(LFLAGS) $(OBJS) $(LNK_CMD) $(LFLAGS_LIBS)
 
-# TI-TXT is the image format MSP430Flasher consumes.
 $(HEX_OUT): $(OUT)
 	$(HEX) --romwidth=8 --memwidth=8 --ti_txt --outfile=$(HEX_OUT) $(OUT)
 

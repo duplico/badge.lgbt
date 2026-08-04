@@ -131,9 +131,28 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
     return stat.size == (STORAGE_ANIM_HEADER_SIZE + read_anim.direct_anim.anim_len * STORAGE_ANIM_FRAME_SIZE);
 }
 
+/// Write "/a/<anim_name>" into dest, or return 0 if the name has no terminator.
+/**
+ ** Names reaching this file are not trustworthy: one arrives in an IR frame
+ ** from a peer badge, and one is read back out of a stored header that a peer
+ ** wrote. An unterminated name runs the copy on into whatever follows it, so
+ ** the check belongs here rather than in each caller's memory.
+ */
+static uint8_t storage_anim_path(char *dest, char *anim_name) {
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!anim_name[i]) {
+            snprintf(dest, STORAGE_FILE_NAME_LIMIT, "/a/%s", anim_name);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 uint8_t storage_load_anim(char *anim_name, led_anim_t *dest) {
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
-    sprintf(fname, "/a/%s", anim_name);
+    if (!storage_anim_path(fname, anim_name)) {
+        return 0;
+    }
 
     if (!storage_read_file(fname, (uint8_t *) dest, 0, STORAGE_ANIM_HEADER_SIZE)) {
         return 0;
@@ -149,7 +168,9 @@ uint8_t storage_load_anim(char *anim_name, led_anim_t *dest) {
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]) {
     volatile int32_t stat;
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
-    sprintf(fname, "/a/%s", anim_name);
+    if (!storage_anim_path(fname, anim_name)) {
+        return 0;
+    }
 
     // Frame offsets exceed 16 bits past frame 207, so this math must be 32-bit.
     return storage_read_file(fname, (uint8_t *) dest, (uint32_t) STORAGE_ANIM_HEADER_SIZE + (uint32_t) STORAGE_ANIM_FRAME_SIZE * frame_number, STORAGE_ANIM_FRAME_SIZE);
@@ -348,9 +369,9 @@ void storage_init() {
         }
     }
 
-    if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", &led_anim_id, 0, sizeof(led_anim_id))) {
+    if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", (uint8_t *) &led_anim_id, 0, sizeof(led_anim_id))) {
         led_anim_id = 0;
-        storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));
+        storage_overwrite_file("/.animid", (uint8_t *) &led_anim_id, sizeof(led_anim_id));
     }
 
     // Decide the next available animation ID:

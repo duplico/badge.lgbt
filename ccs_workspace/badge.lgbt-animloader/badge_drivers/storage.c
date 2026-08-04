@@ -98,12 +98,12 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
     }
 
     status = SPIFFS_read(&storage_fs, fd, (uint8_t *) &read_anim, sizeof(led_anim_t));
-
-    if (status < 0) {
-
-    }
-
     SPIFFS_close(&storage_fs, fd);
+
+    if (status != (int32_t) sizeof(led_anim_t)) {
+        // Without a whole header there is no length to check the size against.
+        return 0;
+    }
 
     return stat.size == (STORAGE_ANIM_HEADER_SIZE + read_anim.direct_anim.anim_len * STORAGE_ANIM_FRAME_SIZE);
 }
@@ -130,7 +130,7 @@ void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
     SPIFFS_close(&storage_fs, fd);
 }
 
-void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked) {
+uint8_t storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked) {
     spiffs_file fd;
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
@@ -145,18 +145,41 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     storage_next_anim_id++;
 
     fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY, 0);
-    if (fd >= 0) {
-        // The open worked properly.
-        // TODO: check for write errors.
-        SPIFFS_write(&storage_fs, fd, &write_anim, sizeof(led_anim_t));
-        for (uint16_t i=0; i<write_anim.direct_anim.anim_len; i++) {
-            SPIFFS_write(&storage_fs, fd, anim->anim_frames[i], STORAGE_ANIM_FRAME_SIZE);
-        }
-        SPIFFS_close(&storage_fs, fd);
-    } else {
+    if (fd < 0) {
+        return 0;
     }
 
-    // TODO: if failed, delete or something?
+    uint8_t ok = (SPIFFS_write(&storage_fs, fd, &write_anim, STORAGE_ANIM_HEADER_SIZE)
+                  == STORAGE_ANIM_HEADER_SIZE);
+    for (uint16_t i=0; ok && i<write_anim.direct_anim.anim_len; i++) {
+        ok = (SPIFFS_write(&storage_fs, fd, anim->anim_frames[i], STORAGE_ANIM_FRAME_SIZE)
+              == STORAGE_ANIM_FRAME_SIZE);
+    }
+    SPIFFS_close(&storage_fs, fd);
+
+    return ok;
+}
+
+/// Wipe the filesystem and mount it empty.
+/**
+ ** Recovery path for flash the storage flag and the per-file size checks both
+ ** accept while the data underneath is unusable.
+ */
+uint8_t storage_reformat() {
+    SPIFFS_unmount(&storage_fs);
+
+    if (SPIFFS_format(&storage_fs) != SPIFFSNVS_STATUS_SUCCESS) {
+        return 0;
+    }
+    if (SPIFFS_mount(&storage_fs, &fsConfig, spiffsWorkBuffer,
+                     spiffsFileDescriptorCache, sizeof(spiffsFileDescriptorCache),
+                     spiffsReadWriteCache, sizeof(spiffsReadWriteCache), NULL)
+            != SPIFFSNVS_STATUS_SUCCESS) {
+        return 0;
+    }
+
+    storage_next_anim_id = 0;
+    return 1;
 }
 
 /// Record that the animation set is completely written at this generation.

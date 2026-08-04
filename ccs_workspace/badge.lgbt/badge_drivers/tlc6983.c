@@ -47,6 +47,16 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 /// The LED SCLK frequency, in Hz.
 #define     LED_CLK   12000000
 
+// The PWM carries SCLK, and with PWM_DUTY_FRACTION the driver computes
+// dutyCounts = periodCounts - (dutyValue * periodCounts) / PWM_DUTY_FRACTION_MAX.
+// That division floors to zero once periodCounts falls below three, leaving
+// dutyCounts equal to periodCounts, which PWMTimerCC26XX holds permanently
+// low. PWM_open() still succeeds, so the pin goes quiet with nothing to catch
+// it and the TLC loses the clock its scan engine runs on.
+#if (48000000 / LED_CLK) < 4
+#error "LED_CLK too high: the PWM would hold SCLK low. See the note above."
+#endif
+
 // 1 frame is divided into SUBPERIODS, which each has a SEGMENT per scan line
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM + BLK_ADJ)
 #define SUBPERIOD_TICKS ((128 + 120) * 7 + 10)

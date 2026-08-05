@@ -162,8 +162,8 @@ uint8_t storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8
 
 /// Wipe the filesystem and mount it empty.
 /**
- ** Recovery path for flash the storage flag and the per-file size checks both
- ** accept while the data underneath is unusable.
+ ** Recovery path for when the storage flag and the per-file size checks both
+ ** accept the flash contents while the data underneath is unusable.
  */
 uint8_t storage_reformat() {
     SPIFFS_unmount(&storage_fs);

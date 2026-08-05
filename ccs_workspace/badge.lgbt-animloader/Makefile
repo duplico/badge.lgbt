@@ -257,6 +257,14 @@ check-toolchain:
 		echo ""; \
 		exit 1; \
 	fi
+	@if [ ! -x "$(HEX)" ]; then \
+		echo ""; \
+		echo "ERROR: TI ARM hex utility not found at: $(HEX)"; \
+		echo "'make hex' needs it. A CGT_ROOT that has armcl but not armhex"; \
+		echo "is usually a partial install; reinstall ti-cgt-arm 20.2.5.LTS."; \
+		echo ""; \
+		exit 1; \
+	fi
 
 # configuro: regenerated whenever app_ble.cfg changes. compiler.opt is the
 # single stamp for the whole generated package (a multi-target rule would run

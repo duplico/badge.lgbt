@@ -61,6 +61,25 @@ CLAUDE.md for toolchain paths). Copy it over the package's
 hardcodes it), then run `dslite.bat` as above. Same pattern for an
 animloader build (`user_files/images/badge.lgbt-animloader.hex`).
 
+### Troubleshooting
+
+- **`Error -242: A router subpath could not be accessed`** means the probe
+  cannot reach the target, not a configuration problem — it is
+  indistinguishable from having no badge attached, and two different badges
+  have produced it from nothing but marginal contact. Re-seat the probe
+  connection to the badge's cJTAG header before touching the ccxml or any
+  settings.
+- A **flashloader timeout** partway through a write is, for the same
+  reason, also usually a seating problem — re-seat before debugging further.
+- The probe (including a LaunchPad's onboard XDS110) supplies enough
+  current to **flash** a badge but not enough to **run** one — the display
+  needs the battery. Flash on probe power, then insert the battery.
+- The shipped ccxml uses probe-supplied power and cJTAG 2-pin mode, so only
+  TMS and TCK carry data; it does not wire VCC through the fixture. On a
+  fixture that does not supply VCC itself, switch the ccxml's Power
+  Selection to target-supplied and leave the battery in, or flashing will
+  fail even with a good connection.
+
 ### Driving DSLite from a WSL shell
 
 Proven pattern, spelled out in full here so nothing outside this

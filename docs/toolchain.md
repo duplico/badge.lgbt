@@ -18,10 +18,13 @@ why they need the SDK and XDCtools; the dongle is bare metal and needs neither.
 
 ## Components
 
-Download from TI, who require a login and an export-control click-through.
-Direct links are version-specific and do not survive site reorganisations, so
-the product pages are given instead. Check the hash after downloading — that is
-what actually identifies the file.
+Download from TI. Some downloads on ti.com gate behind a login and an
+export-control click-through; others don't — the MSP430 CGT below downloaded
+with a direct, unauthenticated `curl` (hash verified after). Treat "may
+require a login" as the assumption and check the product page for what it
+actually asks for. Direct links are version-specific and do not survive site
+reorganisations, so the product pages are given instead. Check the hash after
+downloading — that is what actually identifies the file.
 
 **TI ARM CGT 20.2.5.LTS** — https://www.ti.com/tool/ARM-CGT
 

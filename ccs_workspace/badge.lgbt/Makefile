@@ -248,6 +248,14 @@ check-toolchain:
 		echo ""; \
 		exit 1; \
 	fi
+	@if [ ! -x "$(HEX)" ]; then \
+		echo ""; \
+		echo "ERROR: TI ARM hex utility not found at: $(HEX)"; \
+		echo "'make hex' needs it to emit the Intel-hex image. A CGT_ROOT with"; \
+		echo "armcl but no armhex is usually a partial install."; \
+		echo ""; \
+		exit 1; \
+	fi
 	@if [ ! -d "$(SDK_ROOT)/source/ti/blestack" ]; then \
 		echo ""; \
 		echo "ERROR: SimpleLink CC2640R2 SDK not found at: $(SDK_ROOT)"; \

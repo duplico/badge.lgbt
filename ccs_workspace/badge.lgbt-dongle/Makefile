@@ -30,6 +30,7 @@ HEX := $(CGT_ROOT)/bin/hex430
 # ---- Layout ----------------------------------------------------------------
 PROJ_ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 DEV_DIR   := $(PROJ_ROOT)ccs_base_files
+LOCK      := $(PROJ_ROOT)tools/toolchain.lock
 
 BUILD_DIR := $(PROJ_ROOT)build
 TARGET    := badge.lgbt-dongle
@@ -136,11 +137,22 @@ check-toolchain:
 		echo ""; \
 		exit 1; \
 	fi
-	@if [ ! -f "$(DEV_DIR)/include/msp430fr2433.h" ]; then \
+	@if [ ! -f "$(LOCK)" ]; then \
 		echo ""; \
-		echo "ERROR: device support files missing from ccs_base_files/."; \
-		echo "These are committed; a partial checkout or a moved PROJ_ROOT is"; \
-		echo "the usual cause. See tools/toolchain.lock for what belongs there."; \
+		echo "ERROR: $(LOCK) is missing. It records the SHA-256 checksums the"; \
+		echo "committed ccs_base_files/ are verified against; without it the build"; \
+		echo "cannot confirm those files are what they claim to be."; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if ! (cd $(PROJ_ROOT) && grep -E '^[0-9a-f]{64}  ccs_base_files/' tools/toolchain.lock | sha256sum --check --quiet -); then \
+		echo ""; \
+		echo "ERROR: one or more committed files under ccs_base_files/ do not match"; \
+		echo "the SHA-256 checksums recorded in tools/toolchain.lock (see the"; \
+		echo "FAILED/mismatch lines above for which). A partial checkout, a moved"; \
+		echo "PROJ_ROOT, or local edits to the vendored device-support files all"; \
+		echo "look like this. Restore them with 'git checkout -- ccs_base_files/'"; \
+		echo "or re-copy them from a CCS install per tools/toolchain.lock's header."; \
 		echo ""; \
 		exit 1; \
 	fi

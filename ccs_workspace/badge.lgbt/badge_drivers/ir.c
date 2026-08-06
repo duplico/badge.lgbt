@@ -52,6 +52,10 @@ led_anim_t serial_file_header;
 spiffs_file serial_fd;
 uint16_t serial_filepart = 0;
 uint64_t serial_peer_id;
+/// Consecutive NACKs received for the frame we're currently sending in
+/// SERIAL_LL_STATE_C_FILE_TX. Reset on every successful ACK and on entering
+/// a fresh transaction; see the NACK handling in serial_rx_done().
+uint8_t serial_tx_resend_count = 0;
 
 // When set, SERIAL_LL_STATE_C_FILE_RX(_DONE) ACKs each incoming APPFILE
 //  frame -- through the same validation a real receive uses -- without
@@ -269,6 +273,7 @@ uint8_t serial_deadline_passed(uint32_t deadline) {
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
     if (dest_state == SERIAL_LL_STATE_IDLE) {
         serial_peer_id = 0x0000000000000000;
+        serial_tx_resend_count = 0;
     } else if (serial_ll_state == SERIAL_LL_STATE_IDLE) {
         // Entering a transaction. Frames refresh the per-frame timeout, but
         //  the transaction as a whole gets a fixed time budget, so a peer
@@ -314,6 +319,7 @@ void serial_file_start() {
 
     serial_send(SERIAL_OPCODE_PUTFILE, (uint8_t *) &serial_file_header, STORAGE_ANIM_HEADER_SIZE);
     serial_filepart = 0;
+    serial_tx_resend_count = 0;
     serial_state_transition(SERIAL_LL_STATE_C_FILE_TX, IR_TIMEOUT_MS);
     // Sent the animation header. Now we await an ACK.
     led_anim_idle = ambient_snapshot;
@@ -702,6 +708,10 @@ void serial_rx_done(ir_header_t *header) {
                 serial_peer_id = header->from_id;
             }
 
+            // The frame we just sent made it; a fresh frame gets its own
+            //  run of resend attempts if it, in turn, gets NACKed.
+            serial_tx_resend_count = 0;
+
             if (serial_filepart == serial_file_header.direct_anim.anim_len) {
                 // done
                 serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
@@ -710,6 +720,38 @@ void serial_rx_done(ir_header_t *header) {
                 serial_file_send_next();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             }
+            break;
+        }
+        if (header->opcode == SERIAL_OPCODE_NACK) {
+            // The peer couldn't use what we just sent (a garbled frame, or a
+            //  frame it declined); resend the exact same frame rather than
+            //  waiting out the per-frame timeout with nothing to show for
+            //  it. This mirrors the host tool's own resend-on-NACK behavior
+            //  for the opposite direction (send_image() in
+            //  scripts/controller.py), bounded the same way so a peer that
+            //  keeps NACKing can't hold the link open forever;
+            //  IR_TRANSACTION_LIMIT_MS is the backstop either way.
+            if (serial_tx_resend_count >= SERIAL_MAX_TX_RESENDS) {
+                serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                led_set_anim_direct(led_anim_idle, 1);
+                break;
+            }
+            serial_tx_resend_count++;
+
+            if (serial_filepart == 0) {
+                // Still waiting on the very first ACK; resend the header.
+                //  (serial_filepart only reads 0 here, before the first
+                //  frame has ever been sent - once serial_file_send_next()
+                //  sends frame 0, it advances to 1 before an ACK or NACK for
+                //  it can arrive.)
+                serial_send(SERIAL_OPCODE_PUTFILE, (uint8_t *) &serial_file_header, STORAGE_ANIM_HEADER_SIZE);
+            } else {
+                // serial_file_payload still holds the last frame we sent -
+                //  ACK/NACK carry no payload, so nothing has overwritten it -
+                //  resend it verbatim instead of touching storage again.
+                serial_send(SERIAL_OPCODE_APPFILE, serial_file_payload, STORAGE_ANIM_FRAME_SIZE);
+            }
+            serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             break;
         }
         break;

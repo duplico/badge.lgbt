@@ -30,6 +30,12 @@ extern uint8_t serial_ll_state;
 
 // Configuration
 #define IR_TIMEOUT_MS 500
+// How many times we'll resend the same frame after a NACK before giving up
+//  on the transaction, mirroring the host tool's own MAX_FRAME_ATTEMPTS for
+//  the opposite direction (scripts/controller.py). Bounds how long a peer
+//  that keeps NACKing can hold us out of idle; IR_TRANSACTION_LIMIT_MS below
+//  is the hard backstop either way.
+#define SERIAL_MAX_TX_RESENDS 8
 // Absolute ceiling on a single file transaction, no matter how recently the
 //  peer refreshed the per-frame timeout. A full 200-frame transfer at 19200
 //  baud takes 40-50 seconds plus resends, so this only cuts off transfers

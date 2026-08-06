@@ -535,7 +535,13 @@ void serial_rx_done(ir_header_t *header) {
                     storage_cache_anim_name(local_copy.id, serial_file_header.name);
                 } else {
                     // Local copy is locked. Remote copy is locked.
-                    // Nothing to save.
+                    // Nothing to save. The local copy already matches what
+                    //  the sender is offering, so this is a successful
+                    //  outcome, not a failure; ack it for the same reason
+                    //  as the "already unlocked" case above, or the sender
+                    //  in SERIAL_LL_STATE_C_FILE_TX has only its own
+                    //  timeout to fall back on.
+                    serial_send_ack();
                     break;
                 }
             } else {

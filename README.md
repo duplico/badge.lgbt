@@ -31,16 +31,17 @@ Three firmware images, under `ccs_workspace/`:
   computer's serial port to the IR link. It does not understand the protocol; it
   just moves bytes.
 
-Plus `scripts/`, two host tools (see `scripts/README.rst` for the venv setup):
+Plus `scripts/`, two host tools packaged with uv:
 
-    cd scripts && python convert_image.py --preview some.gif   # see it on a 15x7 screen first
-    python controller.py /dev/ttyUSB0 putfile -n mine some.gif
-    python controller.py /dev/ttyUSB0 getfile
+    cd scripts && uv sync
+    uv run badge-img --preview some.gif      # see it on a 15x7 screen first
+    uv run badge-ctl /dev/ttyUSB0 info       # ask a badge what it is running
+    uv run badge-ctl /dev/ttyUSB0 putfile -n mine some.gif
 
-`convert_image.py` converts GIFs and BMPs into the badge's format, and also
-generates the C arrays the animloader carries (`--gather`). `controller.py`
-talks to a badge through the dongle: `putfile` sends an animation, `getfile`
-pulls one back.
+`badge-img` converts GIFs and BMPs into the badge's format, and also generates
+the C arrays the animloader carries (`--gather`). `badge-ctl` talks to a badge
+through the dongle: `putfile` sends an animation, `getfile` pulls one back,
+`delete` removes one, `info` reports firmware version.
 
 ## Building
 

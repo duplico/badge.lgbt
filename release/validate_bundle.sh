@@ -22,6 +22,7 @@ check() {
 check "manifest.json present"        test -f "$BUNDLE_DIR/manifest.json"
 check "manifest.json is valid JSON"  jq -e . "$BUNDLE_DIR/manifest.json"
 check "RELEASE.md present"           test -f "$BUNDLE_DIR/RELEASE.md"
+check "flash_all.sh present"         test -x "$BUNDLE_DIR/flash_all.sh"
 
 check "animloader image present"     bash -c "compgen -G '$BUNDLE_DIR/animloader/*.hex' > /dev/null"
 check "animloader ccxml present"     test -f "$BUNDLE_DIR/animloader/cc2640r2f.ccxml"
@@ -82,16 +83,18 @@ if [ -f "$BUNDLE_DIR/manifest.json" ] && jq -e . "$BUNDLE_DIR/manifest.json" >/d
 
   # Exhaustiveness: every file physically present in the bundle must be
   # accounted for -- either by the manifest (image/flash_script/config) or
-  # the fixed top-level set (manifest.json, RELEASE.md). A stray extra file
-  # (e.g. a leftover old image alongside the real one) must fail: the
-  # release/assets/flash-*.sh scripts pick their image via `find | head -n1`,
-  # so an unaccounted-for extra image would flash nondeterministically.
+  # the fixed top-level set (manifest.json, RELEASE.md, flash_all.sh). A
+  # stray extra file (e.g. a leftover old image alongside the real one)
+  # must fail: the release/assets/flash-*.sh scripts pick their image via
+  # `find | head -n1`, so an unaccounted-for extra image would flash
+  # nondeterministically.
   EXPECTED_LIST="$(mktemp)"
   ACTUAL_LIST="$(mktemp)"
   trap 'rm -f "$EXPECTED_LIST" "$ACTUAL_LIST"' EXIT
   {
     echo "manifest.json"
     echo "RELEASE.md"
+    echo "flash_all.sh"
     jq -r '.targets[] | .image, .flash_script, (.config // empty)' "$BUNDLE_DIR/manifest.json"
   } | sort -u > "$EXPECTED_LIST"
   find "$BUNDLE_DIR" -type f -printf '%P\n' | sort -u > "$ACTUAL_LIST"

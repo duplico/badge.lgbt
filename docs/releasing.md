@@ -22,6 +22,7 @@ assembles:
     badge.lgbt-<VERSION>/
       manifest.json              machine-readable copy of this layout
       RELEASE.md                 one-page flashing instructions
+      flash_all.sh               one-command end-to-end flash
       animloader/
         badge.lgbt-animloader.hex
         cc2640r2f.ccxml
@@ -43,6 +44,12 @@ CCS install already required to build the badge/animloader firmware also
 supplies the DSLite these scripts drive (`docs/flashing.md` confirms CCS's
 own DSLite works with the project's `cc2640r2f.ccxml`), so there is nothing
 extra to install just to flash a release.
+
+`flash_all.sh` (`release/assets/flash_all.sh`) reads `manifest.json` and
+drives animloader-then-badge in one command
+([#129](https://github.com/duplico/badge.lgbt/issues/129)) -- it's the
+entry point `docs/flashing.md` leads with; per-target `flash.sh` stays
+documented there too for anyone who wants to run one stage by hand.
 
 `release/validate_bundle.sh <bundle-dir>` checks an assembled bundle
 against this layout; `build_release.sh` runs it automatically and fails the
@@ -105,8 +112,12 @@ other way around.
    before finishing; a clean run means the zip is ready to publish as-is.
 
 3. **Smoke-test the images** on real hardware before tagging anything --
-   `docs/flashing.md` has the full procedure, and each bundled `flash.sh`
-   is a `docs/flashing.md`-shaped wrapper you can run directly:
+   `docs/flashing.md` has the full procedure. The bundle's own one-command
+   entry point does animloader-then-badge for you:
+
+       cd dist/badge.lgbt-<VERSION> && ./flash_all.sh --dongle
+
+   or drive one target's `docs/flashing.md`-shaped `flash.sh` directly:
 
        cd dist/badge.lgbt-<VERSION>/animloader && ./flash.sh
        cd ../badge && ./flash.sh

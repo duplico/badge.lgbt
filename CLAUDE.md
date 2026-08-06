@@ -49,17 +49,22 @@ own DSLite (`docs/flashing.md`) rather than bundling one.
 
 ## Python host tooling (`scripts/`)
 
-Two flat modules packaged with uv (`scripts/pyproject.toml`, Python 3.11+). `uv sync` in
-`scripts/`, then `uv run badge-img` / `uv run badge-ctl`.
+Packaged with uv (`scripts/pyproject.toml`, Python 3.11+). `uv sync` in `scripts/`, then
+`uv run badge-img` / `uv run badge-ctl`.
 
 - `convert_image.py` → `badge-img` (click CLI): converts animated GIFs / still BMPs into badge
   format. `--preview` renders what the image will look like on the 15x7 screen; `--gather` emits
   C source (frame arrays + `led_anim_t` structs + `anim_list[]`) — this is how
   `badge.lgbt-animloader/badge_drivers/anims.c` is generated from the GIFs in `img/`. It also
-  owns the shared screen geometry and animation-name-length constants.
+  owns the screen-geometry and animation-name-length aliases the rest of the scripts use,
+  sourced from `badge_protocol.py`.
 - `controller.py` → `badge-ctl` (click CLI): drives a badge over the serial protocol through the
   dongle. Subcommands: `putfile` (upload an animation), `getfile`, `delete`, `info`. Takes the
   serial port as a positional arg before the subcommand.
+- `badge_protocol.py` → generated, not hand-edited. See the invariant below.
+- `generate_protocol.py` → `uv run generate-protocol` (plain) or `uv run generate-protocol
+  --check` (fails loudly on drift, no write): regenerates `badge_protocol.py` from the firmware
+  headers.
 
 `img/` holds the source GIFs: `preload/` = animations shipped in the animloader, `direct/` =
 system animations compiled into the main firmware (pairing, send/recv, startup), `yes/` and
@@ -91,10 +96,15 @@ Three projects:
   linker script) for the controller dongle: a transparent bridge between the USB serial UART
   and the IR UART (it also generates the MCP2122 16x clock). Protocol-unaware.
 
-## Cross-cutting invariant: the serial protocol is defined in two places
+## Cross-cutting invariant: the serial protocol constants are generated, not hand-mirrored
 
-The wire protocol (header layout, opcodes, `CRC_SEED` 0x8FB6, CRC16 algorithm, frame size
-315 = 15x7x3 bytes, `ANIM_NAME_MAX_LEN` 16) is implemented independently in
-`badge_drivers/ir.c`/`ir.h` (badge) and `scripts/controller.py` (struct format strings and
-constants at the top; screen geometry and name lengths come from `convert_image.py`). A change
-to either must be mirrored in the other.
+The wire protocol (header layout, opcodes, `CRC_SEED` 0x8FB6, frame size 315 = 15x7x3 bytes,
+`ANIM_NAME_MAX_LEN` 16, and friends) is implemented in firmware at
+`badge_drivers/ir.c`/`ir.h`/`led.h`/`storage.h`/`tlc6983.h`. The CRC16 algorithm itself
+(`crc16_buf` in `ir.c` / `controller.py`) is still hand-mirrored code, not data, and isn't
+covered by this. The constants are: `scripts/generate_protocol.py` regex-extracts them from
+those headers into `scripts/badge_protocol.py` (committed, banner marks it DO-NOT-EDIT), and
+`controller.py`/`convert_image.py` import from there instead of hand-copying literals. After
+changing a firmware header, run `uv run generate-protocol` in `scripts/` and commit the
+regenerated file; `uv run generate-protocol --check` (also wired as `make check-protocol` in
+`ccs_workspace/badge.lgbt/`) fails loudly if it's out of sync.

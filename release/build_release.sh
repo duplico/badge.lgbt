@@ -75,6 +75,7 @@ cp "$REPO_ROOT/release/assets/cc2640r2f.ccxml" "$BUNDLE_DIR/badge/"
 install -m 755 "$REPO_ROOT/release/assets/flash-dslite.sh"    "$BUNDLE_DIR/animloader/flash.sh"
 install -m 755 "$REPO_ROOT/release/assets/flash-dslite.sh"    "$BUNDLE_DIR/badge/flash.sh"
 install -m 755 "$REPO_ROOT/release/assets/flash-mspflasher.sh" "$BUNDLE_DIR/dongle/flash.sh"
+install -m 755 "$REPO_ROOT/release/assets/flash_all.sh"        "$BUNDLE_DIR/flash_all.sh"
 
 sed -e "s/@VERSION@/${VERSION}/g" -e "s/@GIT_SHA@/${GIT_SHA}/g" \
   "$REPO_ROOT/release/assets/RELEASE.md.in" > "$BUNDLE_DIR/RELEASE.md"

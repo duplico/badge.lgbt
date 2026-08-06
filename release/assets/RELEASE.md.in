@@ -9,7 +9,9 @@ Three images, one per target, each in its own directory with everything its
     badge/        badge.lgbt.hex,             cc2640r2f.ccxml, flash.sh
     dongle/       badge.lgbt-dongle.txt,      flash.sh
 
-`manifest.json` lists the same information machine-readably.
+`manifest.json` lists the same information machine-readably; `flash_all.sh`
+at this directory's root reads it to drive the per-target `flash.sh`
+scripts in the right order.
 
 ## Prerequisites
 
@@ -24,25 +26,31 @@ Three images, one per target, each in its own directory with everything its
   to flash it, not enough to run it. Flash on probe power, then insert the
   battery.
 
-## Flashing a badge
+## Flashing a badge end to end (one command)
 
-Order matters on a fresh badge: the animloader first (it seeds the SPI
-flash with the starting animations), then the main firmware over it.
+    ./flash_all.sh
+
+Flashes the animloader, then the badge firmware, in that order (the order
+that matters on a fresh badge: the animloader seeds the SPI flash with the
+starting animations before the main firmware runs). Add `-n`/`--dry-run` to
+see exactly what it would run without touching a badge;
+`--animloader-only`/`--badge-only` to run one half; `--dongle` to also
+flash the dongle afterward. `./flash_all.sh --help` for the rest.
+
+It re-seats-and-retries on the two bench failures that cost the most time:
+a DSLite `Error -242` and a flashloader timeout, both usually a badly
+seated probe rather than a real problem.
+
+## Flashing one target by hand
 
     cd animloader && ./flash.sh
     cd ../badge && ./flash.sh
+    cd ../dongle && ./flash.sh
 
-Each `flash.sh` stages its image to `C:\temp\badge-flash` and drives DSLite
-via `cmd.exe`; override the CCS install location with `CCS_ROOT` if it is
-not at the default `C:\ti\ccs1271`. Re-run is idempotent.
-
-## Flashing a dongle
-
-    cd dongle && ./flash.sh
-
-Stages the image to `C:\temp` and drives MSP430Flasher; override its
-install location with `MSPFLASHER_ROOT` if it is not at the default
-`/mnt/c/ti/MSPFlasher_1.3.20`.
+Each `flash.sh` stages its image to a Windows-native temp path and drives
+DSLite (badge/animloader) or MSP430Flasher (dongle); override install
+locations with `CCS_ROOT` (default `C:\ti\ccs1271`) or `MSPFLASHER_ROOT`
+(default `/mnt/c/ti/MSPFlasher_1.3.20`). Re-run is idempotent.
 
 ## If it does not work
 

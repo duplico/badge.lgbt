@@ -20,16 +20,18 @@ animloader (same chip, flashed first), and the controller dongle
 - USB cables for the probe(s); the dongle's own USB port is its serial
   bridge, not a programming interface.
 
-## Badge and animloader: release bundles (Windows DSLite)
+## One command: flash a badge end to end
 
 Flashable images are published as tagged GitHub Releases, not committed to
 this repo (`docs/releasing.md` covers building and cutting one). A release
-zip unpacks to `animloader/` and `badge/` directories, each carrying its
-image, the XDS110 target config (`cc2640r2f.ccxml`), and a `flash.sh`
-wrapper:
+zip unpacks to `badge.lgbt-<version>/`, carrying each target's image, config,
+and a `flash.sh` wrapper, plus `flash_all.sh` at the root that drives them:
 
 ```
 badge.lgbt-<version>/
+  flash_all.sh
+  manifest.json
+  RELEASE.md
   animloader/badge.lgbt-animloader.hex
   animloader/cc2640r2f.ccxml
   animloader/flash.sh
@@ -37,15 +39,51 @@ badge.lgbt-<version>/
   badge/cc2640r2f.ccxml
   badge/flash.sh
   dongle/...
-  manifest.json
-  RELEASE.md
 ```
 
-Order matters on a fresh badge: flash **animloader** first and let it run
-to completion (it writes the preloaded animations into SPIFFS on the
-external flash), then flash **badge** over it.
+Order matters on a fresh badge: the **animloader** has to run to completion
+first (it writes the preloaded animations into SPIFFS on the external
+flash) before the **badge** firmware flashes over it — get this backwards
+and the badge looks fine but has no animations. `flash_all.sh` reads
+`manifest.json`'s declared order (`flash_order`) so this can't be gotten
+wrong by hand:
 
-From a WSL2 shell, per target:
+```bash
+cd badge.lgbt-<version> && ./flash_all.sh
+```
+
+This flashes animloader then badge, pausing on the pre-flash power-selection
+notice below and offering to retry (after a re-seat) on the two failures
+that eat the most bench time — see "Troubleshooting" below, which
+`flash_all.sh` surfaces automatically when it recognizes them in a failed
+target's output. Useful flags:
+
+- `-n`/`--dry-run` — print exactly what would run, without touching a badge.
+- `--animloader-only` / `--badge-only` — run one half alone. Combine them
+  (or repeat `--only NAME`) and they still run in the manifest's
+  `flash_order`, never the order the flags were given in.
+- `--dongle` — also flash the dongle afterward (it has no ordering
+  constraint, so it's off by default).
+- `--bundle DIR` — point at a specific bundle instead of auto-detecting one.
+- `./flash_all.sh --help` for the rest, including `CCS_ROOT`/
+  `MSPFLASHER_ROOT`/`STAGE_DIR` passthrough and `--max-retries`.
+
+`flash_all.sh` works the same way from a source checkout: build a bundle
+with `release/build_release.sh` first, then either `cd` into
+`dist/badge.lgbt-<version>/` and run it there, or run
+`release/assets/flash_all.sh` directly from the repo — it finds the
+most recently built `dist/badge.lgbt-*/manifest.json` on its own rather than
+needing the version-suffixed path typed out. Either way it's the same
+script; it locates its bundle via `manifest.json`, never a hardcoded path.
+An auto-detected bundle (anything other than an explicit `--bundle`/
+`$BUNDLE_DIR`) is validated before flashing — with `release/validate_bundle.sh`
+in a source checkout, or a per-target image-presence check when run from an
+unpacked zip — so a stale or corrupted bundle sitting in `dist/` can't get
+silently picked over a good one; an explicit `--bundle` is trusted as-is.
+
+### Flashing one target by hand
+
+Per target, from a WSL2 shell, in the same order:
 
 ```bash
 cd animloader && ./flash.sh
@@ -60,12 +98,11 @@ in "Driving DSLite from a WSL shell" below — it *is* that procedure, packaged.
 No standalone UniFlash install or vendored `DSLite.exe` is needed: CCS's own
 DSLite works with this project's ccxml (confirmed below), and CCS is
 already something you'd install to get XDS110 drivers onto the Windows
-side in the first place.
-
-If you'd rather drive DSLite by hand instead of through `flash.sh` — to
-pass extra flags, or while `flash.sh` doesn't exist yet for a still-being-built
-release — see "Driving DSLite from a WSL shell" below for the equivalent raw
-invocation.
+side in the first place. `flash_all.sh` is a thin wrapper around exactly
+this script, in manifest order — reach for `flash.sh` directly instead
+when you need extra flags it doesn't expose, or before `flash_all.sh` has
+been assembled into a bundle at all (e.g. a hand-built hex, see below); see
+"Driving DSLite from a WSL shell" below for the equivalent raw invocation.
 
 ### Building and flashing a fresh hex without a release
 
@@ -80,6 +117,10 @@ source and assembles this exact layout, so there's rarely a reason to do
 this by hand.
 
 ### Troubleshooting
+
+`flash_all.sh` recognizes the first two of these in a failed target's
+output and prints the same guidance automatically, offering to retry after
+a re-seat instead of just exiting — this list is what it's matching against.
 
 - **`Error -242: A router subpath could not be accessed`** means the probe
   cannot reach the target, not a configuration problem — it is
@@ -167,8 +208,9 @@ installed, the Windows DSLite path above is the working procedure.
 
 A release bundle's `dongle/` directory carries a `flash.sh` wrapper
 (`release/assets/flash-mspflasher.sh`) that does exactly what this section
-describes — `cd dongle && ./flash.sh`. What follows is the manual
-equivalent, and what that script is built from.
+describes — `cd dongle && ./flash.sh`, or `./flash_all.sh --dongle` (or
+`--dongle-only`) from the bundle root. What follows is the manual
+equivalent, and what those scripts are built from.
 
 Build the image (see `ccs_workspace/badge.lgbt-dongle/Makefile`; toolchain
 in `tools/toolchain.lock` there):

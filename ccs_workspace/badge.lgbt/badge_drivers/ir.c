@@ -565,6 +565,13 @@ void ir_init() {
     Task_Params_init(&taskParams);
     taskParams.stack = serial_task_stack;
     taskParams.stackSize = SERIAL_STACKSIZE;
+    // The UI and IR tasks share a priority on purpose. Equal-priority
+    //  tasks only hand off at an explicit yield, so neither can cut
+    //  into the other mid-function, and the animation descriptors
+    //  they both touch need no gate against each other. Only the
+    //  higher-priority TLC task can preempt them, and led.c gates
+    //  what it shares. Splitting these priorities reintroduces a
+    //  torn-read race with nothing to catch it.
     taskParams.priority = 1;
     Task_construct(&serial_task, serial_task_fn, &taskParams, NULL);
 

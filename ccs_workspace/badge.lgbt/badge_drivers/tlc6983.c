@@ -17,6 +17,10 @@
 #include <ti/sysbios/knl/Event.h>
 #include <ti/sysbios/hal/Hwi.h>
 
+#include <inc/hw_types.h>
+#include <inc/hw_memmap.h>
+#include <inc/hw_gpio.h>
+
 #include <board.h>
 
 #include <badge.h>
@@ -41,7 +45,17 @@ rgbcolor16_t tlc_display_curr[7][15] = {0, };
 uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 
 /// The LED SCLK frequency, in Hz.
-#define     LED_CLK   6000000
+#define     LED_CLK   12000000
+
+// The PWM carries SCLK, and with PWM_DUTY_FRACTION the driver computes
+// dutyCounts = periodCounts - (dutyValue * periodCounts) / PWM_DUTY_FRACTION_MAX.
+// That division floors to zero once periodCounts falls below three, leaving
+// dutyCounts equal to periodCounts, which PWMTimerCC26XX holds permanently
+// low. PWM_open() still succeeds, so the pin goes quiet with nothing to catch
+// it and the TLC loses the clock its scan engine runs on.
+#if (48000000 / LED_CLK) < 4
+#error "LED_CLK too high: the PWM would hold SCLK low. See the note above."
+#endif
 
 // 1 frame is divided into SUBPERIODS, which each has a SEGMENT per scan line
 //              ((SEG_LENGTH + LINE_SWT) * SCAN_NUM + BLK_ADJ)
@@ -55,13 +69,33 @@ uint16_t all_off[3] =   {0x0000, 0x0000, 0x0000};
 #define FRAME_LEN_MS ((CLKS_PER_FRAME * 1000) / LED_CLK)
 #define FRAME_LEN_SYSTICKS (((CLKS_PER_FRAME * 1000) / (LED_CLK/100)) + 10)
 
-/// Current value of the bit-banged CCSI clock.
-uint8_t sclk_val = 0;
-/// Toggle the SCLK for when we're bit-banging the CCSI.
+#define CCSI_SCLK_PIN_M (1UL << BADGE_TLC_CCSI_SCLK)
+#define CCSI_MOSI_PIN_M (1UL << BADGE_TLC_CCSI_MOSI)
+
+#define CCSI_MOSI_HIGH() (HWREG(GPIO_BASE + GPIO_O_DOUTSET31_0) = CCSI_MOSI_PIN_M)
+#define CCSI_MOSI_LOW()  (HWREG(GPIO_BASE + GPIO_O_DOUTCLR31_0) = CCSI_MOSI_PIN_M)
+
+/// Toggle SCLK. The TLC samples SIN on both edges and needs 10 ns of setup;
+/// a register write either side of this is already several times that.
 inline void SCLK_toggle() {
-    __nop(); //__nop();
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_SCLK, sclk_val); sclk_val = !sclk_val;
-    __nop(); //__nop();
+    HWREG(GPIO_BASE + GPIO_O_DOUTTGL31_0) = CCSI_SCLK_PIN_M;
+}
+
+/// Send one 17-bit CCSI unit: 16 data bits MSB first, then the check bit,
+/// which is the inverse of the last data bit so a unit can never extend an
+/// 18-edge run of HIGH into a premature END.
+static void ccsi_send_unit(uint16_t word) {
+    uint32_t pattern = ((uint32_t) word << 1) | ((word & 0x0001) ? 0 : 1);
+    uint32_t mask;
+
+    for (mask = 0x00010000; mask; mask >>= 1) {
+        if (pattern & mask) {
+            CCSI_MOSI_HIGH();
+        } else {
+            CCSI_MOSI_LOW();
+        }
+        SCLK_toggle();
+    }
 }
 
 /// Software interrupt for when the screen should refresh.
@@ -74,12 +108,10 @@ void ccsi_bb_start() {
     PWM_stop(tlc_pwm_h);
     Task_sleep(1);
 
-    // Set MOSI high, and click the clock 2 times, so we guarantee our
-    //  clock transitions occur when we think they should.
-    //  (otherwise, if the PWM ended when our sclk_val variable is 1,
-    //   but the PWM was LOW, we could think we're doing a transition
-    //   when actually keeping SCLK the same.)
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
+    // Give the TLC a clean IDLE -- SIN high, clock moving -- before the
+    //  first START. Toggling produces a real edge whatever level the PWM
+    //  happened to stop at.
+    CCSI_MOSI_HIGH();
     // TODO: Do we actually need to click the clock 19 times, so that
     //  we guarantee a correct START?
     SCLK_toggle();
@@ -94,34 +126,19 @@ void ccsi_bb_end() {
 /// Transmit a bit-banged CCSI frame. NOTE: PWM must be stopped.
 void ccsi_tx(uint16_t cmd, uint16_t *payload, uint8_t len) {
     // SIMO LOW (START)
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 0);
+    CCSI_MOSI_LOW();
     SCLK_toggle();
 
-    // Send the 16-bit command, MSB first.
-    for (uint8_t i = 0; i<16; i++) {
-        PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((cmd & (0x0001 << (15-i))) ? 1 : 0));
-        SCLK_toggle();
-    }
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((cmd & 0x0001) ? 0 : 1)); // Parity bit
-    SCLK_toggle();
-
-    // Transmit each 16-bit word plus 1 parity bit for every word in payload.
-    for (uint16_t index = 0; index<len; index++) {
-        for (uint8_t i = 0; i<16; i++) {
-            PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((payload[index] & (0x0001 << (15-i))) ? 1 : 0));
-            SCLK_toggle(); // click for data bit
-        }
-        PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, ((payload[index] & 0x0001) ? 0 : 1));
-        SCLK_toggle(); // click for parity bit
+    ccsi_send_unit(cmd);
+    for (uint16_t index = 0; index < len; index++) {
+        ccsi_send_unit(payload[index]);
     }
 
-    // SIMO high (STOP)
-    // Continue toggling SCLK (at least x18)
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
-    for (uint8_t i=0; i<18; i++) {
+    // SIMO high (STOP), then keep clocking at least 18 more edges.
+    CCSI_MOSI_HIGH();
+    for (uint8_t i = 0; i < 18; i++) {
         SCLK_toggle();
     }
-    return;
 }
 
 void tlc_task_fn(UArg a0, UArg a1) {
@@ -177,7 +194,7 @@ void tlc_init() {
     }
 
     // Set SIMO high
-    PINCC26XX_setOutputValue(BADGE_TLC_CCSI_MOSI, 1);
+    CCSI_MOSI_HIGH();
     PWM_start(tlc_pwm_h);
 
     // with pwm on, we should just wait a bit for the module to stabilize.
@@ -185,7 +202,7 @@ void tlc_init() {
     Task_sleep(100);
 
     uint16_t fc0[3] = {
-                       FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1 | FC_0_0_PDC_EN__EN,
+                       FC_0_2_RESERVED | FC_0_2_MOD_SIZE__1,
                        FC_0_1_RESERVED | FC_0_1_SCAN_NUM__7 | FC_0_1_SUBP_NUM__64 | FC_0_1_FREQ_MOD__DISABLE_DIVIDER,
                        FC_0_0_RESERVED | FC_0_0_PDC_EN__EN
     };

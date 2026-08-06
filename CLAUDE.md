@@ -29,13 +29,10 @@ configs differ — `SingleMode_FlashOnly` is `RF_SINGLEMODE` at `-O4`, `MultiMod
 is `RF_MULTIMODE` + `USE_RCOSC` + `ICALL_EVENTS` with optimization off).
 
 The 2021 release binaries (calibration references for build changes) are inside the
-committed `uniflash_windows_*-2021-r1.zip` files at `user_files/images/*.hex`. The matching
-source is the `2021-rc1` tag (commit `39621f7`) — note the tag named `animloader-2021-r1`
-points at a different, earlier commit, and building from it will not reproduce either image.
-A same-source CLI rebuild of the main firmware matches the released hex in layout and size
-to within a few bytes; ~12% of bytes differ, in contiguous runs concentrated in linker
-trampolines and XDC constant tables rather than application code, attributed to xdctools
-3.62.00.08 standing in for the unavailable 3.62.01.15.
+committed `uniflash_windows_*-2021-r1.zip` files at `user_files/images/*.hex`; the
+`2021-rc1` git tag is the matching source. A same-source CLI rebuild differs from the
+released hex by ~12% of bytes (scattered single-byte ranges, same layout and size ±11 B),
+attributed to xdctools 3.62.00.08 vs the unavailable 3.62.01.15.
 
 The animloader and dongle projects still build only in CCS (CCS ~10.3–12.x; the animloader
 follows the same recipe as the main firmware if a Makefile is needed).

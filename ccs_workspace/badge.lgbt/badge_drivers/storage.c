@@ -379,6 +379,12 @@ void storage_init() {
             post_errors++;
             return;
         }
+    } else if (status != SPIFFSNVS_STATUS_SUCCESS) {
+        // Mount failed for a reason other than an unformatted/foreign
+        // filesystem, e.g. a hardware or NVS-layer failure.
+        post_status_spiffs = status;
+        post_errors++;
+        return;
     }
 
     if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", (uint8_t *) &led_anim_id, 0, sizeof(led_anim_id))) {

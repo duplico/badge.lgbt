@@ -19,3 +19,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+This MIT grant covers this repository's own code. It does not cover
+`ccs_workspace/badge.lgbt-dongle/ccs_base_files/`, which is third-party
+Texas Instruments code under its own BSD 3-Clause License — see `NOTICE`.

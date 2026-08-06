@@ -1,0 +1,56 @@
+Third-party licenses
+====================
+
+The repository's own code is MIT-licensed; see `LICENSE`. The files under
+
+    ccs_workspace/badge.lgbt-dongle/ccs_base_files/
+
+are not: they are Texas Instruments device-support files for the MSP430FR2433
+(register/intrinsic headers and the linker command file, under `include/`,
+plus the RTS math library and MSPMATHLIB variant, under `lib/5xx_6xx_FRxx/`),
+copied unmodified from a Code Composer Studio 12.7.1 install
+(`ccs_base/msp430/`) so the dongle firmware builds without a CCS install. They
+are licensed by Texas Instruments under the BSD 3-Clause License below, not
+MIT.
+
+`include/msp430fr2433.h`, `include/in430.h`, and `include/msp430fr2433.cmd`
+carry this notice as a header comment in the file itself. The two library
+files, `lib/5xx_6xx_FRxx/libmath.a` and
+`lib/5xx_6xx_FRxx/MSPMATHLIB_CCS_msp430_5xx_6xx_FRxx_large_code_small_data.lib`,
+are prebuilt binaries and carry no in-file notice; this file is their license
+record.
+
+SHA-256 checksums for all five files are in
+`ccs_workspace/badge.lgbt-dongle/tools/toolchain.lock`.
+
+------------------------------------------------------------------------------
+
+Copyright (c) 2013, 2020, Texas Instruments Incorporated
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+*  Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+*  Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+*  Neither the name of Texas Instruments Incorporated nor the names of
+   its contributors may be used to endorse or promote products derived
+   from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

@@ -37,6 +37,15 @@ To check `badge_protocol.py` is still in sync with the headers without writing a
 
  uv run generate-protocol --check
 
+`generate_protocol.py` has its own unit tests, covering the extraction regexes
+(`#define` parsing, struct-format derivation, and the `GeneratorError` cases --
+ambiguous/conditional `#define`s, non-`__packed` or array struct fields, etc.) against
+synthetic header snippets. They're regression armor for the generator itself, separate
+from `--check` against the real firmware headers. Run them with:
+
+ uv sync --group dev
+ uv run pytest
+
 badge-img: Generating a preview
 -------------------------------
 

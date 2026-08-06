@@ -37,6 +37,9 @@ EXAMPLE_BLE := $(SDK_ROOT)/examples/rtos/CC2640R2_LAUNCHXL/blestack/micro_ble_te
 # ---- Project root (this Makefile lives in ccs_workspace/badge.lgbt/) --------
 PROJ_ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
+# ---- Host tooling (scripts/, two levels up from this Makefile) --------------
+SCRIPTS_DIR := $(abspath $(PROJ_ROOT)../../scripts)
+
 # ---- Output -----------------------------------------------------------------
 BUILD_DIR := $(PROJ_ROOT)build
 TARGET    := badge.lgbt
@@ -233,7 +236,7 @@ LFLAGS_LIBS := \
     -llibc.a
 
 # ---- Targets ----------------------------------------------------------------
-.PHONY: all clean hex check-toolchain print-flags
+.PHONY: all clean hex check-toolchain check-protocol print-flags
 
 all: check-toolchain $(OUT)
 
@@ -270,6 +273,13 @@ check-toolchain:
 		echo ""; \
 		exit 1; \
 	fi
+
+# Not a dependency of all/hex: a plain firmware build shouldn't need uv
+# installed. Run this by hand (or from a pre-commit/CI hook once one exists)
+# after touching badge_drivers/ir.h, led.h, or storage.h, to confirm
+# scripts/badge_protocol.py wasn't left to drift out of step.
+check-protocol:
+	cd $(SCRIPTS_DIR) && uv run generate-protocol --check
 
 # configuro: regenerated whenever app_ble.cfg changes. compiler.opt is the
 # single stamp for the whole generated package (a multi-target rule would run

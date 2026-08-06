@@ -53,6 +53,17 @@ spiffs_file serial_fd;
 uint16_t serial_filepart = 0;
 uint64_t serial_peer_id;
 
+// When set, SERIAL_LL_STATE_C_FILE_RX(_DONE) ACKs each incoming APPFILE
+//  frame -- through the same validation a real receive uses -- without
+//  writing it anywhere. This lets a PUTFILE the receiver declined to store
+//  (because it already holds an equal-or-better copy) still consume the
+//  frame stream the sender is going to transmit regardless, since a sender
+//  in SERIAL_LL_STATE_C_FILE_TX can't distinguish "keep what you have" from
+//  "send the next frame" and always does the latter after any ACK. Cleared
+//  before a real receive so a leftover 1 from a prior discarded transfer
+//  can never suppress a write. See serial_rx_done()'s PUTFILE handler.
+uint8_t serial_file_discard = 0;
+
 Event_Handle ir_event_h;
 char serial_file_to_send[SPIFFS_OBJ_NAME_LEN+1] = {0,};
 
@@ -505,12 +516,6 @@ void serial_rx_done(ir_header_t *header) {
                 }
                 serial_file_header.id = local_copy.id;
 
-                // We know right now that we're just going to be switching to it,
-                //  but we want to train people that transferring files takes time.
-                // So, we will transition to a dummy state for quite a while, while
-                //  animating "recv".
-                serial_state_transition(SERIAL_LL_STATE_C_FILE_RX_DONE, IR_TIMEOUT_MS*2);
-
                 // Now, determine if we have any storage-related work to do.
                 if (local_copy.unlocked) {
                     // No need to write here; ours is already unlocked.
@@ -520,11 +525,18 @@ void serial_rx_done(ir_header_t *header) {
                     //   shouldn't re-lock it.)
                     serial_file_header.unlocked = 1;
 
-                    // So, we're done. The sender is sitting in
-                    //  SERIAL_LL_STATE_C_FILE_TX waiting on the ACK for the
-                    //  PUTFILE header; without it, it only has its own
-                    //  timeout to fall back on.
+                    // We're not writing anything, but the sender is sitting
+                    //  in SERIAL_LL_STATE_C_FILE_TX and, on any ACK to this
+                    //  header, always streams the APPFILE frames next -- it
+                    //  has no way to learn "keep what you have" from the ACK
+                    //  itself. ACK the header and discard-receive that
+                    //  stream (see serial_file_discard) instead of leaving
+                    //  the sender to time out after wasting the traffic.
+                    serial_filepart = 0;
+                    serial_file_discard = 1;
                     serial_send_ack();
+                    serial_state_transition(SERIAL_LL_STATE_C_FILE_RX_DONE, IR_TIMEOUT_MS);
+                    serial_peer_id = header->from_id;
                     break;
 
                 } else if (serial_file_header.unlocked) {
@@ -535,7 +547,16 @@ void serial_rx_done(ir_header_t *header) {
                     storage_cache_anim_name(local_copy.id, serial_file_header.name);
                 } else {
                     // Local copy is locked. Remote copy is locked.
-                    // Nothing to save.
+                    // Nothing to save. The local copy already matches what
+                    //  the sender is offering, so this is a successful
+                    //  outcome, not a failure; ACK and discard-receive the
+                    //  frame stream for the same reason as the
+                    //  "already unlocked" case above.
+                    serial_filepart = 0;
+                    serial_file_discard = 1;
+                    serial_send_ack();
+                    serial_state_transition(SERIAL_LL_STATE_C_FILE_RX_DONE, IR_TIMEOUT_MS);
+                    serial_peer_id = header->from_id;
                     break;
                 }
             } else {
@@ -560,14 +581,57 @@ void serial_rx_done(ir_header_t *header) {
             }
             if (serial_fd >= 0) {
                 // The open worked properly...
-                SPIFFS_write(&storage_fs, serial_fd, &serial_file_header, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
+                s32_t header_write_result = SPIFFS_write(&storage_fs, serial_fd, &serial_file_header, STORAGE_ANIM_HEADER_SIZE);
                 if (header_only) {
                     SPIFFS_close(&storage_fs, serial_fd);
-                } else {
+                    // Only ack once the header write (and close) is behind
+                    //  us, so a failed write can't produce a false ACK; the
+                    //  sender is sitting in SERIAL_LL_STATE_C_FILE_TX
+                    //  waiting on the reply to this PUTFILE header either
+                    //  way.
+                    if (header_write_result == STORAGE_ANIM_HEADER_SIZE) {
+                        // The header write is the only storage mutation this
+                        //  branch makes; it's already behind us. Same as the
+                        //  other two decline branches, ACK and
+                        //  discard-receive the APPFILE stream the sender is
+                        //  about to send rather than writing it anywhere.
+                        serial_filepart = 0;
+                        serial_file_discard = 1;
+                        serial_send_ack();
+                        serial_state_transition(SERIAL_LL_STATE_C_FILE_RX_DONE, IR_TIMEOUT_MS);
+                        serial_peer_id = header->from_id;
+                    } else {
+                        // Nothing to receive: the sender only ever streams
+                        //  APPFILE frames in response to an ACK, and this
+                        //  path never sends one, so it can safely return to
+                        //  idle instead of waiting on frames that aren't
+                        //  coming.
+                        serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                        led_set_anim_direct(led_anim_idle, 1);
+                        serial_send_nack();
+                    }
+                } else if (header_write_result == STORAGE_ANIM_HEADER_SIZE) {
                     serial_filepart = 0;
+                    serial_file_discard = 0;
                     serial_send_ack();
                     serial_state_transition(SERIAL_LL_STATE_C_FILE_RX, IR_TIMEOUT_MS);
                     serial_peer_id = header->from_id;
+                } else {
+                    // The header write came up short. Same discipline as the
+                    //  header_only branch above: never ACK -- and so never
+                    //  let the sender start streaming APPFILE frames -- on
+                    //  the strength of a write that didn't actually land,
+                    //  or the frames would complete into a file whose header
+                    //  is truncated/garbage. This branch (unlike header_only)
+                    //  just created or truncated the file, so there's a
+                    //  partial file on flash to clean up; it was never
+                    //  cached (storage_cache_anim_name() only runs on a
+                    //  completed transfer), so there's nothing to uncache.
+                    SPIFFS_close(&storage_fs, serial_fd);
+                    storage_delete_anim(serial_file_header.name);
+                    serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                    led_set_anim_direct(led_anim_idle, 1);
+                    serial_send_nack();
                 }
             } else {
                 // There's nowhere to put the animation. The receive display
@@ -583,16 +647,28 @@ void serial_rx_done(ir_header_t *header) {
         break;
 
     case SERIAL_LL_STATE_C_FILE_RX:
+    case SERIAL_LL_STATE_C_FILE_RX_DONE:
+        // A real receive (C_FILE_RX) and a discard receive (C_FILE_RX_DONE,
+        //  entered only with serial_file_discard set -- see the PUTFILE
+        //  handler above) share this case: both must apply the exact same
+        //  per-frame handling, since the sender can't tell the difference
+        //  and streams APPFILE frames identically either way. The only
+        //  difference is whether a valid frame gets written anywhere.
         if (header->opcode == SERIAL_OPCODE_APPFILE) {
-            if (SPIFFS_write(&storage_fs, serial_fd, serial_file_payload, header->payload_len) == header->payload_len) {
+            uint8_t frame_ok = serial_file_discard ||
+                (SPIFFS_write(&storage_fs, serial_fd, serial_file_payload, header->payload_len) == header->payload_len);
+
+            if (frame_ok) {
                 serial_send_ack();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                 serial_filepart++;
 
                 if (serial_filepart >= serial_file_header.direct_anim.anim_len) {
-                    // The file is finished!
-                    storage_next_anim_id++;
-                    SPIFFS_close(&storage_fs, serial_fd);
+                    // The transfer (real or discarded) is finished.
+                    if (!serial_file_discard) {
+                        storage_next_anim_id++;
+                        SPIFFS_close(&storage_fs, serial_fd);
+                    }
                     led_set_anim(serial_file_header.name, 1);
 
                     // led_set_anim() just wrote led_anim_ambient; snapshot
@@ -603,7 +679,11 @@ void serial_rx_done(ir_header_t *header) {
                     Task_restore(task_key);
 
                     led_anim_id = ambient_snapshot.id;
-                    if (serial_file_header.unlocked) {
+                    if (!serial_file_discard && serial_file_header.unlocked) {
+                        // A discard receive's local copy is already cached
+                        //  (or doesn't need to be -- see the PUTFILE
+                        //  handler's three decline branches); only a real,
+                        //  newly-received file needs caching here.
                         storage_cache_anim_name(ambient_snapshot.id, serial_file_header.name);
                     }
                     serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
@@ -637,8 +717,6 @@ void serial_rx_done(ir_header_t *header) {
 }
 
 void serial_timeout() {
-    UInt task_key;
-
     switch(serial_ll_state) {
     case SERIAL_LL_STATE_C_FILE_TX:
         // Timeout, no ACK; return to idle.
@@ -646,25 +724,32 @@ void serial_timeout() {
         led_set_anim_direct(led_anim_idle, 1); // TODO: failure anim?
         break;
     case SERIAL_LL_STATE_C_FILE_RX:
+    case SERIAL_LL_STATE_C_FILE_RX_DONE:
+        // Mid-stream silence (per-frame timeout) or the overall transaction
+        //  deadline, in either a real or a discard receive: a genuine
+        //  failure either way, so fall back to the idle animation exactly
+        //  like a real receive does, never to the file being received or
+        //  discarded. A discard receive can complete only by reaching
+        //  serial_file_header.direct_anim.anim_len frames in
+        //  serial_rx_done(), which returns straight to IDLE there with the
+        //  received/kept animation already showing; this path is reached
+        //  only when that never happened.
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
         led_set_anim_direct(led_anim_idle, 1); // TODO: failure anim?
-        SPIFFS_close(&storage_fs, serial_fd);
-        // Only a transfer that created or truncated the file reaches this
-        //  state, so the frames on flash are this transfer's and there is no
-        //  older copy underneath them. Nothing else will ever finish the
-        //  file, so it goes away with the transfer; otherwise a peer that
-        //  opens transfers and falls silent fills the partition.
-        storage_delete_anim(serial_file_header.name);
-        break;
-    case SERIAL_LL_STATE_C_FILE_RX_DONE:
-        serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
-        led_set_anim(serial_file_header.name, 1);
-
-        // led_set_anim() just wrote led_anim_ambient; snapshot the fresh
-        //  value under the gate (see led_load_frame() in led.c).
-        task_key = Task_disable();
-        led_anim_id = led_anim_ambient.id;
-        Task_restore(task_key);
+        if (!serial_file_discard) {
+            SPIFFS_close(&storage_fs, serial_fd);
+            // Only a transfer that created or truncated the file reaches
+            //  this state, so the frames on flash are this transfer's and
+            //  there is no older copy underneath them. Nothing else will
+            //  ever finish the file, so it goes away with the transfer;
+            //  otherwise a peer that opens transfers and falls silent fills
+            //  the partition. A discard receive never opened serial_fd for
+            //  frame data (the header-only branch already closed its own fd
+            //  before ACKing), and its local file is a pre-existing copy
+            //  the sender was declined, not this transfer's -- there is
+            //  nothing to close or delete.
+            storage_delete_anim(serial_file_header.name);
+        }
         break;
     default:
         serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);

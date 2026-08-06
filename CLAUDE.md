@@ -34,8 +34,9 @@ committed `uniflash_windows_*-2021-r1.zip` files at `user_files/images/*.hex`; t
 released hex by ~12% of bytes (scattered single-byte ranges, same layout and size ±11 B),
 attributed to xdctools 3.62.00.08 vs the unavailable 3.62.01.15.
 
-The animloader and dongle projects still build only in CCS (CCS ~10.3–12.x; the animloader
-follows the same recipe as the main firmware if a Makefile is needed).
+The animloader and the dongle have their own Makefiles and build the same way; the dongle's
+uses the MSP430 CGT and emits TI-TXT rather than Intel-Hex. CCS (~10.3–12.x) still opens all
+three projects, and its settings remain the reference the Makefiles are derived from.
 
 Flashing release binaries does not require CCS: `uniflash_windows_badge-2021-r1/` and
 `uniflash_windows_animloader-2021-r1/` are standalone Windows UniFlash CLI packages

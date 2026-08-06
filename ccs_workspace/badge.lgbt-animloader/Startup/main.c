@@ -42,26 +42,80 @@ uint16_t badge_anim_id = 0x00;
 extern const led_anim_t *anim_list[];
 extern const uint16_t anim_count;
 #define ALL_UNLOCKED_COUNT 4
+/// Seeding passes to try. Each one wipes the filesystem before writing.
+#define STORAGE_SEED_ATTEMPTS 2
 
 void ui_task_fn(UArg a0, UArg a1) {
     storage_init();
+
+    if (post_errors) {
+        // The filesystem would neither mount nor format. Leave the generation
+        //  unwritten so a later attempt, on this boot's successor or on a
+        //  different programmer, starts from the top.
+        while (1) {
+            Task_yield();
+        }
+    }
 
     uble_getPublicAddr((uint8_t *) &badge_id);
 
     uint16_t remaining_count = anim_count - ALL_UNLOCKED_COUNT;
     uint16_t unlocked_for_me = (badge_id % remaining_count) + ALL_UNLOCKED_COUNT;
 
+    // A store that already holds every animation is the whole job, so leave it
+    //  alone. Anything short of that is wiped and rewritten rather than
+    //  patched: ids come from a counter that starts at zero, so writing single
+    //  files back into a populated store would hand out ids the survivors
+    //  already carry, and two animations sharing an id shadow each other.
+    uint8_t all_present = 1;
     for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
         if (!storage_anim_saved_and_valid(anim_list[anim_index]->name)) {
-            volatile uint8_t unlocked = 0;
+            all_present = 0;
+            break;
+        }
+    }
+
+    for (uint8_t attempt=0; !all_present && attempt<STORAGE_SEED_ATTEMPTS; attempt++) {
+        if (!storage_reformat()) {
+            // Nothing more to try if the flash will not even take a format.
+            break;
+        }
+
+        uint8_t wrote_all = 1;
+        for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
+            uint8_t unlocked = 0;
             if (anim_index < ALL_UNLOCKED_COUNT) {
                 unlocked = 1;
             }
             if (anim_index == unlocked_for_me) {
                 unlocked = 1;
             }
-            storage_save_direct_anim(anim_list[anim_index]->name, (led_anim_direct_t *) &anim_list[anim_index]->direct_anim, unlocked);
+            if (!storage_save_direct_anim(anim_list[anim_index]->name,
+                                          (led_anim_direct_t *) &anim_list[anim_index]->direct_anim,
+                                          unlocked)) {
+                wrote_all = 0;
+                break;
+            }
         }
+
+        if (!wrote_all) {
+            continue;
+        }
+
+        // Read back every animation before claiming the generation: a write
+        //  that failed, or landed on flash that will not hold it, has to send
+        //  us around again rather than leaving a badge that looks seeded.
+        all_present = 1;
+        for (uint16_t anim_index=0; anim_index<anim_count; anim_index++) {
+            if (!storage_anim_saved_and_valid(anim_list[anim_index]->name)) {
+                all_present = 0;
+                break;
+            }
+        }
+    }
+
+    if (all_present) {
+        storage_mark_initialized();
     }
 
     while (1) {

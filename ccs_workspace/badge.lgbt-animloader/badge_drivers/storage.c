@@ -26,7 +26,12 @@ SPIFFSNVS_Data   spiffsnvs;
 
 uint16_t storage_next_anim_id = 0;
 
-#define STORAGE_FLAG 0x0009
+/// Generation of the animation set written to flash. A badge whose
+/// /.initialized does not carry this value has its filesystem reformatted and
+/// reseeded once, then stops. Raise it to reseed every badge again -- after
+/// changing the animation set, or to repair damage the per-file size checks
+/// cannot see, such as corrupted file contents or a full filesystem.
+#define STORAGE_FLAG 0x000A
 
 uint16_t storage_flag = 0x0000;
 uint16_t storage_flag_expected = STORAGE_FLAG;
@@ -93,12 +98,12 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
     }
 
     status = SPIFFS_read(&storage_fs, fd, (uint8_t *) &read_anim, sizeof(led_anim_t));
-
-    if (status < 0) {
-
-    }
-
     SPIFFS_close(&storage_fs, fd);
+
+    if (status != (int32_t) sizeof(led_anim_t)) {
+        // Without a whole header there is no length to check the size against.
+        return 0;
+    }
 
     return stat.size == (STORAGE_ANIM_HEADER_SIZE + read_anim.direct_anim.anim_len * STORAGE_ANIM_FRAME_SIZE);
 }
@@ -125,7 +130,7 @@ void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
     SPIFFS_close(&storage_fs, fd);
 }
 
-void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked) {
+uint8_t storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked) {
     spiffs_file fd;
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
     sprintf(fname, "/a/%s", anim_name);
@@ -140,18 +145,51 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     storage_next_anim_id++;
 
     fd = SPIFFS_open(&storage_fs, fname, SPIFFS_O_CREAT | SPIFFS_O_WRONLY, 0);
-    if (fd >= 0) {
-        // The open worked properly.
-        // TODO: check for write errors.
-        SPIFFS_write(&storage_fs, fd, &write_anim, sizeof(led_anim_t));
-        for (uint16_t i=0; i<write_anim.direct_anim.anim_len; i++) {
-            SPIFFS_write(&storage_fs, fd, anim->anim_frames[i], STORAGE_ANIM_FRAME_SIZE);
-        }
-        SPIFFS_close(&storage_fs, fd);
-    } else {
+    if (fd < 0) {
+        return 0;
     }
 
-    // TODO: if failed, delete or something?
+    uint8_t ok = (SPIFFS_write(&storage_fs, fd, &write_anim, STORAGE_ANIM_HEADER_SIZE)
+                  == STORAGE_ANIM_HEADER_SIZE);
+    for (uint16_t i=0; ok && i<write_anim.direct_anim.anim_len; i++) {
+        ok = (SPIFFS_write(&storage_fs, fd, anim->anim_frames[i], STORAGE_ANIM_FRAME_SIZE)
+              == STORAGE_ANIM_FRAME_SIZE);
+    }
+    SPIFFS_close(&storage_fs, fd);
+
+    return ok;
+}
+
+/// Wipe the filesystem and mount it empty.
+/**
+ ** Recovery path for when the storage flag and the per-file size checks both
+ ** accept the flash contents while the data underneath is unusable.
+ */
+uint8_t storage_reformat() {
+    SPIFFS_unmount(&storage_fs);
+
+    if (SPIFFS_format(&storage_fs) != SPIFFSNVS_STATUS_SUCCESS) {
+        return 0;
+    }
+    if (SPIFFS_mount(&storage_fs, &fsConfig, spiffsWorkBuffer,
+                     spiffsFileDescriptorCache, sizeof(spiffsFileDescriptorCache),
+                     spiffsReadWriteCache, sizeof(spiffsReadWriteCache), NULL)
+            != SPIFFSNVS_STATUS_SUCCESS) {
+        return 0;
+    }
+
+    storage_next_anim_id = 0;
+    return 1;
+}
+
+/// Record that the animation set is completely written at this generation.
+/**
+ ** Called once the seeding loop has finished, so an interrupted run leaves the
+ ** generation absent and the next boot reformats and starts over.
+ */
+void storage_mark_initialized() {
+    storage_overwrite_file("/.initialized", (uint8_t *) &storage_flag_expected,
+                           sizeof(storage_flag_expected));
 }
 
 void storage_init() {
@@ -168,14 +206,11 @@ void storage_init() {
         spiffsReadWriteCache, sizeof(spiffsReadWriteCache), NULL);
 
     if (status == SPIFFSNVS_STATUS_SUCCESS) {
-        if (!storage_read_file("/.initialized", &storage_flag, 0, sizeof(storage_flag)) || storage_flag != storage_flag_expected) {
+        if (!storage_read_file("/.initialized", (uint8_t *) &storage_flag, 0, sizeof(storage_flag))
+                || storage_flag != storage_flag_expected) {
             status = SPIFFS_ERR_NOT_A_FS; // If our magic value isn't present, we need to reformat _anyway_.
         }
     }
-
-    // TODO: Set a flag for this.
-    // Format no matter what, clearing all the data and restarting from scratch.
-    status = SPIFFS_ERR_NOT_A_FS;
 
     if (status == SPIFFS_ERR_NOT_A_FS) {
 
@@ -198,7 +233,12 @@ void storage_init() {
             post_errors++;
             return;
         }
-        storage_overwrite_file("/.initialized", &storage_flag_expected, sizeof(storage_flag_expected)); // Write our magic value.
+    } else if (status != SPIFFSNVS_STATUS_SUCCESS) {
+        // Mount failed for a reason other than an unformatted/foreign
+        // filesystem, e.g. a hardware or NVS-layer failure.
+        post_status_spiffs = status;
+        post_errors++;
+        return;
     }
 
     post_status_spiffs = 1;

@@ -520,7 +520,11 @@ void serial_rx_done(ir_header_t *header) {
                     //   shouldn't re-lock it.)
                     serial_file_header.unlocked = 1;
 
-                    // So, we're done.
+                    // So, we're done. The sender is sitting in
+                    //  SERIAL_LL_STATE_C_FILE_TX waiting on the ACK for the
+                    //  PUTFILE header; without it, it only has its own
+                    //  timeout to fall back on.
+                    serial_send_ack();
                     break;
 
                 } else if (serial_file_header.unlocked) {

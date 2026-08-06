@@ -56,6 +56,22 @@ void storage_uncache_anim_name(uint16_t id, const char *name) {
     memset(storage_anim_id_cache[id], 0x00, ANIM_NAME_MAX_LEN);
 }
 
+/// Drop an animation name from the ID cache, searching by name instead of ID.
+/**
+ ** storage_anim_id_cache is indexed by animation ID, but a caller doesn't
+ ** always have a trustworthy ID on hand (e.g. a file whose header no longer
+ ** parses). STORAGE_ANIMS_TO_CACHE is small (60 slots) and this only runs on
+ ** file deletion, so a linear scan is cheap. Clears every matching slot,
+ ** though in practice a name should only ever occupy one.
+ */
+void storage_uncache_anim_name_by_name(const char *name) {
+    for (uint16_t id = 0; id < STORAGE_ANIMS_TO_CACHE; id++) {
+        if (!strncmp(storage_anim_id_cache[id], name, ANIM_NAME_MAX_LEN)) {
+            memset(storage_anim_id_cache[id], 0x00, ANIM_NAME_MAX_LEN);
+        }
+    }
+}
+
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -188,8 +204,6 @@ uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*
  */
 uint8_t storage_delete_anim(char *anim_name) {
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
-    led_anim_t doomed;
-    uint8_t have_header;
 
     uint8_t null_termed = 0;
     for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
@@ -209,16 +223,14 @@ uint8_t storage_delete_anim(char *anim_name) {
         return 0;
     }
 
-    // The ID lives in the file, so read it before the file goes away.
-    have_header = storage_load_anim(anim_name, &doomed);
-
     if (SPIFFS_remove(&storage_fs, fname) != SPIFFS_OK) {
         return 0;
     }
 
-    if (have_header) {
-        storage_uncache_anim_name(doomed.id, anim_name);
-    }
+    // Uncache by name rather than by a parsed header's ID: a truncated or
+    //  corrupt header may not read back at all, but the file is gone either
+    //  way, so any cache slot naming it should go too.
+    storage_uncache_anim_name_by_name(anim_name);
 
     return 1;
 }
@@ -367,6 +379,12 @@ void storage_init() {
             post_errors++;
             return;
         }
+    } else if (status != SPIFFSNVS_STATUS_SUCCESS) {
+        // Mount failed for a reason other than an unformatted/foreign
+        // filesystem, e.g. a hardware or NVS-layer failure.
+        post_status_spiffs = status;
+        post_errors++;
+        return;
     }
 
     if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", (uint8_t *) &led_anim_id, 0, sizeof(led_anim_id))) {

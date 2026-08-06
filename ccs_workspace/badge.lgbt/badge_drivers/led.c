@@ -124,7 +124,16 @@ static void led_arm_frame_clock(uint16_t delay_ms) {
     Clock_start(led_frame_clock_h);
 }
 
+/// Consecutive storage_load_frame() failures tolerated before giving up on
+///  the filesystem for this animation and falling back to a compiled-in one.
+/// 8 is cheap insurance against a one-off SPIFFS hiccup (a GC pass, a single
+///  bad read) while still bounding the worst case -- LED_FRAME_TICKS_MIN's
+///  10 ms floor -- to under a second before the badge shows something is
+///  visibly wrong instead of freezing silently forever.
+#define LED_LOAD_FRAME_FAIL_MAX 8
+
 void led_load_frame() {
+    static uint8_t load_fail_count = 0;
     rgbcolor_t scratch[7][15];
     rgbcolor_t (*src)[15];
     led_anim_t anim;
@@ -152,6 +161,17 @@ void led_load_frame() {
     } else {
         // If anim_frames is NULL, then we need to reference the SPI flash.
         if (!storage_load_frame(anim.name, frame, scratch)) {
+            if (++load_fail_count >= LED_LOAD_FRAME_FAIL_MAX) {
+                // The filesystem looks dead, not just slow: stop retrying it
+                //  and fall back to the compiled-in startup animation -- the
+                //  same no-flash-needed animation led_init() falls back to
+                //  when POST finds the flash already broken at boot.
+                //  Anything visibly wrong beats a frozen display with no
+                //  signal at all.
+                load_fail_count = 0;
+                led_set_anim_direct(startup_anim, 1);
+                return;
+            }
             // Nothing came back, so scratch still holds stack. Hold the frame
             //  that's already up and come back for the next one; the panel
             //  pauses instead of painting noise, and a read that fails once
@@ -159,6 +179,7 @@ void led_load_frame() {
             led_arm_frame_clock(anim.direct_anim.anim_frame_delay_ms);
             return;
         }
+        load_fail_count = 0;
         src = scratch;
     }
 

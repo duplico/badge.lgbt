@@ -124,7 +124,27 @@ static void led_arm_frame_clock(uint16_t delay_ms) {
     Clock_start(led_frame_clock_h);
 }
 
+/// Consecutive storage_load_frame() failures tolerated before giving up on
+///  the filesystem for this animation and falling back to a compiled-in one.
+/// 8 is cheap insurance against a one-off SPIFFS hiccup (a GC pass, a single
+///  bad read) while each failed read still costs a frame, so the real bound
+///  on how long that takes to show is
+///  LED_LOAD_FRAME_FAIL_MAX * max(anim_frame_delay_ms, 10 ms) -- e.g. about
+///  1.2 s for a 150 ms-per-frame animation, longer for slower ones -- not a
+///  flat "under a second".
+#define LED_LOAD_FRAME_FAIL_MAX 8
+
 void led_load_frame() {
+    static uint8_t load_fail_count = 0;
+    // Name of the animation load_fail_count is currently counting failures
+    //  for. Compared against the gated snapshot below so a switch to a
+    //  different animation starts that animation's own count at zero
+    //  instead of inheriting failures the previous animation racked up.
+    // This does not address the complementary direction -- a single
+    //  animation whose reads flap between healthy and dead resetting the
+    //  count on every success and never tripping the fallback -- which is
+    //  tracked separately as https://github.com/duplico/badge.lgbt/issues/143.
+    static char load_fail_anim_name[ANIM_NAME_MAX_LEN] = {0};
     rgbcolor_t scratch[7][15];
     rgbcolor_t (*src)[15];
     led_anim_t anim;
@@ -134,10 +154,25 @@ void led_load_frame() {
     // The UI and IR tasks write these while the TLC task reads them, and a
     // led_anim_t copy is not atomic. Every writer holds the same gate, so a
     // gated copy never sees a torn descriptor or a stale frame index.
+    //
+    // led_anim_ambient and led_curr_ambient carry the same non-atomic-copy
+    // hazard and are gated the same way at every access, even though only
+    // the UI and IR tasks (never the higher-priority TLC task) touch them
+    // today: their only other protection is those two tasks sharing a
+    // priority with time-slicing off (see the Task_construct comment in
+    // ir.c), and gating removes the dependency on that holding forever.
     task_key = Task_disable();
     anim = led_anim_curr;
     frame = led_anim_frame;
     Task_restore(task_key);
+
+    if (strncmp(anim.name, load_fail_anim_name, ANIM_NAME_MAX_LEN)) {
+        // The current animation isn't the one load_fail_count was counting
+        //  for -- it changed since the last frame, so start its count at
+        //  zero rather than carrying over another animation's failures.
+        load_fail_count = 0;
+        strncpy(load_fail_anim_name, anim.name, ANIM_NAME_MAX_LEN);
+    }
 
     if (anim.direct_anim.anim_frames) {
         // If anim_frames is a valid pointer, this is a direct animation.
@@ -145,6 +180,17 @@ void led_load_frame() {
     } else {
         // If anim_frames is NULL, then we need to reference the SPI flash.
         if (!storage_load_frame(anim.name, frame, scratch)) {
+            if (++load_fail_count >= LED_LOAD_FRAME_FAIL_MAX) {
+                // The filesystem looks dead, not just slow: stop retrying it
+                //  and fall back to the compiled-in startup animation -- the
+                //  same no-flash-needed animation led_init() falls back to
+                //  when POST finds the flash already broken at boot.
+                //  Anything visibly wrong beats a frozen display with no
+                //  signal at all.
+                load_fail_count = 0;
+                led_set_anim_direct(startup_anim, 1);
+                return;
+            }
             // Nothing came back, so scratch still holds stack. Hold the frame
             //  that's already up and come back for the next one; the panel
             //  pauses instead of painting noise, and a read that fails once
@@ -152,6 +198,7 @@ void led_load_frame() {
             led_arm_frame_clock(anim.direct_anim.anim_frame_delay_ms);
             return;
         }
+        load_fail_count = 0;
         src = scratch;
     }
 
@@ -188,6 +235,7 @@ void led_set_anim(char *name, uint8_t ambient) {
 }
 
 void led_next_frame() {
+    led_anim_t ambient_snapshot;
     UInt task_key = Task_disable();
     led_anim_frame++;
     if (led_anim_frame >= led_anim_curr.direct_anim.anim_len) {
@@ -197,10 +245,14 @@ void led_next_frame() {
         //  the instant it takes to hand over to led_set_anim_direct.
         led_anim_frame = 0;
         if (!led_curr_ambient) {
+            // Snapshot led_anim_ambient before the gate drops too: it's the
+            //  same shared, non-atomically-copied descriptor as led_anim_curr,
+            //  gated for the same reason (see the gate note on led_load_frame).
+            ambient_snapshot = led_anim_ambient;
             Task_restore(task_key);
             // This posts TLC_EVENT_NEXTFRAME once the descriptor and the frame
             //  index agree, so there is nothing left to post here.
-            led_set_anim_direct(led_anim_ambient, TRUE);
+            led_set_anim_direct(ambient_snapshot, TRUE);
             return;
         }
     }
@@ -212,16 +264,32 @@ void led_next_frame() {
 /// Select our next available unlocked animation, and switch to it.
 void led_next_anim() {
     char next_anim_name[ANIM_NAME_MAX_LEN] = {0x00,};
+    led_anim_t ambient_snapshot;
+    UInt task_key;
+
+    // Gated for the same reason as every other led_anim_ambient access: see
+    //  the gate note on led_load_frame.
+    task_key = Task_disable();
+    ambient_snapshot = led_anim_ambient;
+    Task_restore(task_key);
+
     // If led_anim_last_chosen isn't the current animation,
     //  just switch back to it.
-    if (led_anim_last_chosen.id != led_anim_ambient.id) {
+    if (led_anim_last_chosen.id != ambient_snapshot.id) {
         led_set_anim(led_anim_last_chosen.name, 1);
         led_anim_id = led_anim_last_chosen.id;
     } else {
         storage_get_next_anim_name(next_anim_name);
         led_set_anim(next_anim_name, 1);
-        led_anim_id = led_anim_ambient.id;
-        led_anim_last_chosen = led_anim_ambient;
+
+        // led_set_anim() just wrote led_anim_ambient; re-snapshot for the
+        //  fresh value under the same gate.
+        task_key = Task_disable();
+        ambient_snapshot = led_anim_ambient;
+        Task_restore(task_key);
+
+        led_anim_id = ambient_snapshot.id;
+        led_anim_last_chosen = ambient_snapshot;
     }
 }
 

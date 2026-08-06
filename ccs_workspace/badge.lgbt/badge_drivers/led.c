@@ -127,13 +127,24 @@ static void led_arm_frame_clock(uint16_t delay_ms) {
 /// Consecutive storage_load_frame() failures tolerated before giving up on
 ///  the filesystem for this animation and falling back to a compiled-in one.
 /// 8 is cheap insurance against a one-off SPIFFS hiccup (a GC pass, a single
-///  bad read) while still bounding the worst case -- LED_FRAME_TICKS_MIN's
-///  10 ms floor -- to under a second before the badge shows something is
-///  visibly wrong instead of freezing silently forever.
+///  bad read) while each failed read still costs a frame, so the real bound
+///  on how long that takes to show is
+///  LED_LOAD_FRAME_FAIL_MAX * max(anim_frame_delay_ms, 10 ms) -- e.g. about
+///  1.2 s for a 150 ms-per-frame animation, longer for slower ones -- not a
+///  flat "under a second".
 #define LED_LOAD_FRAME_FAIL_MAX 8
 
 void led_load_frame() {
     static uint8_t load_fail_count = 0;
+    // Name of the animation load_fail_count is currently counting failures
+    //  for. Compared against the gated snapshot below so a switch to a
+    //  different animation starts that animation's own count at zero
+    //  instead of inheriting failures the previous animation racked up.
+    // This does not address the complementary direction -- a single
+    //  animation whose reads flap between healthy and dead resetting the
+    //  count on every success and never tripping the fallback -- which is
+    //  tracked separately as https://github.com/duplico/badge.lgbt/issues/143.
+    static char load_fail_anim_name[ANIM_NAME_MAX_LEN] = {0};
     rgbcolor_t scratch[7][15];
     rgbcolor_t (*src)[15];
     led_anim_t anim;
@@ -154,6 +165,14 @@ void led_load_frame() {
     anim = led_anim_curr;
     frame = led_anim_frame;
     Task_restore(task_key);
+
+    if (strncmp(anim.name, load_fail_anim_name, ANIM_NAME_MAX_LEN)) {
+        // The current animation isn't the one load_fail_count was counting
+        //  for -- it changed since the last frame, so start its count at
+        //  zero rather than carrying over another animation's failures.
+        load_fail_count = 0;
+        strncpy(load_fail_anim_name, anim.name, ANIM_NAME_MAX_LEN);
+    }
 
     if (anim.direct_anim.anim_frames) {
         // If anim_frames is a valid pointer, this is a direct animation.

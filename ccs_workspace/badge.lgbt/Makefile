@@ -278,7 +278,20 @@ check-toolchain:
 # installed. Run this by hand (or from a pre-commit/CI hook once one exists)
 # after touching badge_drivers/ir.h, led.h, or storage.h, to confirm
 # scripts/badge_protocol.py wasn't left to drift out of step.
+#
+# Unlike all/hex, this target is only ever run explicitly by someone who
+# wants the check, so a missing uv fails outright (same philosophy as
+# check-toolchain) rather than skipping-with-a-warning, which would let a
+# real drift silently pass as "checked".
 check-protocol:
+	@if ! command -v uv >/dev/null 2>&1; then \
+		echo ""; \
+		echo "ERROR: uv not found; needed to run scripts/generate_protocol.py."; \
+		echo "Install uv (https://docs.astral.sh/uv/), e.g.:"; \
+		echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"; \
+		echo ""; \
+		exit 1; \
+	fi
 	cd $(SCRIPTS_DIR) && uv run generate-protocol --check
 
 # configuro: regenerated whenever app_ble.cfg changes. compiler.opt is the

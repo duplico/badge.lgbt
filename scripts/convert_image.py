@@ -5,18 +5,14 @@ from itertools import zip_longest
 import click
 from PIL import Image, ImageFilter, ImageEnhance
 
-# The badge screen. These also fix the on-wire frame size and the C array
-#  shapes emitted for the firmware; they match rgbcolor_t and the 15x7 matrix
-#  in badge_drivers/led.h and STORAGE_ANIM_FRAME_SIZE in storage.h.
-SCREEN_WIDTH = 15
-SCREEN_HEIGHT = 7
-BYTES_PER_PIXEL = 3
-SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
-FRAME_BYTES = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL
+from badge_protocol import ANIM_NAME_MAX_LEN, FRAME_BYTES, RGBCOLOR_BYTES, SCREEN_HEIGHT, SCREEN_WIDTH
 
-# ANIM_NAME_MAX_LEN in badge_drivers/led.h: the firmware's name buffer,
-#  including the null terminator.
-ANIM_NAME_MAX_LEN = 16
+# The badge screen. These fix the on-wire frame size and the C array shapes
+#  emitted for the firmware; generated from rgbcolor_t and the 15x7 matrix in
+#  badge_drivers/led.h and badge_drivers/tlc6983.h (see badge_protocol.py).
+BYTES_PER_PIXEL = RGBCOLOR_BYTES
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
+
 ANIM_NAME_MAX_CHARS = ANIM_NAME_MAX_LEN - 1
 
 PREVIEW_SCALE = 10

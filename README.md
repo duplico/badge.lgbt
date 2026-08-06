@@ -56,7 +56,10 @@ the reference the Makefiles were derived from, but nothing here needs it.
 
 **`docs/flashing.md`**. Briefly: the badge and the animloader go on with an
 XDS110 debug probe through UniFlash/DSLite, animloader first; the dongle goes on
-with MSP430Flasher over Spy-Bi-Wire.
+with MSP430Flasher over Spy-Bi-Wire. Flashable images ship as
+[tagged releases](https://github.com/duplico/badge.lgbt/releases), each a
+zip of the three images plus a thin flasher wrapper per target
+(**`docs/releasing.md`** covers building and cutting one).
 
 ## Things worth knowing before you change something
 

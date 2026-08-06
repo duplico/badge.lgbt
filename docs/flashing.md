@@ -137,6 +137,13 @@ CCS 12.7.1's own DSLite
 with this project's ccxml, same invocation rules — that's why release
 bundles don't carry their own DSLite: an installed CCS already supplies it.
 
+Note: the old, no-longer-committed `uniflash_windows_badge-2021-r1/dslite.bat`
+(findable at commit `77bd87c`) invoked DSLite with two extra flags this
+project's `release/assets/flash-dslite.sh` doesn't pass: `-l
+user_files/settings/generated.ufsettings` and `-s
+VerifyAfterProgramLoad="No verification"`. Both invocations are proven
+working as documented above; they just aren't byte-identical.
+
 ## Alternative: usbipd-win + native Linux tools in WSL
 
 The XDS110 can be handed to WSL directly (Windows side, admin PowerShell):

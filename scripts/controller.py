@@ -5,26 +5,40 @@ import click
 import serial # pyserial
 from PIL import Image
 
+from badge_protocol import (CRC_SEED, HEADER_FIELDS, HEADER_FMT, MIN_FRAME_DELAY_MS,
+                            SERIAL_CAP_DELETE, SERIAL_CONTROLLER_ID, SERIAL_OPCODE_ACK,
+                            SERIAL_OPCODE_APPFILE, SERIAL_OPCODE_DELFILE, SERIAL_OPCODE_GETFILE,
+                            SERIAL_OPCODE_HELO, SERIAL_OPCODE_NACK, SERIAL_OPCODE_PUTFILE,
+                            SERIAL_OPCODE_SETNAME, SERIAL_OPCODE_VERSION, SERIAL_PROTO_VERSION,
+                            STORAGE_MAX_ANIM_FRAMES, VERSION_FIELDS, VERSION_FMT)
 from convert_image import (ANIM_NAME_MAX_CHARS, ANIM_NAME_MAX_LEN, FRAME_BYTES,
                            SCREEN_SIZE, BadgeImage)
 
-PROTO_VERSION = 0x0001
+PROTO_VERSION = SERIAL_PROTO_VERSION
 
 # The high byte of version_header is the sender's feature level. Badges mask
 # it off to read the protocol version, so 2021 badges ignore it entirely.
+# This is the host's own announced feature level, not a firmware mirror --
+# there's no requirement it track SERIAL_FEATURE_LEVEL in ir.h, which is the
+# badge's own separate self-announcement.
 CONTROLLER_FEATURE_LEVEL = 0x01
 VERSION_HEADER = (CONTROLLER_FEATURE_LEVEL << 8) | PROTO_VERSION
 
-HEADER_FMT_NOCRCs   = '<HHHQ'
-HEADER_FMT   = '<HHHQHH'
-SerialHeader = namedtuple('Header', 'version_header payload_len opcode from_id crc16_payload crc16_header')
+HEADER_FMT_NOCRCs = HEADER_FMT[:-2] # Same header, without the two trailing CRC fields.
+# Field names for HEADER_FMT_NOCRCs, in the same generated order -- this is
+# what lets send_message() below pack by field *name* instead of by a
+# hand-ordered positional tuple. If ir_header_t's field order ever changes
+# and the protocol gets regenerated, this picks up the new order for free;
+# a hand-ordered struct.pack(HEADER_FMT_NOCRCs, a, b, c, d) would keep
+# packing in the old order and mispack silently.
+HEADER_FIELDS_NOCRCs = HEADER_FIELDS[:-2]
+SerialHeader = namedtuple('Header', HEADER_FIELDS)
 CRC_FMT = '<H'
 
 ANIM_META_FMT = '<%dsLHHHH' % ANIM_NAME_MAX_LEN # The last H is actually a B with a pad, but this is close enough.
 AnimMeta = namedtuple('Image', 'name anim_frames anim_len anim_frame_delay_ms id unlocked')
 
-VERSION_FMT = '<HBBH'
-BadgeVersion = namedtuple('BadgeVersion', 'proto_version fw_year fw_rev capabilities')
+BadgeVersion = namedtuple('BadgeVersion', VERSION_FIELDS)
 
 DELFILE_FMT = '<%ds' % ANIM_NAME_MAX_LEN
 
@@ -42,22 +56,7 @@ MAX_FRAME_ATTEMPTS = 8
 # STORAGE_MAX_ANIM_FRAMES and the frame-delay floor in ir.c. A header outside
 # them is dropped silently rather than NACKed, so check here: otherwise the
 # only symptom is putfile waiting out its timeout with nothing to explain it.
-MAX_ANIM_FRAMES = 200
-MIN_FRAME_DELAY_MS = 20
-
-SERIAL_OPCODE_HELO=0x01
-SERIAL_OPCODE_ACK=0x02
-SERIAL_OPCODE_NACK=0x03
-SERIAL_OPCODE_VERSION=0x04
-SERIAL_OPCODE_PUTFILE=0x09
-SERIAL_OPCODE_APPFILE=0x0A
-SERIAL_OPCODE_DELFILE=0x0B
-# Reserved for setting a badge handle. No implementation on either side of the
-# link; kept so the value is not handed to something else.
-SERIAL_OPCODE_SETNAME=0x0D
-SERIAL_OPCODE_GETFILE=0x13
-
-SERIAL_CAP_DELETE=0x0001
+MAX_ANIM_FRAMES = STORAGE_MAX_ANIM_FRAMES
 
 CAPABILITY_NAMES = (
     (SERIAL_CAP_DELETE, 'delete'),
@@ -65,9 +64,7 @@ CAPABILITY_NAMES = (
 
 # The badge only honors DELFILE from this ID. It is trivially spoofable, and
 # is there so badges trading animations can't delete each other's by accident.
-CONTROLLER_ID=0x1234000000000000
-# CONTROLLER_ID=0x0000d0e2ab542dc9
-CRC_SEED=0x8FB6
+CONTROLLER_ID = SERIAL_CONTROLLER_ID
 
 def crc16_buf(sbuf):
     crc = CRC_SEED
@@ -125,7 +122,16 @@ def await_ack(ser, nack_allowed=False):
         raise ValueError("Unexpected opcode received: %d" % header.opcode)
 
 def send_message(ser, opcode, payload=b'', src_id=CONTROLLER_ID):
-    msg = struct.pack(HEADER_FMT_NOCRCs, VERSION_HEADER, len(payload), opcode, src_id)
+    # Packed by field name (via HEADER_FIELDS_NOCRCs), not by a hand-ordered
+    # positional tuple: see the comment on HEADER_FIELDS_NOCRCs above.
+    header_values_by_name = {
+        'version_header': VERSION_HEADER,
+        'payload_len': len(payload),
+        'opcode': opcode,
+        'from_id': src_id,
+    }
+    msg = struct.pack(HEADER_FMT_NOCRCs,
+                      *(header_values_by_name[name] for name in HEADER_FIELDS_NOCRCs))
     msg += struct.pack(CRC_FMT, crc16_buf(payload) if payload else 0x0000) # No payload.
     msg += struct.pack(CRC_FMT, crc16_buf(msg))
     msg += payload

@@ -73,6 +73,10 @@ extern uint8_t serial_ll_state;
 /// Capability bits reported in SERIAL_OPCODE_VERSION.
 #define SERIAL_CAP_DELETE 0x0001
 
+/// Floor on an incoming animation's frame delay, in ms. Below this the delay
+/// becomes a Clock timeout too close to zero to honor.
+#define MIN_FRAME_DELAY_MS 20
+
 /// Everything this firmware advertises.
 #define SERIAL_CAPABILITIES (SERIAL_CAP_DELETE)
 

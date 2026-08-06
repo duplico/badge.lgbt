@@ -18,6 +18,34 @@ date on every invocation:
 
 `badge-img` is `convert_image.py` and `badge-ctl` is `controller.py`.
 
+Protocol constants
+-------------------
+
+`badge_protocol.py` is generated from the firmware headers
+(`ccs_workspace/badge.lgbt/badge_drivers/ir.h`, `led.h`, `storage.h`, `tlc6983.h`) by
+`generate_protocol.py`; don't edit it by hand. `badge-img` and `badge-ctl` import their
+protocol constants (opcodes, `CRC_SEED`, header layout, screen geometry, name/frame limits)
+from it, so a normal `uv run badge-ctl` / `uv run badge-img` never needs to run the generator
+itself.
+
+After changing one of those firmware headers, regenerate and commit the result:
+
+ uv run generate-protocol
+
+To check `badge_protocol.py` is still in sync with the headers without writing anything
+(useful before sending a PR that touches those headers):
+
+ uv run generate-protocol --check
+
+`generate_protocol.py` has its own unit tests, covering the extraction regexes
+(`#define` parsing, struct-format derivation, and the `GeneratorError` cases --
+ambiguous/conditional `#define`s, non-`__packed` or array struct fields, etc.) against
+synthetic header snippets. They're regression armor for the generator itself, separate
+from `--check` against the real firmware headers. Run them with:
+
+ uv sync --group dev
+ uv run pytest
+
 badge-img: Generating a preview
 -------------------------------
 

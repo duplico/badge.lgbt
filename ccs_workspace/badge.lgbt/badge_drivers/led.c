@@ -134,6 +134,13 @@ void led_load_frame() {
     // The UI and IR tasks write these while the TLC task reads them, and a
     // led_anim_t copy is not atomic. Every writer holds the same gate, so a
     // gated copy never sees a torn descriptor or a stale frame index.
+    //
+    // led_anim_ambient and led_curr_ambient carry the same non-atomic-copy
+    // hazard and are gated the same way at every access, even though only
+    // the UI and IR tasks (never the higher-priority TLC task) touch them
+    // today: their only other protection is those two tasks sharing a
+    // priority with time-slicing off (see the Task_construct comment in
+    // ir.c), and gating removes the dependency on that holding forever.
     task_key = Task_disable();
     anim = led_anim_curr;
     frame = led_anim_frame;
@@ -188,6 +195,7 @@ void led_set_anim(char *name, uint8_t ambient) {
 }
 
 void led_next_frame() {
+    led_anim_t ambient_snapshot;
     UInt task_key = Task_disable();
     led_anim_frame++;
     if (led_anim_frame >= led_anim_curr.direct_anim.anim_len) {
@@ -197,10 +205,14 @@ void led_next_frame() {
         //  the instant it takes to hand over to led_set_anim_direct.
         led_anim_frame = 0;
         if (!led_curr_ambient) {
+            // Snapshot led_anim_ambient before the gate drops too: it's the
+            //  same shared, non-atomically-copied descriptor as led_anim_curr,
+            //  gated for the same reason (see the gate note on led_load_frame).
+            ambient_snapshot = led_anim_ambient;
             Task_restore(task_key);
             // This posts TLC_EVENT_NEXTFRAME once the descriptor and the frame
             //  index agree, so there is nothing left to post here.
-            led_set_anim_direct(led_anim_ambient, TRUE);
+            led_set_anim_direct(ambient_snapshot, TRUE);
             return;
         }
     }
@@ -212,16 +224,32 @@ void led_next_frame() {
 /// Select our next available unlocked animation, and switch to it.
 void led_next_anim() {
     char next_anim_name[ANIM_NAME_MAX_LEN] = {0x00,};
+    led_anim_t ambient_snapshot;
+    UInt task_key;
+
+    // Gated for the same reason as every other led_anim_ambient access: see
+    //  the gate note on led_load_frame.
+    task_key = Task_disable();
+    ambient_snapshot = led_anim_ambient;
+    Task_restore(task_key);
+
     // If led_anim_last_chosen isn't the current animation,
     //  just switch back to it.
-    if (led_anim_last_chosen.id != led_anim_ambient.id) {
+    if (led_anim_last_chosen.id != ambient_snapshot.id) {
         led_set_anim(led_anim_last_chosen.name, 1);
         led_anim_id = led_anim_last_chosen.id;
     } else {
         storage_get_next_anim_name(next_anim_name);
         led_set_anim(next_anim_name, 1);
-        led_anim_id = led_anim_ambient.id;
-        led_anim_last_chosen = led_anim_ambient;
+
+        // led_set_anim() just wrote led_anim_ambient; re-snapshot for the
+        //  fresh value under the same gate.
+        task_key = Task_disable();
+        ambient_snapshot = led_anim_ambient;
+        Task_restore(task_key);
+
+        led_anim_id = ambient_snapshot.id;
+        led_anim_last_chosen = ambient_snapshot;
     }
 }
 

@@ -273,16 +273,26 @@ void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
 }
 
 void serial_file_start() {
+    led_anim_t ambient_snapshot;
+    UInt task_key;
+
     if (serial_ll_state != SERIAL_LL_STATE_IDLE) {
         return;
     }
 
-    if (led_anim_ambient.direct_anim.anim_frames) {
+    // Gated: led_anim_ambient is shared with the UI task the same way
+    //  led_anim_curr is shared with the TLC task; see the gate note on
+    //  led_load_frame() in led.c.
+    task_key = Task_disable();
+    ambient_snapshot = led_anim_ambient;
+    Task_restore(task_key);
+
+    if (ambient_snapshot.direct_anim.anim_frames) {
         // We don't send direct animations.
         return;
     }
 
-    serial_file_header = led_anim_ambient;
+    serial_file_header = ambient_snapshot;
     serial_filepart = 0;
 
     serial_file_header.id = 0;
@@ -295,7 +305,7 @@ void serial_file_start() {
     serial_filepart = 0;
     serial_state_transition(SERIAL_LL_STATE_C_FILE_TX, IR_TIMEOUT_MS);
     // Sent the animation header. Now we await an ACK.
-    led_anim_idle = led_anim_ambient;
+    led_anim_idle = ambient_snapshot;
     led_set_anim_direct(send_anim, 1);
 }
 
@@ -316,12 +326,19 @@ void serial_file_send_next() {
  */
 void serial_leave_anim(char *name) {
     char next_name[ANIM_NAME_MAX_LEN] = {0,};
+    led_anim_t ambient_snapshot;
+    UInt task_key;
 
-    if (strncmp(led_anim_ambient.name, name, ANIM_NAME_MAX_LEN)) {
+    // Gated: see the gate note on led_load_frame() in led.c.
+    task_key = Task_disable();
+    ambient_snapshot = led_anim_ambient;
+    Task_restore(task_key);
+
+    if (strncmp(ambient_snapshot.name, name, ANIM_NAME_MAX_LEN)) {
         // Not the animation we're showing, so only the bookkeeping below
         //  matters.
         if (!strncmp(led_anim_last_chosen.name, name, ANIM_NAME_MAX_LEN)) {
-            led_anim_last_chosen = led_anim_ambient;
+            led_anim_last_chosen = ambient_snapshot;
         }
         return;
     }
@@ -332,15 +349,27 @@ void serial_leave_anim(char *name) {
         led_set_anim(next_name, 1);
     }
 
-    if (!strncmp(led_anim_ambient.name, name, ANIM_NAME_MAX_LEN)) {
+    // led_set_anim() may have just written led_anim_ambient; re-snapshot the
+    //  fresh value under the gate.
+    task_key = Task_disable();
+    ambient_snapshot = led_anim_ambient;
+    Task_restore(task_key);
+
+    if (!strncmp(ambient_snapshot.name, name, ANIM_NAME_MAX_LEN)) {
         // There was nothing else to switch to, or the switch didn't take.
         //  A compiled-in animation lives in flash with the code, so it can't
         //  be deleted out from under us.
         led_set_anim_direct(recv_anim, 1);
+
+        // led_set_anim_direct() just wrote led_anim_ambient; re-snapshot the
+        //  fresh value under the same gate.
+        task_key = Task_disable();
+        ambient_snapshot = led_anim_ambient;
+        Task_restore(task_key);
     }
 
-    led_anim_id = led_anim_ambient.id;
-    led_anim_last_chosen = led_anim_ambient;
+    led_anim_id = ambient_snapshot.id;
+    led_anim_last_chosen = ambient_snapshot;
 }
 
 /// Delete an animation at the controller's request.
@@ -398,6 +427,9 @@ void serial_rx_done(ir_header_t *header) {
     //     it should be copied to a more durable buffer if it needs to be
     //     used after this function returns. Otherwise we'll have
     //     a use-after-free problem.
+    led_anim_t ambient_snapshot;
+    UInt task_key;
+
     switch(serial_ll_state) {
     case SERIAL_LL_STATE_IDLE:
         // TODO: ok to accept this in other states too?
@@ -453,7 +485,10 @@ void serial_rx_done(ir_header_t *header) {
 
             // This is a good and valid animation, which we are receiving.
             // Time to show the receiving animation.
+            // Gated: see the gate note on led_load_frame() in led.c.
+            task_key = Task_disable();
             led_anim_idle = led_anim_ambient;
+            Task_restore(task_key);
             led_set_anim_direct(recv_anim, 1);
 
             // Check to see if we already have the animation.
@@ -555,9 +590,17 @@ void serial_rx_done(ir_header_t *header) {
                     storage_next_anim_id++;
                     SPIFFS_close(&storage_fs, serial_fd);
                     led_set_anim(serial_file_header.name, 1);
-                    led_anim_id = led_anim_ambient.id;
+
+                    // led_set_anim() just wrote led_anim_ambient; snapshot
+                    //  the fresh value under the gate (see led_load_frame()
+                    //  in led.c).
+                    task_key = Task_disable();
+                    ambient_snapshot = led_anim_ambient;
+                    Task_restore(task_key);
+
+                    led_anim_id = ambient_snapshot.id;
                     if (serial_file_header.unlocked) {
-                        storage_cache_anim_name(led_anim_ambient.id, serial_file_header.name);
+                        storage_cache_anim_name(ambient_snapshot.id, serial_file_header.name);
                     }
                     serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
                 }
@@ -590,6 +633,8 @@ void serial_rx_done(ir_header_t *header) {
 }
 
 void serial_timeout() {
+    UInt task_key;
+
     switch(serial_ll_state) {
     case SERIAL_LL_STATE_C_FILE_TX:
         // Timeout, no ACK; return to idle.
@@ -610,7 +655,12 @@ void serial_timeout() {
     case SERIAL_LL_STATE_C_FILE_RX_DONE:
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
         led_set_anim(serial_file_header.name, 1);
+
+        // led_set_anim() just wrote led_anim_ambient; snapshot the fresh
+        //  value under the gate (see led_load_frame() in led.c).
+        task_key = Task_disable();
         led_anim_id = led_anim_ambient.id;
+        Task_restore(task_key);
         break;
     default:
         serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
@@ -747,13 +797,24 @@ void ir_init() {
     Task_Params_init(&taskParams);
     taskParams.stack = serial_task_stack;
     taskParams.stackSize = SERIAL_STACKSIZE;
-    // The UI and IR tasks share a priority on purpose. Equal-priority
-    //  tasks only hand off at an explicit yield, so neither can cut
-    //  into the other mid-function, and the animation descriptors
-    //  they both touch need no gate against each other. Only the
-    //  higher-priority TLC task can preempt them, and led.c gates
-    //  what it shares. Splitting these priorities reintroduces a
-    //  torn-read race with nothing to catch it.
+    // Authoritative note (see the one-line pointer in Startup/main.c): the UI
+    //  and IR tasks share a priority on purpose. This SYS/BIOS Task scheduler
+    //  has no round-robin/time-slicing feature at all -- equal-priority
+    //  tasks are only ever rescheduled at an explicit yield or block, by
+    //  kernel design, not by a config toggle that could be flipped. So
+    //  neither task can cut into the other mid-function, and the multi-step
+    //  state they both touch (serial_ll_state, serial_file_header,
+    //  led_anim_last_chosen, and the rest that isn't individually gated)
+    //  needs no lock against that. The higher-priority TLC task is the
+    //  exception: it can preempt either of them at any instruction, so every
+    //  led_anim_t/uint8_t it also touches -- currently led_anim_curr,
+    //  led_anim_frame, led_anim_ambient, led_curr_ambient -- is additionally
+    //  gated with Task_disable()/Task_restore() at every access, in led.c
+    //  and here, regardless of this priority invariant. What remains
+    //  load-bearing on this comment: splitting the UI/IR priority apart, or
+    //  a future SDK/kernel upgrade adding a scheduler that can preempt
+    //  between equal-priority tasks, reopens a torn-read race on the
+    //  ungated state above with nothing to catch it.
     taskParams.priority = 1;
     Task_construct(&serial_task, serial_task_fn, &taskParams, NULL);
 

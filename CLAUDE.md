@@ -107,4 +107,7 @@ those headers into `scripts/badge_protocol.py` (committed, banner marks it DO-NO
 `controller.py`/`convert_image.py` import from there instead of hand-copying literals. After
 changing a firmware header, run `uv run generate-protocol` in `scripts/` and commit the
 regenerated file; `uv run generate-protocol --check` (also wired as `make check-protocol` in
-`ccs_workspace/badge.lgbt/`) fails loudly if it's out of sync.
+`ccs_workspace/badge.lgbt/`) fails loudly if it's out of sync. `ANIM_META_FMT`/`AnimMeta` in
+`controller.py` is the one remaining hand-mirrored struct format (the animation-header
+payload is not a plain `__packed` fixed-width struct the generator can derive from -- see
+`generate_protocol.py`'s module docstring); it isn't covered by `--check` either.

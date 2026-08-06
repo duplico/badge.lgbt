@@ -25,6 +25,13 @@ CONTROLLER_FEATURE_LEVEL = 0x01
 VERSION_HEADER = (CONTROLLER_FEATURE_LEVEL << 8) | PROTO_VERSION
 
 HEADER_FMT_NOCRCs = HEADER_FMT[:-2] # Same header, without the two trailing CRC fields.
+# Field names for HEADER_FMT_NOCRCs, in the same generated order -- this is
+# what lets send_message() below pack by field *name* instead of by a
+# hand-ordered positional tuple. If ir_header_t's field order ever changes
+# and the protocol gets regenerated, this picks up the new order for free;
+# a hand-ordered struct.pack(HEADER_FMT_NOCRCs, a, b, c, d) would keep
+# packing in the old order and mispack silently.
+HEADER_FIELDS_NOCRCs = HEADER_FIELDS[:-2]
 SerialHeader = namedtuple('Header', HEADER_FIELDS)
 CRC_FMT = '<H'
 
@@ -115,7 +122,16 @@ def await_ack(ser, nack_allowed=False):
         raise ValueError("Unexpected opcode received: %d" % header.opcode)
 
 def send_message(ser, opcode, payload=b'', src_id=CONTROLLER_ID):
-    msg = struct.pack(HEADER_FMT_NOCRCs, VERSION_HEADER, len(payload), opcode, src_id)
+    # Packed by field name (via HEADER_FIELDS_NOCRCs), not by a hand-ordered
+    # positional tuple: see the comment on HEADER_FIELDS_NOCRCs above.
+    header_values_by_name = {
+        'version_header': VERSION_HEADER,
+        'payload_len': len(payload),
+        'opcode': opcode,
+        'from_id': src_id,
+    }
+    msg = struct.pack(HEADER_FMT_NOCRCs,
+                      *(header_values_by_name[name] for name in HEADER_FIELDS_NOCRCs))
     msg += struct.pack(CRC_FMT, crc16_buf(payload) if payload else 0x0000) # No payload.
     msg += struct.pack(CRC_FMT, crc16_buf(msg))
     msg += payload

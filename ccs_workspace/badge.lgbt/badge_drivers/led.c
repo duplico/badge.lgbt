@@ -91,6 +91,20 @@ const led_anim_t *led_direct_anims[DIRECT_CNT] = {
                                        &wave_anim,
 };
 
+/// Is name one of the animations compiled into the firmware?
+/**
+ ** These are written back to flash by led_init(), so removing one only makes
+ ** it reappear on the next boot, having consumed another animation ID.
+ */
+uint8_t led_is_system_anim(char *name) {
+    for (uint16_t i=0; i<DIRECT_CNT; i++) {
+        if (!strncmp(name, led_direct_anims[i]->name, ANIM_NAME_MAX_LEN)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void led_next_frame_swi(UArg a0) {
     Event_post(ui_event_h, UI_EVENT_LED_FRAME);
 }
@@ -131,8 +145,10 @@ void led_load_frame() {
     } else {
         // If anim_frames is NULL, then we need to reference the SPI flash.
         if (!storage_load_frame(anim.name, frame, scratch)) {
-            // Nothing came back, so scratch still holds stack. Keep the frame
-            //  that is already up and come back for the next one.
+            // Nothing came back, so scratch still holds stack. Hold the frame
+            //  that's already up and come back for the next one; the panel
+            //  pauses instead of painting noise, and a read that fails once
+            //  costs a single frame.
             led_arm_frame_clock(anim.direct_anim.anim_frame_delay_ms);
             return;
         }

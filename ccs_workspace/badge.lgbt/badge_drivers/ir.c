@@ -26,6 +26,7 @@
 #include <board.h>
 #include <post.h>
 #include <badge.h>
+#include <version.h>
 
 #include <badge_drivers/storage.h>
 #include <badge_drivers/tlc6983.h>
@@ -43,6 +44,7 @@ uint8_t serial_phy_mode_ptx = 0;
 
 uint8_t serial_ll_state;
 uint32_t serial_ll_next_timeout;
+uint32_t serial_ll_transaction_deadline;
 Clock_Handle serial_timeout_clock_h;
 
 uint8_t serial_file_payload[STORAGE_ANIM_FRAME_SIZE] = {0,};
@@ -96,8 +98,9 @@ uint8_t validate_header(ir_header_t *header) {
         return 0;
     }
 
-    if ((header->version_header & 0x00ff) != 0x0001) {
-        // Unknown protocol version.
+    if ((header->version_header & 0x00ff) != SERIAL_PROTO_VERSION) {
+        // Unknown protocol version. The high byte is the sender's feature
+        //  level, which is a hint and not part of this check.
         return 0;
     }
 
@@ -113,6 +116,18 @@ uint8_t validate_header(ir_header_t *header) {
             return 0;
         }
          break;
+    case SERIAL_OPCODE_DELFILE:
+        if (header->payload_len != ANIM_NAME_MAX_LEN) {
+            return 0;
+        }
+        break;
+    case SERIAL_OPCODE_VERSION:
+        // Only ever sent, never received, by a badge; listed so the table
+        //  describes the whole protocol.
+        if (header->payload_len != sizeof(ir_version_t)) {
+            return 0;
+        }
+        break;
     // All these have zero length payloads:
     case SERIAL_OPCODE_HELO:
     case SERIAL_OPCODE_ACK:
@@ -188,7 +203,7 @@ uint16_t buffer_rank(uint8_t *buf, uint16_t len) {
 /// Send a message, applying the payload, len, crc, and from-ID.
 void serial_send(uint8_t opcode, uint8_t *payload, uint16_t payload_len) {
     ir_header_t header_out;
-    header_out.version_header = 0x0001;
+    header_out.version_header = SERIAL_VERSION_HEADER;
     header_out.opcode = opcode;
     header_out.from_id = badge_id;
     header_out.payload_len = payload_len;
@@ -212,9 +227,42 @@ void serial_send_ack() {
     serial_send(SERIAL_OPCODE_ACK, NULL, 0);
 }
 
+void serial_send_nack() {
+    serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+}
+
+/// Answer a HELO with who we are and what we can do.
+void serial_send_version() {
+    ir_version_t version_out;
+
+    version_out.proto_version = SERIAL_PROTO_VERSION;
+    version_out.fw_year = BADGE_FW_YEAR_WIRE;
+    version_out.fw_rev = BADGE_FW_REV_WIRE;
+    version_out.capabilities = SERIAL_CAPABILITIES;
+
+    serial_send(SERIAL_OPCODE_VERSION, (uint8_t *) &version_out, sizeof(version_out));
+}
+
+/// Has the deadline standing at ``deadline`` ticks arrived?
+/**
+ ** Clock_getTicks() is a 32-bit count of 10 us ticks, so it wraps about every
+ ** twelve hours. Deadlines are therefore compared by signed difference, which
+ ** orders correctly across the wrap for any interval shorter than half the
+ ** tick range - a little under six hours, far longer than anything the link
+ ** layer waits on.
+ */
+uint8_t serial_deadline_passed(uint32_t deadline) {
+    return ((int32_t) (Clock_getTicks() - deadline)) >= 0;
+}
+
 void serial_state_transition(uint8_t dest_state, uint32_t timeout_ms) {
     if (dest_state == SERIAL_LL_STATE_IDLE) {
         serial_peer_id = 0x0000000000000000;
+    } else if (serial_ll_state == SERIAL_LL_STATE_IDLE) {
+        // Entering a transaction. Frames refresh the per-frame timeout, but
+        //  the transaction as a whole gets a fixed time budget, so a peer
+        //  can't hold us out of IDLE forever by chattering.
+        serial_ll_transaction_deadline = Clock_getTicks() + (IR_TRANSACTION_LIMIT_MS * 100);
     }
 
     serial_ll_state = dest_state;
@@ -260,6 +308,90 @@ void serial_file_send_next() {
 }
 
 
+/// Stop showing the named animation, if it's the one on the screen.
+/**
+ ** Switches to the next animation we have, or to a compiled-in one if there
+ ** isn't another to switch to. Also drags led_anim_last_chosen along, so the
+ ** ID that eventually lands in /.animid can't name the doomed animation.
+ */
+void serial_leave_anim(char *name) {
+    char next_name[ANIM_NAME_MAX_LEN] = {0,};
+
+    if (strncmp(led_anim_ambient.name, name, ANIM_NAME_MAX_LEN)) {
+        // Not the animation we're showing, so only the bookkeeping below
+        //  matters.
+        if (!strncmp(led_anim_last_chosen.name, name, ANIM_NAME_MAX_LEN)) {
+            led_anim_last_chosen = led_anim_ambient;
+        }
+        return;
+    }
+
+    storage_get_next_anim_name(next_name);
+
+    if (next_name[0] && strncmp(next_name, name, ANIM_NAME_MAX_LEN)) {
+        led_set_anim(next_name, 1);
+    }
+
+    if (!strncmp(led_anim_ambient.name, name, ANIM_NAME_MAX_LEN)) {
+        // There was nothing else to switch to, or the switch didn't take.
+        //  A compiled-in animation lives in flash with the code, so it can't
+        //  be deleted out from under us.
+        led_set_anim_direct(recv_anim, 1);
+    }
+
+    led_anim_id = led_anim_ambient.id;
+    led_anim_last_chosen = led_anim_ambient;
+}
+
+/// Delete an animation at the controller's request.
+void serial_delete_anim(ir_header_t *header) {
+    char name[ANIM_NAME_MAX_LEN] = {0,};
+
+    if (header->from_id != SERIAL_CONTROLLER_ID) {
+        // Only the controller deletes. Anyone can claim to be the controller,
+        //  so this keeps badges from deleting each other's animations by
+        //  accident, nothing more.
+        serial_send_nack();
+        return;
+    }
+
+    // The name is untrusted; require a null term before any string op, and
+    //  refuse an empty name.
+    uint8_t null_termed = 0;
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!serial_file_payload[i]) {
+            null_termed = 1;
+            break;
+        }
+    }
+
+    if (!null_termed || !serial_file_payload[0]) {
+        serial_send_nack();
+        return;
+    }
+
+    snprintf(name, sizeof(name), "%s", (char *) serial_file_payload);
+
+    if (led_is_system_anim(name)) {
+        // The animations the firmware ships with back the transfer and
+        //  startup displays, and led_init() writes them back to flash.
+        serial_send_nack();
+        return;
+    }
+
+    // The removal comes first so a NACK means the badge is exactly as the
+    //  controller left it. It also empties the animation's cache slot before
+    //  serial_leave_anim() goes looking for something to switch to, so the
+    //  scan can't land back on the animation that just went away.
+    if (!storage_delete_anim(name)) {
+        serial_send_nack();
+        return;
+    }
+
+    serial_leave_anim(name);
+    serial_send_ack();
+}
+
 void serial_rx_done(ir_header_t *header) {
     // If this is called, it's already been validated.
     // NB: payload will be freed immediately after this returns, so
@@ -272,7 +404,12 @@ void serial_rx_done(ir_header_t *header) {
         if (header->opcode == SERIAL_OPCODE_GETFILE) {
             Event_post(ir_event_h, IR_EVENT_SENDFILE);
         }
-        // TODO: HELO
+        if (header->opcode == SERIAL_OPCODE_HELO) {
+            serial_send_version();
+        }
+        if (header->opcode == SERIAL_OPCODE_DELFILE) {
+            serial_delete_anim(header);
+        }
         if (header->opcode == SERIAL_OPCODE_PUTFILE) {
             char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
             uint8_t header_only = 0;
@@ -280,9 +417,14 @@ void serial_rx_done(ir_header_t *header) {
             // The first message will be the animation header.
 
             memcpy(&serial_file_header, serial_file_payload, sizeof(led_anim_t));
-            sprintf(fname, "/a/%s", serial_file_header.name);
 
-            // Validate that the name has a null term:
+            // The frame pointer in the received header is an address in the
+            //  sender's memory; only NULL is valid for an animation that
+            //  lives on flash.
+            serial_file_header.direct_anim.anim_frames = NULL;
+
+            // Names arriving over IR are untrusted; require a null term
+            //  before any string op touches the name.
             uint8_t null_termed = 0;
             for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
                 if (!serial_file_header.name[i]) {
@@ -296,6 +438,19 @@ void serial_rx_done(ir_header_t *header) {
                 return;
             }
 
+            // The animation metadata is also untrusted. A zero-length
+            //  animation can never complete its transfer; an over-long one
+            //  eats flash (each frame is 315 bytes against 1 MiB total); and
+            //  the frame delay becomes a Clock timeout, which must not be
+            //  zero or near it.
+            if (serial_file_header.direct_anim.anim_len == 0 ||
+                    serial_file_header.direct_anim.anim_len > STORAGE_MAX_ANIM_FRAMES ||
+                    serial_file_header.direct_anim.anim_frame_delay_ms < 20) {
+                return;
+            }
+
+            snprintf(fname, sizeof(fname), "/a/%s", serial_file_header.name);
+
             // This is a good and valid animation, which we are receiving.
             // Time to show the receiving animation.
             led_anim_idle = led_anim_ambient;
@@ -305,7 +460,14 @@ void serial_rx_done(ir_header_t *header) {
             if (storage_anim_saved_and_valid(serial_file_header.name)) {
                 // We do already have the animation.
                 led_anim_t local_copy;
-                storage_load_anim(serial_file_header.name, &local_copy);
+                if (!storage_load_anim(serial_file_header.name, &local_copy)) {
+                    // The file passed its size check but its header wouldn't
+                    //  read back, so there's no ID or unlock bit to reason
+                    //  from. Put the display back and let the sender know.
+                    led_set_anim_direct(led_anim_idle, 1);
+                    serial_send_nack();
+                    return;
+                }
                 serial_file_header.id = local_copy.id;
 
                 // We know right now that we're just going to be switching to it,
@@ -331,7 +493,7 @@ void serial_rx_done(ir_header_t *header) {
                     //  version says it should be unlocked, then we should
                     //  rewrite the header.
                     header_only = 1;
-                    strncpy(storage_anim_id_cache[local_copy.id], serial_file_header.name, ANIM_NAME_MAX_LEN);
+                    storage_cache_anim_name(local_copy.id, serial_file_header.name);
                 } else {
                     // Local copy is locked. Remote copy is locked.
                     // Nothing to save.
@@ -369,7 +531,14 @@ void serial_rx_done(ir_header_t *header) {
                     serial_peer_id = header->from_id;
                 }
             } else {
-                // I don't believe there's any special cleanup needed here.
+                // There's nowhere to put the animation. The receive display
+                //  is already up, and only the transfer states restore it,
+                //  so put the ambient animation back here and return to idle
+                //  rather than leaving the badge showing "recv" until it's
+                //  power cycled.
+                serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                led_set_anim_direct(led_anim_idle, 1);
+                serial_send_nack();
             }
         }
         break;
@@ -381,14 +550,14 @@ void serial_rx_done(ir_header_t *header) {
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                 serial_filepart++;
 
-                if (serial_filepart == serial_file_header.direct_anim.anim_len) {
+                if (serial_filepart >= serial_file_header.direct_anim.anim_len) {
                     // The file is finished!
                     storage_next_anim_id++;
                     SPIFFS_close(&storage_fs, serial_fd);
                     led_set_anim(serial_file_header.name, 1);
                     led_anim_id = led_anim_ambient.id;
                     if (serial_file_header.unlocked) {
-                        strncpy(storage_anim_id_cache[led_anim_ambient.id], serial_file_header.name, ANIM_NAME_MAX_LEN);
+                        storage_cache_anim_name(led_anim_ambient.id, serial_file_header.name);
                     }
                     serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
                 }
@@ -431,6 +600,12 @@ void serial_timeout() {
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
         led_set_anim_direct(led_anim_idle, 1); // TODO: failure anim?
         SPIFFS_close(&storage_fs, serial_fd);
+        // Only a transfer that created or truncated the file reaches this
+        //  state, so the frames on flash are this transfer's and there is no
+        //  older copy underneath them. Nothing else will ever finish the
+        //  file, so it goes away with the transfer; otherwise a peer that
+        //  opens transfers and falls silent fills the partition.
+        storage_delete_anim(serial_file_header.name);
         break;
     case SERIAL_LL_STATE_C_FILE_RX_DONE:
         serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
@@ -452,7 +627,14 @@ void serial_task_fn(UArg a0, UArg a1) {
     serial_ll_next_timeout = Clock_getTicks() + IR_TIMEOUT_MS * 100;
 
     while (1) {
-        if (serial_ll_next_timeout && Clock_getTicks() >= serial_ll_next_timeout) {
+        if (serial_ll_state != SERIAL_LL_STATE_IDLE
+                && serial_deadline_passed(serial_ll_transaction_deadline)) {
+            // The transaction's absolute time budget is spent; abandon it
+            //  regardless of how recently the last frame arrived.
+            serial_timeout();
+        }
+
+        if (serial_ll_next_timeout && serial_deadline_passed(serial_ll_next_timeout)) {
             serial_timeout();
         }
 
@@ -485,7 +667,7 @@ void serial_task_fn(UArg a0, UArg a1) {
                     } else {
                         // We got something, but it was framed wrong or garbled, so if possible
                         //  we'd like a re-send, which also tolls our timeout:
-                        serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+                        serial_send_nack();
                         serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
                     }
 
@@ -494,7 +676,7 @@ void serial_task_fn(UArg a0, UArg a1) {
                     serial_rx_done(&header_in);
                 }
             } else {
-                serial_send(SERIAL_OPCODE_NACK, NULL, 0);
+                serial_send_nack();
                 serial_ll_next_timeout = Clock_getTicks() + (IR_TIMEOUT_MS * 100);
             }
         } else if (result == UART_ERROR) {

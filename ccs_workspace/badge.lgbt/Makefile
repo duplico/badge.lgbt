@@ -69,6 +69,11 @@ CFLAGS_CORE := \
     --display_error_number \
     --gen_func_subsections=on
 
+# Exact build provenance compiled into the image (see version.h). Override to
+# stamp a build made outside a git checkout. Must be set before DEFINES, which
+# expands immediately.
+FW_BUILD ?= $(shell git -C $(PROJ_ROOT) describe --tags --always --dirty 2>/dev/null || echo unknown)
+
 # Predefined symbols (.cproject DEFINE list; the leading
 # ${COM_TI_SIMPLELINK_CC2640R2_SDK_SYMBOLS} macro expands to nothing).
 # The x-prefixed names (xFEATURE_MONITOR, xICALL_EVENTS, xUSE_ICALL) are
@@ -96,7 +101,8 @@ DEFINES := \
     --define=TBM_ACTIVE_ITEMS_ONLY \
     --define=xUSE_ICALL \
     --define=xdc_runtime_Assert_DISABLE_ALL \
-    --define=xdc_runtime_Log_DISABLE_ALL
+    --define=xdc_runtime_Log_DISABLE_ALL \
+    --define=BADGE_FW_BUILD='"$(FW_BUILD)"'
 
 # Include paths (.cproject INCLUDE_PATH list, macros resolved as above)
 INCLUDES := \
@@ -283,6 +289,24 @@ $(CONFIGPKG)/compiler.opt: $(XDC_CFG) | $(BUILD_DIR)
 
 # ---- Compile rules ----------------------------------------------------------
 $(ALL_OBJS): $(CONFIGPKG)/compiler.opt
+
+# The build stamp reaches the image through a --define rather than a source
+# file, so nothing about badge.c changes when a new commit changes it. Route it
+# through a file whose contents make tracks, and rewrite that file only when the
+# value actually differs, so the stamp stays honest without rebuilding on every
+# invocation.
+FW_BUILD_STAMP := $(BUILD_DIR)/fw_build.stamp
+
+.PHONY: $(FW_BUILD_STAMP).check
+$(FW_BUILD_STAMP).check: | $(BUILD_DIR)
+	@printf '%s' '$(FW_BUILD)' > $(FW_BUILD_STAMP).new
+	@cmp -s $(FW_BUILD_STAMP).new $(FW_BUILD_STAMP) \
+	    || mv $(FW_BUILD_STAMP).new $(FW_BUILD_STAMP)
+	@rm -f $(FW_BUILD_STAMP).new
+
+$(FW_BUILD_STAMP): $(FW_BUILD_STAMP).check ;
+
+$(BUILD_DIR)/badge.obj: $(FW_BUILD_STAMP)
 
 $(BUILD_DIR)/%.obj: $(PROJ_ROOT)%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) --output_file=$@ $<

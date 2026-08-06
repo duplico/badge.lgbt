@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <third_party/spiffs/SPIFFSNVS.h>
 #include <third_party/spiffs/spiffs.h>
@@ -28,6 +29,33 @@ uint16_t storage_next_anim_id = 0;
 
 char storage_anim_id_cache[STORAGE_ANIMS_TO_CACHE][ANIM_NAME_MAX_LEN] = {0,};
 
+/// Record an animation name in the ID cache, if its ID fits.
+/**
+ ** Animation IDs grow without bound, but the cache only covers the first
+ ** STORAGE_ANIMS_TO_CACHE of them; IDs past the end are simply not cached.
+ */
+void storage_cache_anim_name(uint16_t id, const char *name) {
+    if (id >= STORAGE_ANIMS_TO_CACHE) {
+        return;
+    }
+    strncpy(storage_anim_id_cache[id], name, ANIM_NAME_MAX_LEN);
+}
+
+/// Drop an animation name from the ID cache, if that slot still holds it.
+/**
+ ** The ID comes from the animation's own header, so the slot is only cleared
+ ** when it actually names this animation.
+ */
+void storage_uncache_anim_name(uint16_t id, const char *name) {
+    if (id >= STORAGE_ANIMS_TO_CACHE) {
+        return;
+    }
+    if (strncmp(storage_anim_id_cache[id], name, ANIM_NAME_MAX_LEN)) {
+        return;
+    }
+    memset(storage_anim_id_cache[id], 0x00, ANIM_NAME_MAX_LEN);
+}
+
 uint8_t storage_file_exists(char *fname) {
     volatile int32_t status;
     spiffs_stat stat;
@@ -38,7 +66,7 @@ uint8_t storage_file_exists(char *fname) {
     return 0;
 }
 
-uint8_t storage_read_file(char *fname, uint8_t *dest, uint16_t offset, uint16_t size) {
+uint8_t storage_read_file(char *fname, uint8_t *dest, uint32_t offset, uint16_t size) {
     spiffs_file fd;
     volatile int32_t stat;
 
@@ -91,28 +119,108 @@ uint8_t storage_anim_saved_and_valid(char *anim_name) {
 
     status = SPIFFS_read(&storage_fs, fd, (uint8_t *) &read_anim, sizeof(led_anim_t));
 
-    if (status < 0) {
+    SPIFFS_close(&storage_fs, fd);
+
+    if (status != (int32_t) sizeof(led_anim_t)) {
+        // A file too short to hold a whole header leaves read_anim partly
+        //  uninitialized, and the length out of that header is what the size
+        //  check below is built on.
         return 0;
     }
-
-    SPIFFS_close(&storage_fs, fd);
 
     return stat.size == (STORAGE_ANIM_HEADER_SIZE + read_anim.direct_anim.anim_len * STORAGE_ANIM_FRAME_SIZE);
 }
 
+/// Write "/a/<anim_name>" into dest, or return 0 if the name has no terminator.
+/**
+ ** Names reaching this file are not trustworthy: one arrives in an IR frame
+ ** from a peer badge, and one is read back out of a stored header that a peer
+ ** wrote. An unterminated name runs the copy on into whatever follows it, so
+ ** the check belongs here rather than in each caller's memory.
+ */
+static uint8_t storage_anim_path(char *dest, char *anim_name) {
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!anim_name[i]) {
+            snprintf(dest, STORAGE_FILE_NAME_LIMIT, "/a/%s", anim_name);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 uint8_t storage_load_anim(char *anim_name, led_anim_t *dest) {
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
-    sprintf(fname, "/a/%s", anim_name);
+    if (!storage_anim_path(fname, anim_name)) {
+        return 0;
+    }
 
-    return storage_read_file(fname, (uint8_t *) dest, 0, STORAGE_ANIM_HEADER_SIZE);
+    if (!storage_read_file(fname, (uint8_t *) dest, 0, STORAGE_ANIM_HEADER_SIZE)) {
+        return 0;
+    }
+
+    // An animation loaded from flash is by definition not a direct animation,
+    //  so whatever pointer value the stored header carries is meaningless;
+    //  only NULL is valid here.
+    dest->direct_anim.anim_frames = NULL;
+    return 1;
 }
 
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]) {
     volatile int32_t stat;
     char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
-    sprintf(fname, "/a/%s", anim_name);
+    if (!storage_anim_path(fname, anim_name)) {
+        return 0;
+    }
 
-    return storage_read_file(fname, (uint8_t *) dest, STORAGE_ANIM_HEADER_SIZE + STORAGE_ANIM_FRAME_SIZE*frame_number, STORAGE_ANIM_FRAME_SIZE);
+    // Frame offsets exceed 16 bits past frame 207, so this math must be 32-bit.
+    return storage_read_file(fname, (uint8_t *) dest, (uint32_t) STORAGE_ANIM_HEADER_SIZE + (uint32_t) STORAGE_ANIM_FRAME_SIZE * frame_number, STORAGE_ANIM_FRAME_SIZE);
+}
+
+/// Remove a stored animation from flash and from the ID cache.
+/**
+ ** Returns 1 if the animation is gone, 0 if there was no such animation or
+ ** the removal failed. The name is treated as untrusted: it must carry a null
+ ** term within ANIM_NAME_MAX_LEN and must not be empty.
+ **
+ ** storage_next_anim_id is deliberately left alone. It only ever moves
+ ** forward, so a freed ID is never handed out again and can't collide with an
+ ** animation a peer already knows by that ID.
+ */
+uint8_t storage_delete_anim(char *anim_name) {
+    char fname[STORAGE_FILE_NAME_LIMIT] = {0,};
+    led_anim_t doomed;
+    uint8_t have_header;
+
+    uint8_t null_termed = 0;
+    for (uint8_t i=0; i<ANIM_NAME_MAX_LEN; i++) {
+        if (!anim_name[i]) {
+            null_termed = 1;
+            break;
+        }
+    }
+
+    if (!null_termed || !anim_name[0]) {
+        return 0;
+    }
+
+    snprintf(fname, sizeof(fname), "/a/%s", anim_name);
+
+    if (!storage_file_exists(fname)) {
+        return 0;
+    }
+
+    // The ID lives in the file, so read it before the file goes away.
+    have_header = storage_load_anim(anim_name, &doomed);
+
+    if (SPIFFS_remove(&storage_fs, fname) != SPIFFS_OK) {
+        return 0;
+    }
+
+    if (have_header) {
+        storage_uncache_anim_name(doomed.id, anim_name);
+    }
+
+    return 1;
 }
 
 void storage_overwrite_file(char *fname, uint8_t *src, uint16_t size) {
@@ -149,8 +257,8 @@ void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t 
     } else {
     }
 
-    if (unlocked && write_anim.id < STORAGE_ANIMS_TO_CACHE) {
-        strncpy(storage_anim_id_cache[write_anim.id], write_anim.name, ANIM_NAME_MAX_LEN);
+    if (unlocked) {
+        storage_cache_anim_name(write_anim.id, write_anim.name);
     }
 }
 
@@ -162,13 +270,20 @@ void storage_get_next_anim_name(char *name_out) {
         // If storage_next_anim_id == STORAGE_ANIMS_TO_CACHE, then that means
         //  the NEXT animation we receive will have an ID equal to the size
         //  of our cache, meaning an overrun. But NOT YET!
+        // led_anim_id can be stale relative to what's actually on flash
+        //  (it's persisted separately in /.animid), so the wrap and the
+        //  iteration cap below must not trust it to terminate this loop.
+        uint16_t ids_scanned = 0;
         do {
             next_id++;
-            if (next_id == storage_next_anim_id) {
+            if (next_id >= storage_next_anim_id || next_id >= STORAGE_ANIMS_TO_CACHE) {
                 next_id = 0;
             }
             if (next_id == led_anim_id) {
                 break; // just in case
+            }
+            if (++ids_scanned > STORAGE_ANIMS_TO_CACHE) {
+                break; // Scanned every possible slot; settle for this one.
             }
         } while (!storage_anim_id_cache[next_id][0]);
         strncpy(name_out, storage_anim_id_cache[next_id], ANIM_NAME_MAX_LEN);
@@ -254,9 +369,9 @@ void storage_init() {
         }
     }
 
-    if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", &led_anim_id, 0, sizeof(led_anim_id))) {
+    if (!storage_file_exists("/.animid") || !storage_read_file("/.animid", (uint8_t *) &led_anim_id, 0, sizeof(led_anim_id))) {
         led_anim_id = 0;
-        storage_overwrite_file("/.animid", &led_anim_id, sizeof(led_anim_id));
+        storage_overwrite_file("/.animid", (uint8_t *) &led_anim_id, sizeof(led_anim_id));
     }
 
     // Decide the next available animation ID:
@@ -279,12 +394,20 @@ void storage_init() {
                 led_anim_ambient = led_anim_curr;
                 led_anim_last_chosen = led_anim_curr;
             }
-            if (id_candidate.id < STORAGE_ANIMS_TO_CACHE && id_candidate.unlocked) {
-                strncpy(storage_anim_id_cache[id_candidate.id], &(pe->name[3]), ANIM_NAME_MAX_LEN);
+            if (id_candidate.unlocked) {
+                storage_cache_anim_name(id_candidate.id, (char *) &(pe->name[3]));
             }
         }
     }
     SPIFFS_closedir(&d);
+
+    // /.animid holds whatever was last written there, including by an
+    //  interrupted or garbage IR transfer; every ID on flash is below
+    //  storage_next_anim_id, so anything at or past it is not a real
+    //  animation ID.
+    if (led_anim_id >= storage_next_anim_id) {
+        led_anim_id = 0;
+    }
 
     led_anim_last_id_written = led_anim_id;
 

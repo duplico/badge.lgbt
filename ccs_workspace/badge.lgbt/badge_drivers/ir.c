@@ -560,9 +560,19 @@ void serial_rx_done(ir_header_t *header) {
             }
             if (serial_fd >= 0) {
                 // The open worked properly...
-                SPIFFS_write(&storage_fs, serial_fd, &serial_file_header, STORAGE_ANIM_HEADER_SIZE); // TODO: check result
+                s32_t header_write_result = SPIFFS_write(&storage_fs, serial_fd, &serial_file_header, STORAGE_ANIM_HEADER_SIZE);
                 if (header_only) {
                     SPIFFS_close(&storage_fs, serial_fd);
+                    // Only ack once the header write (and close) is behind
+                    //  us, so a failed write can't produce a false ACK; the
+                    //  sender is sitting in SERIAL_LL_STATE_C_FILE_TX
+                    //  waiting on the reply to this PUTFILE header either
+                    //  way.
+                    if (header_write_result == STORAGE_ANIM_HEADER_SIZE) {
+                        serial_send_ack();
+                    } else {
+                        serial_send_nack();
+                    }
                 } else {
                     serial_filepart = 0;
                     serial_send_ack();

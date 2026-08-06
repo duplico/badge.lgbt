@@ -28,6 +28,18 @@ this script doesn't model (a nested struct, a bitfield, a non-``__packed``
 field), extraction would fail loudly (see ``GeneratorError`` below) rather
 than silently emitting a wrong format string -- but it's worth flagging that
 the derivation is field-shape-aware, not a general C parser.
+
+This has no C preprocessor, so two more things worth knowing:
+
+- A required constant ``#define``d more than once with different values --
+  e.g. one value inside ``#ifdef``/``#else`` and another outside it -- is
+  refused with a loud ``GeneratorError`` rather than silently taking
+  whichever definition the regex happened to see last (which could be the
+  inactive branch's value). See ``extract_defines``.
+- ``#define NAME value`` lines are matched with a trailing ``// comment``
+  allowed, but *not* a trailing C-style ``/* comment */`` -- that makes the
+  line unmatchable, so a required name defined only that way is reported as
+  simply "not found" rather than being silently mis-extracted.
 """
 import argparse
 import pathlib
@@ -84,7 +96,11 @@ class GeneratorError(Exception):
 
 
 def read(path: pathlib.Path) -> str:
-    return path.read_text()
+    # Explicit encoding/newline: Path.read_text()'s platform defaults would
+    # otherwise make --check's string comparison (and regex matching, for
+    # that matter) behave differently across environments -- e.g. universal
+    # newline translation on Windows vs. Linux.
+    return path.read_text(encoding="utf-8", newline="")
 
 
 def parse_c_int(text: str) -> int:
@@ -101,17 +117,55 @@ DEFINE_RE = re.compile(
 )
 
 
-def extract_defines(text: str) -> dict:
+def extract_defines(text: str, required_names: frozenset = frozenset()) -> dict:
     """Map #define name -> (raw value text, parsed int), for simple
     single-token integer literal defines. Multi-token expressions (like
-    STORAGE_ANIM_FRAME_SIZE's sizeof(...) expression) are not simple
-    literals and are skipped rather than mis-parsed."""
+    STORAGE_ANIM_FRAME_SIZE's sizeof(...) expression), and defines whose
+    value trails a C-style ``/* ... */`` comment, don't match ``DEFINE_RE``
+    at all and are skipped -- for a name in `required_names` that means the
+    header simply didn't provide it, so the caller's "not found" check
+    (`require_define` / the explicit loop in `build_constants`) is what
+    fails loud; extraction itself doesn't need to distinguish "absent" from
+    "unparseable" to be safe. (A trailing ``// ...`` comment is fine and
+    matched.)
+
+    required_names: names the caller actually needs from this header. If one
+    of them is `#define`d more than once with a value that *does* parse --
+    the hallmark of conditional compilation, e.g. one value inside `#ifdef`
+    and another in the `#else` -- this raises GeneratorError instead of
+    silently keeping whichever definition the regex happened to see last.
+    This script has no C preprocessor, so it has no way to know which
+    `#ifdef` branch is actually compiled in; picking "last one wins" would
+    silently emit the wrong constant with no warning. Names outside
+    `required_names` are left alone: the generator doesn't consume them, so
+    an unrelated duplicate elsewhere in the header is not this script's
+    problem.
+    """
     out = {}
+    occurrences = {}
     for name, raw in DEFINE_RE.findall(text):
         try:
-            out[name] = (raw, parse_c_int(raw))
+            value = parse_c_int(raw)
         except ValueError:
             continue
+        out[name] = (raw, value)
+        if name in required_names:
+            occurrences.setdefault(name, []).append(raw)
+
+    ambiguous = {name: raws for name, raws in occurrences.items() if len(raws) > 1}
+    if ambiguous:
+        detail = "; ".join(
+            "%s (defined as: %s)" % (name, ", ".join(raws))
+            for name, raws in sorted(ambiguous.items())
+        )
+        raise GeneratorError(
+            "#define found more than once, likely from conditional "
+            "compilation (e.g. an #ifdef/#else): %s. This script has no C "
+            "preprocessor, so it cannot tell which branch is active; "
+            "resolve the ambiguity in the header (make the value "
+            "unconditional, or otherwise ensure only one definition is "
+            "visible) before regenerating." % detail)
+
     return out
 
 
@@ -238,26 +292,37 @@ def render_hex_or_dec(value: int, like: str) -> str:
     return str(value)
 
 
+# Names required from each header, keyed the same way build_constants()
+# reads them. Passed to extract_defines() as its ambiguity-detection scope:
+# see extract_defines' docstring for why only *these* names need to be
+# unambiguous.
+IR_REQUIRED_DEFINES = frozenset((
+    "CRC_SEED", "SERIAL_PROTO_VERSION", "SERIAL_OPCODE_HELO",
+    "SERIAL_OPCODE_ACK", "SERIAL_OPCODE_NACK",
+    "SERIAL_OPCODE_VERSION", "SERIAL_OPCODE_PUTFILE",
+    "SERIAL_OPCODE_APPFILE", "SERIAL_OPCODE_DELFILE",
+    "SERIAL_OPCODE_SETNAME", "SERIAL_OPCODE_GETFILE",
+    "SERIAL_CAP_DELETE", "SERIAL_CONTROLLER_ID",
+    "MIN_FRAME_DELAY_MS",
+))
+LED_REQUIRED_DEFINES = frozenset(("ANIM_NAME_MAX_LEN",))
+STORAGE_REQUIRED_DEFINES = frozenset(("STORAGE_MAX_ANIM_FRAMES",))
+
+
 def build_constants():
     ir_h_text = read(IR_H)
     led_h_text = read(LED_H)
     storage_h_text = read(STORAGE_H)
     tlc6983_h_text = read(TLC6983_H)
 
-    ir_defines = extract_defines(ir_h_text)
-    led_defines = extract_defines(led_h_text)
-    storage_defines = extract_defines(storage_h_text)
+    ir_defines = extract_defines(ir_h_text, IR_REQUIRED_DEFINES)
+    led_defines = extract_defines(led_h_text, LED_REQUIRED_DEFINES)
+    storage_defines = extract_defines(storage_h_text, STORAGE_REQUIRED_DEFINES)
 
     consts = {}
     raw_literals = {}
 
-    for name in ("CRC_SEED", "SERIAL_PROTO_VERSION", "SERIAL_OPCODE_HELO",
-                 "SERIAL_OPCODE_ACK", "SERIAL_OPCODE_NACK",
-                 "SERIAL_OPCODE_VERSION", "SERIAL_OPCODE_PUTFILE",
-                 "SERIAL_OPCODE_APPFILE", "SERIAL_OPCODE_DELFILE",
-                 "SERIAL_OPCODE_SETNAME", "SERIAL_OPCODE_GETFILE",
-                 "SERIAL_CAP_DELETE", "SERIAL_CONTROLLER_ID",
-                 "MIN_FRAME_DELAY_MS"):
+    for name in sorted(IR_REQUIRED_DEFINES):
         raw, value = ir_defines.get(name, (None, None))
         if raw is None:
             raise GeneratorError("Expected #define %s not found in ir.h." % name)
@@ -395,7 +460,7 @@ def main(argv=None) -> int:
         if not OUTPUT_PATH.is_file():
             print("generate-protocol --check: %s does not exist." % OUTPUT_PATH, file=sys.stderr)
             return 1
-        current = OUTPUT_PATH.read_text()
+        current = OUTPUT_PATH.read_text(encoding="utf-8", newline="")
         if current != rendered:
             print("generate-protocol --check: %s is out of date with the "
                   "firmware headers. Run 'uv run generate-protocol' and "
@@ -412,7 +477,7 @@ def main(argv=None) -> int:
         print("generate-protocol --check: %s is up to date." % OUTPUT_PATH)
         return 0
 
-    OUTPUT_PATH.write_text(rendered)
+    OUTPUT_PATH.write_text(rendered, encoding="utf-8", newline="")
     print("generate-protocol: wrote %s" % OUTPUT_PATH)
     return 0
 

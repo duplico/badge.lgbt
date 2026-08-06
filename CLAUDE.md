@@ -29,11 +29,11 @@ configs differ — `SingleMode_FlashOnly` is `RF_SINGLEMODE` at `-O4`, `MultiMod
 is `RF_MULTIMODE` + `USE_RCOSC` + `ICALL_EVENTS` with optimization off).
 
 The 2021 release binaries (calibration references for build changes) are inside the
-`uniflash_windows_*-2021-r1.zip` files findable via the `2021-rc1` git tag (they are no
-longer committed at HEAD — see below); that tag is also the matching source. A
-same-source CLI rebuild differs from the released hex by ~12% of bytes (scattered
-single-byte ranges, same layout and size ±11 B), attributed to xdctools 3.62.00.08 vs the
-unavailable 3.62.01.15.
+`uniflash_windows_*-2021-r1.zip` files, committed at `77bd87c` and reachable at any
+`main` commit before this change merged (they are no longer committed at HEAD — see
+below); the `2021-rc1` tag is the matching source. A same-source CLI rebuild differs
+from the released hex by ~12% of bytes (scattered single-byte ranges, same layout and
+size ±11 B), attributed to xdctools 3.62.00.08 vs the unavailable 3.62.01.15.
 
 The animloader and the dongle have their own Makefiles and build the same way; the dongle's
 uses the MSP430 CGT and emits TI-TXT rather than Intel-Hex. CCS (~10.3–12.x) still opens all

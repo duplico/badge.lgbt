@@ -10,8 +10,9 @@ This replaces the `uniflash_windows_badge-2021-r1{,.zip}` and
 committed at the repo root. Those packages are superseded by tagged
 GitHub Releases built this way, starting with whichever tag is cut first
 under this process. They are gone from the tree but not from history --
-`git checkout 2021-rc1` still has them -- so there was no reason to rewrite
-history, only to stop adding to it.
+`git checkout 77bd87c` (the commit that added them, and any commit on
+`main` before this change merged) still has them -- so there was no
+reason to rewrite history, only to stop adding to it.
 
 ## What the bundle contains
 

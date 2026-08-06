@@ -78,6 +78,28 @@ def crc16_buf(sbuf):
 
     return crc
 
+class BadgeSilent(TimeoutError):
+    """The badge sent nothing at all before the read timed out.
+
+    Distinguished from a plain TimeoutError (which also covers a frame that
+    started but got cut off partway through) because there's nothing here a
+    NACK could fix: the badge hasn't sent a frame for us to have rejected.
+    See await_frame_retrying(), which retries on link-corruption errors
+    (a truncated read, a bad CRC) but never on this one.
+    """
+
+class UnexpectedOpcode(ValueError):
+    """The badge sent a well-formed, uncorrupted frame -- just not the one we
+    were expecting.
+
+    Distinguished from the other ValueErrors await_serial() raises (a bad
+    header or payload CRC) because a NACK can't fix this: the frame wasn't
+    garbled, the badge just said something else. See await_frame_retrying(),
+    which never retries this -- it's a protocol-state error, not link
+    corruption, and burning the retry budget on it would only delay
+    surfacing the real problem.
+    """
+
 def validate_header(header):
     if len(header) < HEADER_SIZE:
         raise TimeoutError("No response from badge.")
@@ -89,7 +111,7 @@ def await_serial(ser, opcode=None):
         # TODO: timeout
         resp = ser.read(1)
         if not len(resp):
-            raise TimeoutError("No response from badge.")
+            raise BadgeSilent("No response from badge.")
         if resp[0] == 0xAC:
             break
 
@@ -97,7 +119,7 @@ def await_serial(ser, opcode=None):
     validate_header(resp)
     header = SerialHeader._make(struct.unpack(HEADER_FMT, resp))
     if opcode and header.opcode != opcode:
-        raise ValueError("Unexpected opcode received: %d" % header.opcode)
+        raise UnexpectedOpcode("Unexpected opcode received: %d" % header.opcode)
     if header.payload_len:
         payload = ser.read(header.payload_len)
         if len(payload) != header.payload_len:
@@ -119,7 +141,51 @@ def await_ack(ser, nack_allowed=False):
     elif header.opcode == SERIAL_OPCODE_NACK and nack_allowed:
         return False, header
     else:
-        raise ValueError("Unexpected opcode received: %d" % header.opcode)
+        raise UnexpectedOpcode("Unexpected opcode received: %d" % header.opcode)
+
+def await_frame_retrying(ser, opcode, expected_payload_len=None):
+    """Receive a frame of the given opcode, NACKing and retrying a garbled or
+    truncated one so a resend-capable badge can resend it -- the receive-side
+    counterpart to send_image()'s own retry loop, which resends a frame the
+    badge NACKs. Bounded by MAX_FRAME_ATTEMPTS, same as that loop.
+
+    If expected_payload_len is given, a frame whose payload is missing or
+    the wrong size is treated the same as a CRC failure: NACKed and retried.
+    A corrupted payload_len can pass its own CRC check (the CRC covers the
+    bytes as received, not what the sender meant to send), so without this
+    a resend-capable badge would never get the chance to fix it.
+
+    Two error categories are deliberately *not* retried, and propagate on
+    the first attempt:
+    - Total silence from the badge (BadgeSilent): there was no frame to have
+      rejected, so a NACK can't help.
+    - An unexpected-but-well-formed opcode (UnexpectedOpcode): the frame
+      wasn't garbled, the badge just said something else. That's a
+      protocol-state error, not link corruption, and retrying would only
+      burn the retry budget before surfacing the real problem.
+
+    A badge running firmware from before this was added just times out on
+    its own per-frame timeout after our NACK and abandons the transfer,
+    exactly as if we hadn't retried; the only difference is the CLI's
+    eventual fatal error arrives a bit later.
+    """
+    for attempt in range(1, MAX_FRAME_ATTEMPTS + 1):
+        try:
+            header, payload = await_serial(ser, opcode)
+            if expected_payload_len is not None and (
+                    not payload or len(payload) != expected_payload_len):
+                raise ValueError(
+                    "Badge sent a %d byte frame, expected %d."
+                    % (len(payload) if payload else 0, expected_payload_len))
+            return header, payload
+        except BadgeSilent:
+            raise
+        except UnexpectedOpcode:
+            raise
+        except (TimeoutError, ValueError):
+            if attempt == MAX_FRAME_ATTEMPTS:
+                raise
+            send_message(ser, SERIAL_OPCODE_NACK)
 
 def send_message(ser, opcode, payload=b'', src_id=CONTROLLER_ID):
     # Packed by field name (via HEADER_FIELDS_NOCRCs), not by a hand-ordered
@@ -240,12 +306,11 @@ def get_image(ser: serial.Serial, output: str = None):
     """Pull the animation the badge is showing. Returns the badge's ID."""
     frames = []
     send_message(ser, SERIAL_OPCODE_GETFILE)
-    header, payload = await_serial(ser, SERIAL_OPCODE_PUTFILE)
+    header, payload = await_frame_retrying(ser, SERIAL_OPCODE_PUTFILE,
+                                           expected_payload_len=ANIM_HEADER_SIZE)
     badge_id = header.from_id
     frame = 0
 
-    if not payload or len(payload) != ANIM_HEADER_SIZE:
-        raise ValueError("Malformed animation header from badge.")
     send_message(ser, SERIAL_OPCODE_ACK)
     anim = AnimMeta._make(struct.unpack(ANIM_META_FMT, payload))
     clean_anim_name = anim.name.split(b'\0', 1)[0].decode('ascii')
@@ -255,10 +320,8 @@ def get_image(ser: serial.Serial, output: str = None):
     while True:
         # Name the opcode, and check the frame before acknowledging it: an ACK
         # for something never accepted leaves the badge a frame ahead.
-        header, payload = await_serial(ser, SERIAL_OPCODE_APPFILE)
-        if not payload or len(payload) != FRAME_BYTES:
-            raise ValueError("Badge sent a %d byte frame, expected %d."
-                             % (len(payload) if payload else 0, FRAME_BYTES))
+        header, payload = await_frame_retrying(ser, SERIAL_OPCODE_APPFILE,
+                                               expected_payload_len=FRAME_BYTES)
         send_message(ser, SERIAL_OPCODE_ACK)
         frame += 1
         print("Got frame %d/%d." % (frame, anim.anim_len))

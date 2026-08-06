@@ -610,12 +610,28 @@ void serial_rx_done(ir_header_t *header) {
                         led_set_anim_direct(led_anim_idle, 1);
                         serial_send_nack();
                     }
-                } else {
+                } else if (header_write_result == STORAGE_ANIM_HEADER_SIZE) {
                     serial_filepart = 0;
                     serial_file_discard = 0;
                     serial_send_ack();
                     serial_state_transition(SERIAL_LL_STATE_C_FILE_RX, IR_TIMEOUT_MS);
                     serial_peer_id = header->from_id;
+                } else {
+                    // The header write came up short. Same discipline as the
+                    //  header_only branch above: never ACK -- and so never
+                    //  let the sender start streaming APPFILE frames -- on
+                    //  the strength of a write that didn't actually land,
+                    //  or the frames would complete into a file whose header
+                    //  is truncated/garbage. This branch (unlike header_only)
+                    //  just created or truncated the file, so there's a
+                    //  partial file on flash to clean up; it was never
+                    //  cached (storage_cache_anim_name() only runs on a
+                    //  completed transfer), so there's nothing to uncache.
+                    SPIFFS_close(&storage_fs, serial_fd);
+                    storage_delete_anim(serial_file_header.name);
+                    serial_state_transition(SERIAL_LL_STATE_IDLE, IR_TIMEOUT_MS);
+                    led_set_anim_direct(led_anim_idle, 1);
+                    serial_send_nack();
                 }
             } else {
                 // There's nowhere to put the animation. The receive display

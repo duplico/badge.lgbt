@@ -27,6 +27,7 @@ void storage_init();
 uint8_t storage_read_file(char *fname, uint8_t *dest, uint32_t offset, uint16_t size);
 void storage_cache_anim_name(uint16_t id, const char *name);
 void storage_uncache_anim_name(uint16_t id, const char *name);
+void storage_uncache_anim_name_by_name(const char *name);
 uint8_t storage_delete_anim(char *anim_name);
 uint8_t storage_load_frame(char *anim_name, uint16_t frame_number, rgbcolor_t (*dest)[15]);
 void storage_save_direct_anim(char *anim_name, led_anim_direct_t *anim, uint8_t unlocked);

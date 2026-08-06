@@ -25,6 +25,15 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 VERSION="${1:-$(git -C "$REPO_ROOT" describe --tags --always --dirty)}"
+
+if ! [[ "$VERSION" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "usage: $0 [VERSION]" >&2
+  echo "VERSION must match ^[A-Za-z0-9._-]+\$ (got: '$VERSION')" >&2
+  echo "it is used unescaped in sed and as a directory/zip name, so slashes," >&2
+  echo "spaces, and shell/sed metacharacters are not safe here" >&2
+  exit 1
+fi
+
 GIT_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 

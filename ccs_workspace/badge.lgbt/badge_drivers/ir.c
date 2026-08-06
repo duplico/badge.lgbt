@@ -488,7 +488,7 @@ void serial_rx_done(ir_header_t *header) {
             //  zero or near it.
             if (serial_file_header.direct_anim.anim_len == 0 ||
                     serial_file_header.direct_anim.anim_len > STORAGE_MAX_ANIM_FRAMES ||
-                    serial_file_header.direct_anim.anim_frame_delay_ms < 20) {
+                    serial_file_header.direct_anim.anim_frame_delay_ms < MIN_FRAME_DELAY_MS) {
                 return;
             }
 

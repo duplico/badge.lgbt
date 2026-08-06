@@ -81,6 +81,16 @@ def crc16_buf(sbuf):
 
     return crc
 
+class BadgeSilent(TimeoutError):
+    """The badge sent nothing at all before the read timed out.
+
+    Distinguished from a plain TimeoutError (which also covers a frame that
+    started but got cut off partway through) because there's nothing here a
+    NACK could fix: the badge hasn't sent a frame for us to have rejected.
+    See await_frame_retrying(), which retries on any other TimeoutError or
+    ValueError but never on this one.
+    """
+
 def validate_header(header):
     if len(header) < HEADER_SIZE:
         raise TimeoutError("No response from badge.")
@@ -92,7 +102,7 @@ def await_serial(ser, opcode=None):
         # TODO: timeout
         resp = ser.read(1)
         if not len(resp):
-            raise TimeoutError("No response from badge.")
+            raise BadgeSilent("No response from badge.")
         if resp[0] == 0xAC:
             break
 
@@ -123,6 +133,29 @@ def await_ack(ser, nack_allowed=False):
         return False, header
     else:
         raise ValueError("Unexpected opcode received: %d" % header.opcode)
+
+def await_frame_retrying(ser, opcode):
+    """Receive a frame of the given opcode, NACKing and retrying a garbled or
+    truncated one so a resend-capable badge can resend it -- the receive-side
+    counterpart to send_image()'s own retry loop, which resends a frame the
+    badge NACKs. Bounded by MAX_FRAME_ATTEMPTS, same as that loop.
+
+    Total silence from the badge (BadgeSilent) is not retried: there was no
+    frame to have rejected, so a NACK can't help, and it propagates
+    immediately, same as before this existed. A badge running firmware from
+    before this was added just times out on its own per-frame timeout after
+    our NACK and abandons the transfer, exactly as if we hadn't retried; the
+    only difference is the CLI's eventual fatal error arrives a bit later.
+    """
+    for attempt in range(1, MAX_FRAME_ATTEMPTS + 1):
+        try:
+            return await_serial(ser, opcode)
+        except BadgeSilent:
+            raise
+        except (TimeoutError, ValueError):
+            if attempt == MAX_FRAME_ATTEMPTS:
+                raise
+            send_message(ser, SERIAL_OPCODE_NACK)
 
 def send_message(ser, opcode, payload=b'', src_id=CONTROLLER_ID):
     msg = struct.pack(HEADER_FMT_NOCRCs, VERSION_HEADER, len(payload), opcode, src_id)
@@ -234,7 +267,7 @@ def get_image(ser: serial.Serial, output: str = None):
     """Pull the animation the badge is showing. Returns the badge's ID."""
     frames = []
     send_message(ser, SERIAL_OPCODE_GETFILE)
-    header, payload = await_serial(ser, SERIAL_OPCODE_PUTFILE)
+    header, payload = await_frame_retrying(ser, SERIAL_OPCODE_PUTFILE)
     badge_id = header.from_id
     frame = 0
 
@@ -249,7 +282,7 @@ def get_image(ser: serial.Serial, output: str = None):
     while True:
         # Name the opcode, and check the frame before acknowledging it: an ACK
         # for something never accepted leaves the badge a frame ahead.
-        header, payload = await_serial(ser, SERIAL_OPCODE_APPFILE)
+        header, payload = await_frame_retrying(ser, SERIAL_OPCODE_APPFILE)
         if not payload or len(payload) != FRAME_BYTES:
             raise ValueError("Badge sent a %d byte frame, expected %d."
                              % (len(payload) if payload else 0, FRAME_BYTES))

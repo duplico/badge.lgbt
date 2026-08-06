@@ -1,19 +1,33 @@
-import math
-import argparse
-import os, os.path
-import struct
+import os.path
+import string
 from itertools import zip_longest
 
 import click
-from intelhex import IntelHex
 from PIL import Image, ImageFilter, ImageEnhance
 
+# The badge screen. These also fix the on-wire frame size and the C array
+#  shapes emitted for the firmware; they match rgbcolor_t and the 15x7 matrix
+#  in badge_drivers/led.h and STORAGE_ANIM_FRAME_SIZE in storage.h.
+SCREEN_WIDTH = 15
+SCREEN_HEIGHT = 7
+BYTES_PER_PIXEL = 3
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
+FRAME_BYTES = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL
+
+# ANIM_NAME_MAX_LEN in badge_drivers/led.h: the firmware's name buffer,
+#  including the null terminator.
+ANIM_NAME_MAX_LEN = 16
+ANIM_NAME_MAX_CHARS = ANIM_NAME_MAX_LEN - 1
+
+PREVIEW_SCALE = 10
+
 def scale_preview(i):
-     return i.resize((150,70), resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
+     preview_size = (SCREEN_WIDTH * PREVIEW_SCALE, SCREEN_HEIGHT * PREVIEW_SCALE)
+     return i.resize(preview_size, resample=Image.NEAREST).filter(ImageFilter.BoxBlur(2))
 
 def img_string(img):
      s = "{"
-     for rgb_row in grouper(img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), 15*3):
+     for rgb_row in grouper(img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.FLIP_TOP_BOTTOM).tobytes(), SCREEN_WIDTH*BYTES_PER_PIXEL):
           s += "{"
           for rgb in grouper(rgb_row, 3):
                s += "{%d, %d, %d}, " % rgb
@@ -36,19 +50,14 @@ def get_avg_fps(PIL_Image_object):
             return frames / duration * 1000
     return None
 
-import string
-
 class BadgeImage:
      def __init__(self, path, frame_delay_ms, crop=False):
           self.imgs = []
           self.enhance = True
 
-          if path.endswith('.bmp') or path.endswith('.gif'):
-               pass
-          else:
-               print("Expected: bmp or gif, got: %s" % path)
-               exit(1)
-          
+          if not (path.lower().endswith('.bmp') or path.lower().endswith('.gif')):
+               raise ValueError("Expected: bmp or gif, got: %s" % path)
+
           self.image_name = os.path.basename(path).split('.')[0]
           if self.image_name[0] in string.digits:
                self.image_name = 'a%s' % self.image_name
@@ -57,8 +66,9 @@ class BadgeImage:
                self.image_name = self.image_name[:-len('_noenhance')]
                self.enhance = False
 
-          if len(self.image_name) > 14:
-               raise ValueError("File name too long.")
+          if len(self.image_name) > ANIM_NAME_MAX_CHARS:
+               raise ValueError("Image name %s is longer than %d characters."
+                                % (self.image_name, ANIM_NAME_MAX_CHARS))
 
           im = Image.open(path)
           for i, frame in enumerate(iter_frames(im)):
@@ -114,11 +124,14 @@ def iter_frames(im):
 
 def print_img_code(imglist, delay=100, print_anim_struct=False, name='image'):
      if len(imglist) == 1:
-          print("const rgbcolor_t %s[7][15] = %s;" % (name, img_string(imglist[0])))
+          print("const rgbcolor_t %s[%d][%d] = %s;" % (
+               name, SCREEN_HEIGHT, SCREEN_WIDTH, img_string(imglist[0])))
      else:
-          print('const rgbcolor_t %s_frames[%d][7][15] = {%s};' % (
+          print('const rgbcolor_t %s_frames[%d][%d][%d] = {%s};' % (
                name,
                len(imglist),
+               SCREEN_HEIGHT,
+               SCREEN_WIDTH,
                ',\n'.join(map(img_string, imglist))
           ))
           if print_anim_struct:
@@ -137,8 +150,8 @@ def scale_img(i, crop=False):
      # TODO: Docs and cleanup
      width, height = i.size
 
-     if crop and not (width <= 15 and height <= 7):
-          ideal_aspect = 15/7.0
+     if crop and not (width <= SCREEN_WIDTH and height <= SCREEN_HEIGHT):
+          ideal_aspect = SCREEN_WIDTH / float(SCREEN_HEIGHT)
           aspect = width / float(height)
 
           if aspect > ideal_aspect:
@@ -152,7 +165,7 @@ def scale_img(i, crop=False):
 
           i = i.crop(resize)
 
-     size = (15, 7)
+     size = SCREEN_SIZE
 
      i.thumbnail(size) #, Image.ANTIALIAS)
      background = Image.new('RGB', size, (0, 0, 0))
@@ -163,24 +176,23 @@ def scale_img(i, crop=False):
      return background
 
 @click.command()
-@click.option('--preview', is_flag=True)
-@click.option('--crop', is_flag=True)
-@click.option('--gather', is_flag=True)
-@click.option('--frame-dur', type=int, default=0)
+@click.option('--preview', is_flag=True, help="Render what the image will look like on the badge screen instead of emitting C source.")
+@click.option('--crop', is_flag=True, help="Crop to the screen's aspect ratio instead of letterboxing.")
+@click.option('--gather', is_flag=True, help="Emit a complete animation list for the animloader.")
+@click.option('--frame-dur', type=int, default=0, help="Animation frame duration in milliseconds. Defaults to the source GIF's.")
 @click.argument('img-src-path', type=click.Path(exists=True, dir_okay=False), required=True, nargs=-1)
 def import_img(img_src_path, frame_dur, preview, crop, gather):
+     """Convert animated GIFs and still BMPs into badge animations."""
      image_names = []
      if gather:
           print('#include <led.h>')
           print('#include <stdint.h>')
           print('#include <tlc6983.h>')
      for img_src in img_src_path[::-1]:
-          if img_src.lower().endswith('.bmp') or img_src.lower().endswith('.gif'):
-               pass
-          else:
-               print("Expected: bmp or gif, got: %s" % img_src)
-
-          badge_image = BadgeImage(img_src, frame_dur, crop)
+          try:
+               badge_image = BadgeImage(img_src, frame_dur, crop)
+          except (ValueError, OSError) as e:
+               raise click.ClickException(str(e))
           image_names.append(badge_image.image_name)
 
           if img_src.lower().endswith('.bmp'):

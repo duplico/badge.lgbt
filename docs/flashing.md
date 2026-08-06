@@ -1,6 +1,8 @@
 # Flashing runbook
 
-Building the images these procedures flash is covered in `toolchain.md`.
+Building the images these procedures flash is covered in `toolchain.md`;
+publishing them as a release bundle (what most people flashing a badge
+should actually use) is covered in `releasing.md`.
 
 How to get firmware onto the three targets: the badge (CC2640R2F), the
 animloader (same chip, flashed first), and the controller dongle
@@ -11,55 +13,71 @@ animloader (same chip, flashed first), and the controller dongle
 
 - Badge(s) — CC2640R2F, 2021 revision.
 - XDS110 debug probe + cable / Tag-Connect to the badge's cJTAG header
-  (the packages' ccxml targets the XDS110 probe).
+  (`release/assets/cc2640r2f.ccxml` targets the XDS110 probe).
 - Controller dongle (MSP430FR2433) + an eZ-FET or MSP-FET wired for
   Spy-Bi-Wire: SBWTDIO → dongle nRST, SBWTCK → dongle TEST, plus 3V3 and
   GND. (A LaunchPad's eZ-FET header works.)
 - USB cables for the probe(s); the dongle's own USB port is its serial
   bridge, not a programming interface.
 
-## Badge and animloader: UniFlash packages (Windows DSLite)
+## Badge and animloader: release bundles (Windows DSLite)
 
-`uniflash_windows_badge-2021-r1.zip` and
-`uniflash_windows_animloader-2021-r1.zip` at the repo root are standalone
-Windows UniFlash CLI packages: `dslite.bat`, `DSLite.exe` under
-`ccs_base/DebugServer/bin/`, the release hex in `user_files/images/`, and
-the XDS110 target config `user_files/configs/cc2640r2f.ccxml`.
-
-**Use the zips, not the extracted `uniflash_windows_*-2021-r1/` directories
-in the repo** — `.gitignore` excludes `*.exe`/`*.dll`/`*.hex`, so the
-checked-out trees are missing `DSLite.exe` and the firmware image. Extract
-each zip to a Windows-side path with no spaces (e.g. `C:\temp\uf-badge\`).
-
-Order matters on a fresh badge: flash the **animloader** package first and
-let it run to completion (it writes the preloaded animations into SPIFFS on
-the external flash), then flash the **badge** package over it.
-
-From Windows (cmd), per package:
-
-```bat
-one_time_setup.bat      REM once per machine: installs XDS110 drivers
-dslite.bat              REM flashes user_files\images\*.hex via the XDS110
-```
-
-`dslite.bat` with no arguments runs, from the package root (the command
-embeds package-relative paths, so cwd must be the package root):
+Flashable images are published as tagged GitHub Releases, not committed to
+this repo (`docs/releasing.md` covers building and cutting one). A release
+zip unpacks to `animloader/` and `badge/` directories, each carrying its
+image, the XDS110 target config (`cc2640r2f.ccxml`), and a `flash.sh`
+wrapper:
 
 ```
-DSLite flash -c user_files/configs/cc2640r2f.ccxml
-    -l user_files/settings/generated.ufsettings
-    -s VerifyAfterProgramLoad="No verification"
-    -e -f -v user_files/images/<name>.hex
+badge.lgbt-<version>/
+  animloader/badge.lgbt-animloader.hex
+  animloader/cc2640r2f.ccxml
+  animloader/flash.sh
+  badge/badge.lgbt.hex
+  badge/cc2640r2f.ccxml
+  badge/flash.sh
+  dongle/...
+  manifest.json
+  RELEASE.md
 ```
 
-### Swapping in a freshly built hex
+Order matters on a fresh badge: flash **animloader** first and let it run
+to completion (it writes the preloaded animations into SPIFFS on the
+external flash), then flash **badge** over it.
 
-`cd ccs_workspace/badge.lgbt && make hex` produces
-`build/badge.lgbt.hex` (Intel hex, via armhex — see that Makefile and
-CLAUDE.md for toolchain paths). Copy it over the package's
-`user_files/images/badge.lgbt.hex`, keeping the filename (`dslite.bat`
-hardcodes it), then run `dslite.bat` as above. Same pattern for an
-animloader build (`user_files/images/badge.lgbt-animloader.hex`).
+From a WSL2 shell, per target:
+
+```bash
+cd animloader && ./flash.sh
+cd ../badge && ./flash.sh
+```
+
+`flash.sh` (`release/assets/flash-dslite.sh` in this repo) stages the image
+and ccxml to a Windows-native path (`C:\temp\badge-flash` by default,
+override with `STAGE_DIR`) and drives the DSLite under an installed CCS
+(`C:\ti\ccs1271` by default, override with `CCS_ROOT`) exactly as described
+in "Driving DSLite from a WSL shell" below — it *is* that procedure, packaged.
+No standalone UniFlash install or vendored `DSLite.exe` is needed: CCS's own
+DSLite works with this project's ccxml (confirmed below), and CCS is
+already something you'd install to get XDS110 drivers onto the Windows
+side in the first place.
+
+If you'd rather drive DSLite by hand instead of through `flash.sh` — to
+pass extra flags, or while `flash.sh` doesn't exist yet for a still-being-built
+release — see "Driving DSLite from a WSL shell" below for the equivalent raw
+invocation.
+
+### Building and flashing a fresh hex without a release
+
+`cd ccs_workspace/badge.lgbt && make hex` produces `build/badge.lgbt.hex`
+(Intel hex, via armhex — see that Makefile and CLAUDE.md for toolchain
+paths); same pattern for `ccs_workspace/badge.lgbt-animloader`. Point a
+copy of `release/assets/flash-dslite.sh` (as `flash.sh`) and
+`release/assets/cc2640r2f.ccxml` at a directory holding one of these
+freshly built `.hex` files and run it, or just build the whole release
+bundle instead — `release/build_release.sh` builds all three images from
+source and assembles this exact layout, so there's rarely a reason to do
+this by hand.
 
 ### Troubleshooting
 
@@ -106,17 +124,18 @@ repository has to be consulted:
   debug session holds the probe; the only reliable cure is a Windows
   reboot.
 
-Example (badge package extracted to `C:\temp\uf-badge`, fresh hex already
-copied into its `user_files\images\`):
+Example (a release bundle's `badge/` directory staged to
+`C:\temp\badge-flash`, mirroring what `flash.sh` does automatically):
 
 ```bash
-cd /mnt/c/temp/uf-badge/ccs_base/DebugServer/bin
-cmd.exe /c "DSLite.exe flash -c C:\temp\uf-badge\user_files\configs\cc2640r2f.ccxml -e -f -v C:\temp\uf-badge\user_files\images\badge.lgbt.hex"
+cd /mnt/c/ti/ccs1271/ccs/ccs_base/DebugServer/bin
+cmd.exe /c "DSLite.exe flash -c C:\temp\badge-flash\cc2640r2f.ccxml -e -f -v C:\temp\badge-flash\badge.lgbt.hex"
 ```
 
 CCS 12.7.1's own DSLite
-(`/mnt/c/ti/ccs1271/ccs/ccs_base/DebugServer/bin/DSLite.exe`) also works
-with the package's ccxml, same invocation rules.
+(`/mnt/c/ti/ccs1271/ccs/ccs_base/DebugServer/bin/DSLite.exe`) works fine
+with this project's ccxml, same invocation rules — that's why release
+bundles don't carry their own DSLite: an installed CCS already supplies it.
 
 ## Alternative: usbipd-win + native Linux tools in WSL
 
@@ -129,16 +148,20 @@ usbipd attach --wsl --busid <busid>
 ```
 
 There is currently **no Linux DSLite on this machine**: `~/ti` holds only
-CGT/SDK/xdctools installs, and the uniflash zips are Windows-only packages
-(`DSLite.exe` + `.dll`s). To use this path you would need to install, inside
-WSL, either TI UniFlash for Linux or CCS for Linux (both ship
+CGT/SDK/xdctools installs, and the CCS/DSLite referenced above is a Windows
+install. To use this path you would need to install, inside WSL, either TI
+UniFlash for Linux or CCS for Linux (both ship
 `ccs_base/DebugServer/bin/DSLite`), plus the XDS110 udev rules their
 install scripts provide, then run the same `DSLite flash -c
-user_files/configs/cc2640r2f.ccxml ... <hex>` command natively. Until one
-of those is installed, the Windows DSLite path above is the working
-procedure.
+cc2640r2f.ccxml ... <hex>` command natively. Until one of those is
+installed, the Windows DSLite path above is the working procedure.
 
 ## Dongle: MSP430Flasher with a TI-TXT image
+
+A release bundle's `dongle/` directory carries a `flash.sh` wrapper
+(`release/assets/flash-mspflasher.sh`) that does exactly what this section
+describes — `cd dongle && ./flash.sh`. What follows is the manual
+equivalent, and what that script is built from.
 
 Build the image (see `ccs_workspace/badge.lgbt-dongle/Makefile`; toolchain
 in `tools/toolchain.lock` there):

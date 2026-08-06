@@ -29,18 +29,23 @@ configs differ — `SingleMode_FlashOnly` is `RF_SINGLEMODE` at `-O4`, `MultiMod
 is `RF_MULTIMODE` + `USE_RCOSC` + `ICALL_EVENTS` with optimization off).
 
 The 2021 release binaries (calibration references for build changes) are inside the
-committed `uniflash_windows_*-2021-r1.zip` files at `user_files/images/*.hex`; the
-`2021-rc1` git tag is the matching source. A same-source CLI rebuild differs from the
-released hex by ~12% of bytes (scattered single-byte ranges, same layout and size ±11 B),
-attributed to xdctools 3.62.00.08 vs the unavailable 3.62.01.15.
+`uniflash_windows_*-2021-r1.zip` files findable via the `2021-rc1` git tag (they are no
+longer committed at HEAD — see below); that tag is also the matching source. A
+same-source CLI rebuild differs from the released hex by ~12% of bytes (scattered
+single-byte ranges, same layout and size ±11 B), attributed to xdctools 3.62.00.08 vs the
+unavailable 3.62.01.15.
 
 The animloader and the dongle have their own Makefiles and build the same way; the dongle's
 uses the MSP430 CGT and emits TI-TXT rather than Intel-Hex. CCS (~10.3–12.x) still opens all
 three projects, and its settings remain the reference the Makefiles are derived from.
 
-Flashing release binaries does not require CCS: `uniflash_windows_badge-2021-r1/` and
-`uniflash_windows_animloader-2021-r1/` are standalone Windows UniFlash CLI packages
-(`dslite.bat`, hex image in `user_files/images/`) for an XDS110 debug probe.
+Flashable images are published as tagged GitHub Releases, built by
+`release/build_release.sh` (see `docs/releasing.md`) rather than committed to this repo —
+the old `uniflash_windows_badge-2021-r1/` and `uniflash_windows_animloader-2021-r1/`
+UniFlash packages are gone from HEAD, superseded by that release process
+([#130](https://github.com/duplico/badge.lgbt/issues/130)). Flashing a release still
+doesn't require CCS *for building*, but the flashing step itself drives an installed CCS's
+own DSLite (`docs/flashing.md`) rather than bundling one.
 
 ## Python host tooling (`scripts/`)
 

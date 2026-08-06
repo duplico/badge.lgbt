@@ -97,6 +97,10 @@ loader images.
 
 ## Flashing
 
-`docs/flashing.md`. The badge and animloader go through UniFlash/DSLite with an
+`docs/flashing.md`. The badge and animloader go through DSLite with an
 XDS110 probe; the dongle goes through MSP430Flasher. Both flashing tools are
 Windows binaries here, driven from WSL.
+
+Flashable images ship as tagged GitHub Releases rather than being committed
+to this repo — `docs/releasing.md` covers building and publishing one with
+`release/build_release.sh`.

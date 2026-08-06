@@ -118,3 +118,7 @@ ccs_workspace/badge.lgbt-dongle/build/
 venv/
 
 scripts/*_preview.gif
+
+# release/build_release.sh output -- built on demand, published as GitHub
+# Release assets rather than committed (see docs/releasing.md).
+/dist/

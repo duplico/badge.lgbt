@@ -1,0 +1,63 @@
+# badge.lgbt @VERSION@
+
+Built from duplico/badge.lgbt @ `@GIT_SHA@`.
+
+Three images, one per target, each in its own directory with everything its
+`flash.sh` needs:
+
+    animloader/   badge.lgbt-animloader.hex, cc2640r2f.ccxml, flash.sh
+    badge/        badge.lgbt.hex,             cc2640r2f.ccxml, flash.sh
+    dongle/       badge.lgbt-dongle.txt,      flash.sh
+
+`manifest.json` lists the same information machine-readably.
+
+## Prerequisites
+
+- A WSL2 shell on a Windows host.
+- For the badge and animloader: Code Composer Studio (or a standalone TI
+  UniFlash install) on the Windows side, an XDS110 debug probe, and a
+  Tag-Connect/cJTAG cable to the badge's header.
+- For the dongle: TI MSPFlasher on the Windows side, and an eZ-FET or
+  MSP-FET wired for Spy-Bi-Wire (SBWTDIO -> dongle nRST, SBWTCK -> dongle
+  TEST, plus 3V3 and GND).
+- The probe (including a LaunchPad's onboard XDS110) powers a badge enough
+  to flash it, not enough to run it. Flash on probe power, then insert the
+  battery.
+
+## Flashing a badge
+
+Order matters on a fresh badge: the animloader first (it seeds the SPI
+flash with the starting animations), then the main firmware over it.
+
+    cd animloader && ./flash.sh
+    cd ../badge && ./flash.sh
+
+Each `flash.sh` stages its image to `C:\temp\badge-flash` and drives DSLite
+via `cmd.exe`; override the CCS install location with `CCS_ROOT` if it is
+not at the default `C:\ti\ccs1271`. Re-run is idempotent.
+
+## Flashing a dongle
+
+    cd dongle && ./flash.sh
+
+Stages the image to `C:\temp` and drives MSP430Flasher; override its
+install location with `MSPFLASHER_ROOT` if it is not at the default
+`/mnt/c/ti/MSPFlasher_1.3.20`.
+
+## If it does not work
+
+- **`Error -242: A router subpath could not be accessed`**, or a
+  flashloader timeout partway through a write, almost always means the
+  probe is seated badly on the badge's header, not a configuration
+  problem -- re-seat before touching anything else.
+- **"MSP-FET430UIF is already in use"** or another probe-lock error means a
+  zombie debug session holds the probe; a Windows reboot is the reliable
+  fix.
+- The shipped `cc2640r2f.ccxml` uses probe-supplied power. On a fixture
+  that does not supply VCC itself, switch its Power Selection to
+  target-supplied and leave the battery in, or flashing fails even with a
+  good connection.
+
+The full runbook, including the reasoning behind each of these scripts and
+a from-source-build path, lives at `docs/flashing.md` in the
+[duplico/badge.lgbt](https://github.com/duplico/badge.lgbt) repository.

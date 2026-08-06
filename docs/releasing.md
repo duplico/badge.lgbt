@@ -48,6 +48,34 @@ extra to install just to flash a release.
 against this layout; `build_release.sh` runs it automatically and fails the
 build if the bundle doesn't match.
 
+## `manifest.json` schema
+
+`manifest.json` (written by the `jq -n` block in `build_release.sh`) is:
+
+    {
+      "version": "<VERSION>",
+      "git_sha": "<short HEAD sha at build time>",
+      "built": "<UTC build timestamp, e.g. 2026-08-05T20:48:00Z>",
+      "targets": [ {target}, {target}, {target} ]
+    }
+
+Each `target` entry has all paths relative to the bundle root:
+
+| field | type | meaning |
+| --- | --- | --- |
+| `name` | string | `animloader`, `badge`, or `dongle`. |
+| `chip` | string | `CC2640R2F` for animloader/badge, `MSP430FR2433` for dongle. |
+| `image` | string | Path to the built firmware image. |
+| `image_format` | string | `ihex` (Intel-hex, first byte `:`) for animloader/badge, or `ti-txt` (first byte `@`) for dongle. |
+| `config` | string \| `null` | Path to the target's `cc2640r2f.ccxml` (animloader/badge); `null` for dongle, which has no XDS110 debug-probe config. |
+| `tool` | string | `dslite` (animloader/badge) or `mspflasher` (dongle) -- which flashing tool `flash_script` drives. |
+| `flash_script` | string | Path to that target's `flash.sh`. |
+| `flash_order` | integer \| `null` | `1` for animloader, `2` for badge -- animloader must be flashed first on a fresh badge (it writes the preloaded animations to SPIFFS). `null` for dongle, which has no ordering constraint relative to the other two. |
+
+This is the exact set `build_release.sh` emits today; if that script's `jq
+-n` block changes, this table is the one that's out of date, not the
+other way around.
+
 ## Steps
 
 1. **Bump the firmware version**, if this release carries a firmware
